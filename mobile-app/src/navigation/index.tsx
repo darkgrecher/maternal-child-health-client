@@ -3,15 +3,18 @@
  * 
  * Main navigation configuration using React Navigation.
  * Implements bottom tab navigation with stack navigators for each tab.
+ * Includes authentication flow with Login screen.
  */
 
 import React from 'react';
+import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, FONT_SIZE } from '../constants';
+import { useAuthStore } from '../stores';
 
 // Screens
 import {
@@ -21,12 +24,14 @@ import {
   GrowthScreen,
   FeedingScreen,
   ScheduleScreen,
+  LoginScreen,
 } from '../screens';
 
 // Types
 import { RootStackParamList, TabParamList } from '../types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const AuthStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator<TabParamList>();
 
 // Icon type mapping
@@ -42,6 +47,17 @@ const tabIcons: Record<keyof TabParamList, { focused: IoniconsName; unfocused: I
   Growth: { focused: 'trending-up', unfocused: 'trending-up-outline' },
   Feeding: { focused: 'restaurant', unfocused: 'restaurant-outline' },
   Schedule: { focused: 'calendar', unfocused: 'calendar-outline' },
+};
+
+/**
+ * Auth Navigator - Login flow
+ */
+const AuthNavigator: React.FC = () => {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+    </AuthStack.Navigator>
+  );
 };
 
 /**
@@ -121,14 +137,42 @@ const RootNavigator: React.FC = () => {
 };
 
 /**
+ * Loading Screen
+ */
+const LoadingScreen: React.FC = () => (
+  <View style={styles.loadingContainer}>
+    <ActivityIndicator size="large" color={COLORS.primary} />
+  </View>
+);
+
+/**
  * App Navigation Container
+ * Handles authentication state and shows appropriate navigator
  */
 export const Navigation: React.FC = () => {
+  const { status, accessToken } = useAuthStore();
+  
+  // Show loading while checking auth status
+  if (status === 'idle' || status === 'loading') {
+    return <LoadingScreen />;
+  }
+  
+  const isAuthenticated = !!accessToken && status === 'authenticated';
+
   return (
     <NavigationContainer>
-      <RootNavigator />
+      {isAuthenticated ? <RootNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+});
 
 export default Navigation;

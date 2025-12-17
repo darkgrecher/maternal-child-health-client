@@ -8,3 +8,4 @@ export { useChildStore } from './childStore';
 export { useVaccineStore } from './vaccineStore';
 export { useAppointmentStore } from './appointmentStore';
 export { useAppStore } from './appStore';
+export { useAuthStore } from './authStore';

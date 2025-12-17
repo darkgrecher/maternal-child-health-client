@@ -8,3 +8,4 @@ export { default as VaccinesScreen } from './VaccinesScreen';
 export { default as GrowthScreen } from './GrowthScreen';
 export { default as FeedingScreen } from './FeedingScreen';
 export { default as ScheduleScreen } from './ScheduleScreen';
+export { LoginScreen } from './LoginScreen';

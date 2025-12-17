@@ -374,3 +374,6 @@ export type TabParamList = {
   Feeding: undefined;
   Schedule: undefined;
 };
+
+// Re-export auth types
+export * from './auth';

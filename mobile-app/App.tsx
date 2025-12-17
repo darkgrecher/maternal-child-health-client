@@ -19,7 +19,7 @@ import './src/i18n';
 import Navigation from './src/navigation';
 
 // Stores
-import { useAppStore, useChildStore, useVaccineStore, useAppointmentStore } from './src/stores';
+import { useAppStore, useChildStore, useVaccineStore, useAppointmentStore, useAuthStore } from './src/stores';
 
 // Constants
 import { COLORS } from './src/constants';
@@ -48,10 +48,25 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { loadMockData: loadChildData } = useChildStore();
   const { loadMockData: loadVaccineData } = useVaccineStore();
   const { loadMockData: loadAppointmentData } = useAppointmentStore();
+  const { status, accessToken, setStatus, fetchProfile } = useAuthStore();
 
   useEffect(() => {
     const initialize = async () => {
       try {
+        // Check authentication status
+        if (accessToken && status === 'idle') {
+          setStatus('authenticated');
+          // Try to fetch user profile
+          try {
+            await fetchProfile();
+          } catch {
+            // Profile fetch failed, but we still have tokens
+            console.log('Profile fetch failed, continuing with cached data');
+          }
+        } else if (!accessToken && status === 'idle') {
+          setStatus('unauthenticated');
+        }
+        
         // Load mock data for development
         // In production, this would load from AsyncStorage or API
         loadChildData();

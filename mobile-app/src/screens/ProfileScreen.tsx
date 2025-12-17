@@ -12,13 +12,14 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 
 import { Card, Header, Avatar, SectionTitle, InfoRow, Badge } from '../components/common';
-import { useChildStore } from '../stores';
+import { useChildStore, useAuthStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 
 /**
@@ -27,7 +28,23 @@ import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../const
 const ProfileScreen: React.FC = () => {
   const { t } = useTranslation();
   const { profile, getChildAgeDisplay } = useChildStore();
+  const { user, logout } = useAuthStore();
   const ageDisplay = getChildAgeDisplay();
+
+  const handleLogout = () => {
+    Alert.alert(
+      t('auth.logoutTitle', 'Sign Out'),
+      t('auth.logoutConfirm', 'Are you sure you want to sign out?'),
+      [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        { 
+          text: t('auth.logout', 'Sign Out'), 
+          style: 'destructive',
+          onPress: () => logout(),
+        },
+      ]
+    );
+  };
 
   if (!profile) {
     return (
@@ -180,6 +197,31 @@ const ProfileScreen: React.FC = () => {
           )}
         </Card>
 
+        {/* Account Section */}
+        <Card style={styles.sectionCard}>
+          <SectionTitle 
+            title={t('profile.account', 'Account')} 
+            icon="person-outline"
+            iconColor={COLORS.info}
+          />
+          {user && (
+            <View style={styles.singleInfo}>
+              <Text style={styles.infoLabel}>{t('profile.signedInAs', 'Signed in as')}</Text>
+              <Text style={styles.infoValue}>{user.email}</Text>
+              {user.name && (
+                <Text style={styles.userName}>{user.name}</Text>
+              )}
+            </View>
+          )}
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
+            <Text style={styles.logoutText}>{t('auth.logout', 'Sign Out')}</Text>
+          </TouchableOpacity>
+        </Card>
+
         {/* Bottom spacing */}
         <View style={{ height: SPACING.xl }} />
       </ScrollView>
@@ -265,6 +307,25 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray[100],
+  },
+  userName: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    marginTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray[100],
+  },
+  logoutText: {
+    fontSize: FONT_SIZE.md,
+    color: COLORS.error,
+    marginLeft: SPACING.sm,
+    fontWeight: FONT_WEIGHT.medium,
   },
 });
 
