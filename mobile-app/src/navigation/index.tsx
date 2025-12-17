@@ -6,13 +6,22 @@
  */
 
 import React from 'react';
-import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, FONT_SIZE } from '../constants';
+
+// Screens
+import {
+  HomeScreen,
+  ProfileScreen,
+  VaccinesScreen,
+  GrowthScreen,
+  FeedingScreen,
+  ScheduleScreen,
+} from '../screens';
 
 // Types
 import { RootStackParamList, TabParamList } from '../types';
@@ -34,21 +43,6 @@ const tabIcons: Record<keyof TabParamList, { focused: IoniconsName; unfocused: I
   Feeding: { focused: 'restaurant', unfocused: 'restaurant-outline' },
   Schedule: { focused: 'calendar', unfocused: 'calendar-outline' },
 };
-
-// Simple placeholder screen for testing
-const PlaceholderScreen: React.FC<{ name: string }> = ({ name }) => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF5F7' }}>
-    <Text style={{ fontSize: 24, color: '#212121', fontWeight: '600' }}>{name}</Text>
-    <Text style={{ fontSize: 14, color: '#757575', marginTop: 8 }}>Screen is working</Text>
-  </View>
-);
-
-const HomeScreen = () => <PlaceholderScreen name="Home" />;
-const ProfileScreen = () => <PlaceholderScreen name="Profile" />;
-const VaccinesScreen = () => <PlaceholderScreen name="Vaccines" />;
-const GrowthScreen = () => <PlaceholderScreen name="Growth" />;
-const FeedingScreen = () => <PlaceholderScreen name="Feeding" />;
-const ScheduleScreen = () => <PlaceholderScreen name="Schedule" />;
 
 /**
  * Bottom Tab Navigator
