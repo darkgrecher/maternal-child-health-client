@@ -1,0 +1,235 @@
+/**
+ * Sinhala Language Translations (සිංහල)
+ * 
+ * Sinhala language file for Sri Lankan users.
+ */
+
+export default {
+  // Common
+  common: {
+    save: 'සුරකින්න',
+    cancel: 'අවලංගු කරන්න',
+    edit: 'සංස්කරණය',
+    delete: 'මකන්න',
+    confirm: 'තහවුරු කරන්න',
+    loading: 'පූරණය වෙමින්...',
+    error: 'දෝෂය',
+    success: 'සාර්ථකයි',
+    retry: 'නැවත උත්සාහ කරන්න',
+    viewAll: 'සියල්ල බලන්න',
+    call: 'ඇමතුම',
+    back: 'ආපසු',
+    next: 'ඊළඟ',
+    done: 'අවසන්',
+    add: 'එකතු කරන්න',
+    update: 'යාවත්කාලීන කරන්න',
+    search: 'සොයන්න',
+    noData: 'දත්ත නොමැත',
+    syncPending: 'සමමුහුර්ත කිරීම අපේක්ෂිතයි',
+    synced: 'සමමුහුර්ත කළා',
+    offline: 'අන්තර්ජාලය නැත',
+    online: 'සබැඳි',
+  },
+
+  // Navigation
+  navigation: {
+    home: 'මුල් පිටුව',
+    profile: 'පැතිකඩ',
+    vaccines: 'එන්නත්',
+    growth: 'වර්ධනය',
+    feeding: 'ආහාර',
+    schedule: 'කාලසටහන',
+  },
+
+  // Home Screen
+  home: {
+    title: 'ළමා සෞඛ්‍යය',
+    subtitle: 'සංවර්ධන වාර්තාව',
+    welcomeBanner: 'ඔබේ පවුලට සාදරයෙන් පිළිගනිමු',
+    welcomeSubtitle: 'ළමා සෞඛ්‍ය සංවර්ධන වාර්තාව',
+    nextAppointment: 'ඊළඟ හමුවීම',
+    growthPercentile: 'වර්ධන ප්‍රතිශතය',
+    immunizations: 'එන්නත්කරණය',
+    overdueVaccines: 'ප්‍රමාද එන්නත්',
+    immunizationProgress: 'එන්නත්කරණ ප්‍රගතිය',
+    overallProgress: 'සමස්ත ප්‍රගතිය',
+    vaccinesCompleted: '{{total}} න් {{completed}} එන්නත් සම්පූර්ණයි',
+    nextVaccine: 'ඊළඟ: {{vaccine}} - {{age}}',
+    addRecord: 'වාර්තාව එකතු කරන්න',
+    aiChat: 'AI චැට්',
+    emergencyContacts: 'හදිසි සම්බන්ධතා',
+    recentActivities: 'මෑත ක්‍රියාකාරකම්',
+    dailyHealthTip: 'දෛනික සෞඛ්‍ය උපදෙස්',
+    chdrNumber: 'CHDR අංකය:',
+    monthsOld: 'මාස {{months}} සති {{weeks}}',
+    weight: 'බර:',
+    height: 'උස:',
+  },
+
+  // Profile Screen
+  profile: {
+    title: 'ළමා පැතිකඩ',
+    subtitle: 'පුද්ගලික තොරතුරු',
+    personalInfo: 'පුද්ගලික තොරතුරු',
+    birthInfo: 'උපත් තොරතුරු',
+    medicalInfo: 'වෛද්‍ය තොරතුරු',
+    familyInfo: 'පවුල් තොරතුරු',
+    healthcareProviders: 'සෞඛ්‍ය සේවා සපයන්නන්',
+    name: 'නම',
+    dateOfBirth: 'උපන් දිනය',
+    gender: 'ස්ත්‍රී පුරුෂ භාවය',
+    male: 'පිරිමි',
+    female: 'ගැහැණු',
+    birthWeight: 'උපන් බර',
+    birthHeight: 'උපන් උස',
+    bloodType: 'රුධිර වර්ගය',
+    allergies: 'අසාත්මිකතා',
+    noneKnown: 'දන්නේ නැත',
+    specialConditions: 'විශේෂ තත්ත්වයන්',
+    none: 'නැත',
+    motherName: 'මවගේ නම',
+    fatherName: 'පියාගේ නම',
+    emergencyContact: 'හදිසි සම්බන්ධතාව',
+    assignedMidwife: 'පවරන ලද මිඩ්වයිෆ්',
+    pediatrician: 'ළමා රෝග විශේෂඥ',
+  },
+
+  // Vaccines Screen
+  vaccines: {
+    title: 'එන්නත්කරණය',
+    subtitle: 'එන්නත් කාලසටහන',
+    immunizationComplete: 'එන්නත්කරණය සම්පූර්ණයි',
+    onTrack: 'නියමිත පරිදි',
+    vaccineCard: 'එන්නත් කාඩ්පත',
+    certificate: 'සහතිකය',
+    nextVaccination: 'ඊළඟ එන්නත',
+    scheduleAppointment: 'ඔබේ මිඩ්වයිෆ් සමඟ හමුවීමක් වෙන්කරවා ගන්න',
+    schedule: 'වෙන්කරවා ගන්න',
+    status: {
+      completed: 'සම්පූර්ණයි',
+      due: 'නියමිත',
+      upcoming: 'ඉදිරි',
+      overdue: 'ප්‍රමාදයි',
+      missed: 'මඟ හැරුණු',
+    },
+    ageGroups: {
+      birth: 'උපතේදී',
+      months2: 'මාස 2',
+      months4: 'මාස 4',
+      months6: 'මාස 6',
+      months9: 'මාස 9',
+      months12: 'මාස 12',
+      months18: 'මාස 18',
+    },
+    given: 'ලබා දුන්:',
+    dueDate: 'නියමිත:',
+  },
+
+  // Growth Screen
+  growth: {
+    title: 'වර්ධන නිරීක්ෂණය',
+    subtitle: 'සංවර්ධන අධීක්ෂකය',
+    addMeasurement: 'මිනුම එකතු කරන්න',
+    photoProgress: 'ඡායාරූප ප්‍රගතිය',
+    growthCharts: 'වර්ධන ප්‍රස්ථාර',
+    weight: 'බර',
+    height: 'උස',
+    head: 'හිස',
+    weightForAge: 'වයසට අනුව බර',
+    heightForAge: 'වයසට අනුව උස',
+    headCircumference: 'හිස වට ප්‍රමාණය',
+    latest: 'නවතම:',
+    atAge: 'මාස {{age}} දී',
+    developmentMilestones: 'සංවර්ධන සන්ධිස්ථාන',
+    achieved: 'ලබා ගත්:',
+    expected: 'අපේක්ෂිත:',
+    growthStatus: 'වර්ධන තත්ත්වය',
+    growingWell: 'ඔබේ දරුවා සාමාන්‍ය පරාසයන් තුළ හොඳින් වැඩෙමින් සිටී',
+    nextMeasurement: 'ඊළඟ මිනුම නියමිත:',
+    kg: 'කි.ග්‍රෑ.',
+    cm: 'සෙ.මී.',
+    percentile: '{{value}} වන',
+  },
+
+  // Feeding Screen
+  feeding: {
+    title: 'ආහාර මාර්ගෝපදේශ',
+    subtitle: 'CHDR පෝෂණ මාර්ගෝපදේශය',
+    selectAge: 'ළමයාගේ වයස තෝරන්න',
+    ageRanges: {
+      months6_8: 'මාස 6-8',
+      months9_11: 'මාස 9-11',
+      months12_23: 'මාස 12-23',
+    },
+    texture: 'වයනය',
+    frequency: 'වාර ගණන',
+    amountPerMeal: 'එක් ආහාර වේලකට ප්‍රමාණය',
+    tipsTitle: 'ප්‍රතිචාරාත්මක ආහාර ලබාදීම සඳහා උපදෙස්',
+    illnessTitle: 'අසනීප කාලයේ ආහාර ලබාදීම',
+    illnessDescription: 'අසනීප කාලයේ නුසුදුසු ආහාර ලබාදීම වර්ධනය අඩාල වීමට පොදු හේතුවකි. ඉවසීමෙන් යුතුව අසනීප කාලයේ ආහාර ලබාදීමට විශේෂ අවධානය යොමු කරන්න.',
+    feedingTip: 'ආහාර ලබාදීමේ කාලය ප්‍රසන්න අත්දැකීමක් විය යුතුය. එය රැකබලා ගන්නා සහ ළමයා අතර සටනක් විය නොයුතුය.',
+    supplementTitle: 'ත්‍රිපෝෂ අතිරේක',
+    eligibilityStatus: 'සුදුසුකම් තත්ත්වය',
+    eligible: 'සුදුසුකම් ඇත',
+    notEligible: 'සුදුසුකම් නැත',
+    receiving: 'ලබා ගනිමින්',
+    supplementDescription: 'ත්‍රිපෝෂ යනු නිරෝගී වර්ධනයට සහ සංවර්ධනයට සහාය වීම සඳහා සෞඛ්‍ය අමාත්‍යාංශය විසින් සපයන පෝෂණ අතිරේකයකි. නිවැරදි භාවිත මාර්ගෝපදේශ සඳහා ඔබේ මිඩ්වයිෆ් සමඟ සාකච්ඡා කරන්න.',
+    viewDistributionSchedule: 'බෙදාහැරීම් කාලසටහන බලන්න',
+  },
+
+  // Schedule Screen
+  schedule: {
+    title: 'හමුවීම්',
+    subtitle: 'සෞඛ්‍ය සේවා කාලසටහන',
+    upcoming: 'ඉදිරි',
+    past: 'පසුගිය',
+    scheduleNew: 'නව හමුවීමක් වෙන්කරවා ගන්න',
+    reschedule: 'නැවත වෙන්කරවා ගන්න',
+    noUpcoming: 'ඉදිරි හමුවීම් නැත',
+    noPast: 'පසුගිය හමුවීම් නැත',
+    quickActions: 'ඉක්මන් ක්‍රියා',
+    findClinic: 'සායනය සොයන්න',
+    emergency: 'හදිසි',
+    scheduled: 'වෙන්කර ඇත',
+    completed: 'සම්පූර්ණයි',
+    cancelled: 'අවලංගු කළා',
+    notes: 'සටහන්:',
+  },
+
+  // Roles
+  roles: {
+    pediatrician: 'ළමා රෝග විශේෂඥ',
+    midwife: 'ප්‍රජා මිඩ්වයිෆ්',
+    ambulance: 'ගිලන් රථය',
+    communityHealthWorker: 'ප්‍රජා සෞඛ්‍ය සේවක',
+  },
+
+  // Time & Date
+  time: {
+    today: 'අද',
+    yesterday: 'ඊයේ',
+    daysAgo: 'දින {{days}}කට පෙර',
+    weeksAgo: 'සති {{weeks}}කට පෙර',
+    monthsAgo: 'මාස {{months}}කට පෙර',
+    at: 'දී',
+  },
+
+  // Settings
+  settings: {
+    title: 'සැකසුම්',
+    language: 'භාෂාව',
+    notifications: 'දැනුම්දීම්',
+    darkMode: 'අඳුරු ප්‍රකාරය',
+    sync: 'දත්ත සමමුහුර්ත කරන්න',
+    about: 'ගැන',
+    logout: 'පිටවීම',
+  },
+
+  // Errors
+  errors: {
+    networkError: 'ජාල දෝෂය. කරුණාකර ඔබේ සම්බන්ධතාවය පරීක්ෂා කරන්න.',
+    syncError: 'දත්ත සමමුහුර්ත කිරීම අසාර්ථක විය. පසුව නැවත උත්සාහ කරනු ඇත.',
+    loadError: 'දත්ත පූරණය කිරීම අසාර්ථක විය.',
+    saveError: 'වෙනස්කම් සුරැකීම අසාර්ථක විය.',
+  },
+};

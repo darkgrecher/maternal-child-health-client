@@ -1,0 +1,235 @@
+/**
+ * Tamil Language Translations (தமிழ்)
+ * 
+ * Tamil language file for Sri Lankan Tamil users.
+ */
+
+export default {
+  // Common
+  common: {
+    save: 'சேமி',
+    cancel: 'ரத்து செய்',
+    edit: 'திருத்து',
+    delete: 'நீக்கு',
+    confirm: 'உறுதிப்படுத்து',
+    loading: 'ஏற்றுகிறது...',
+    error: 'பிழை',
+    success: 'வெற்றி',
+    retry: 'மீண்டும் முயற்சி',
+    viewAll: 'அனைத்தையும் பார்',
+    call: 'அழைப்பு',
+    back: 'பின்',
+    next: 'அடுத்து',
+    done: 'முடிந்தது',
+    add: 'சேர்',
+    update: 'புதுப்பி',
+    search: 'தேடு',
+    noData: 'தரவு இல்லை',
+    syncPending: 'ஒத்திசைவு நிலுவையில்',
+    synced: 'ஒத்திசைக்கப்பட்டது',
+    offline: 'ஆஃப்லைன்',
+    online: 'ஆன்லைன்',
+  },
+
+  // Navigation
+  navigation: {
+    home: 'முகப்பு',
+    profile: 'சுயவிவரம்',
+    vaccines: 'தடுப்பூசிகள்',
+    growth: 'வளர்ச்சி',
+    feeding: 'உணவு',
+    schedule: 'அட்டவணை',
+  },
+
+  // Home Screen
+  home: {
+    title: 'குழந்தை சுகாதாரம்',
+    subtitle: 'வளர்ச்சி பதிவு',
+    welcomeBanner: 'உங்கள் குடும்பத்திற்கு வரவேற்கிறோம்',
+    welcomeSubtitle: 'குழந்தை சுகாதார வளர்ச்சி பதிவு',
+    nextAppointment: 'அடுத்த சந்திப்பு',
+    growthPercentile: 'வளர்ச்சி சதவீதம்',
+    immunizations: 'நோய்த்தடுப்பு',
+    overdueVaccines: 'தாமதமான தடுப்பூசிகள்',
+    immunizationProgress: 'நோய்த்தடுப்பு முன்னேற்றம்',
+    overallProgress: 'ஒட்டுமொத்த முன்னேற்றம்',
+    vaccinesCompleted: '{{total}} இல் {{completed}} தடுப்பூசிகள் நிறைவு',
+    nextVaccine: 'அடுத்தது: {{vaccine}} - {{age}}',
+    addRecord: 'பதிவு சேர்',
+    aiChat: 'AI அரட்டை',
+    emergencyContacts: 'அவசர தொடர்புகள்',
+    recentActivities: 'சமீபத்திய நடவடிக்கைகள்',
+    dailyHealthTip: 'தினசரி சுகாதார குறிப்பு',
+    chdrNumber: 'CHDR எண்:',
+    monthsOld: '{{months}} மாதங்கள் {{weeks}} வாரங்கள்',
+    weight: 'எடை:',
+    height: 'உயரம்:',
+  },
+
+  // Profile Screen
+  profile: {
+    title: 'குழந்தை சுயவிவரம்',
+    subtitle: 'தனிப்பட்ட தகவல்',
+    personalInfo: 'தனிப்பட்ட தகவல்',
+    birthInfo: 'பிறப்பு தகவல்',
+    medicalInfo: 'மருத்துவ தகவல்',
+    familyInfo: 'குடும்ப தகவல்',
+    healthcareProviders: 'சுகாதார வழங்குநர்கள்',
+    name: 'பெயர்',
+    dateOfBirth: 'பிறந்த தேதி',
+    gender: 'பாலினம்',
+    male: 'ஆண்',
+    female: 'பெண்',
+    birthWeight: 'பிறப்பு எடை',
+    birthHeight: 'பிறப்பு உயரம்',
+    bloodType: 'இரத்த வகை',
+    allergies: 'ஒவ்வாமைகள்',
+    noneKnown: 'அறியப்படவில்லை',
+    specialConditions: 'சிறப்பு நிலைமைகள்',
+    none: 'இல்லை',
+    motherName: 'தாயின் பெயர்',
+    fatherName: 'தந்தையின் பெயர்',
+    emergencyContact: 'அவசர தொடர்பு',
+    assignedMidwife: 'நியமிக்கப்பட்ட மருத்துவச்சி',
+    pediatrician: 'குழந்தை மருத்துவர்',
+  },
+
+  // Vaccines Screen
+  vaccines: {
+    title: 'நோய்த்தடுப்பு',
+    subtitle: 'தடுப்பூசி அட்டவணை',
+    immunizationComplete: 'நோய்த்தடுப்பு நிறைவு',
+    onTrack: 'சரியான பாதையில்',
+    vaccineCard: 'தடுப்பூசி அட்டை',
+    certificate: 'சான்றிதழ்',
+    nextVaccination: 'அடுத்த தடுப்பூசி',
+    scheduleAppointment: 'உங்கள் மருத்துவச்சியுடன் சந்திப்பு திட்டமிடுங்கள்',
+    schedule: 'திட்டமிடு',
+    status: {
+      completed: 'நிறைவு',
+      due: 'நிலுவை',
+      upcoming: 'வரவிருக்கும்',
+      overdue: 'தாமதம்',
+      missed: 'தவறவிட்டது',
+    },
+    ageGroups: {
+      birth: 'பிறப்பு',
+      months2: '2 மாதங்கள்',
+      months4: '4 மாதங்கள்',
+      months6: '6 மாதங்கள்',
+      months9: '9 மாதங்கள்',
+      months12: '12 மாதங்கள்',
+      months18: '18 மாதங்கள்',
+    },
+    given: 'கொடுக்கப்பட்டது:',
+    dueDate: 'நிலுவை:',
+  },
+
+  // Growth Screen
+  growth: {
+    title: 'வளர்ச்சி கண்காணிப்பு',
+    subtitle: 'வளர்ச்சி கண்காணிப்பான்',
+    addMeasurement: 'அளவீடு சேர்',
+    photoProgress: 'புகைப்பட முன்னேற்றம்',
+    growthCharts: 'வளர்ச்சி விளக்கப்படங்கள்',
+    weight: 'எடை',
+    height: 'உயரம்',
+    head: 'தலை',
+    weightForAge: 'வயதுக்கான எடை',
+    heightForAge: 'வயதுக்கான உயரம்',
+    headCircumference: 'தலை சுற்றளவு',
+    latest: 'சமீபத்திய:',
+    atAge: '{{age}} மாதங்களில்',
+    developmentMilestones: 'வளர்ச்சி மைல்கற்கள்',
+    achieved: 'அடைந்தது:',
+    expected: 'எதிர்பார்க்கப்படுகிறது:',
+    growthStatus: 'வளர்ச்சி நிலை',
+    growingWell: 'உங்கள் குழந்தை இயல்பான வரம்புகளில் நன்றாக வளர்கிறது',
+    nextMeasurement: 'அடுத்த அளவீடு:',
+    kg: 'கி.கி',
+    cm: 'செ.மீ',
+    percentile: '{{value}}வது',
+  },
+
+  // Feeding Screen
+  feeding: {
+    title: 'உணவு வழிகாட்டுதல்கள்',
+    subtitle: 'CHDR ஊட்டச்சத்து வழிகாட்டி',
+    selectAge: 'குழந்தையின் வயதைத் தேர்ந்தெடுக்கவும்',
+    ageRanges: {
+      months6_8: '6-8 மாதங்கள்',
+      months9_11: '9-11 மாதங்கள்',
+      months12_23: '12-23 மாதங்கள்',
+    },
+    texture: 'அமைப்பு',
+    frequency: 'அதிர்வெண்',
+    amountPerMeal: 'ஒரு உணவுக்கான அளவு',
+    tipsTitle: 'பதிலளிக்கும் உணவளிப்புக்கான குறிப்புகள்',
+    illnessTitle: 'நோயின் போது உணவளித்தல்',
+    illnessDescription: 'நோயின் போது பொருத்தமற்ற உணவளிப்பு வளர்ச்சி தடுமாற்றத்திற்கு பொதுவான காரணமாகும். பொறுமையுடன் நோயின் போது உணவளிப்பதில் சிறப்பு கவனம் செலுத்துங்கள்.',
+    feedingTip: 'உணவளிக்கும் நேரம் இனிமையான அனுபவமாக இருக்க வேண்டும். அது பராமரிப்பாளருக்கும் குழந்தைக்கும் இடையில் போராட்டமாக இருக்க வேண்டியதில்லை.',
+    supplementTitle: 'திரிபோஷா சப்ளிமெண்ட்',
+    eligibilityStatus: 'தகுதி நிலை',
+    eligible: 'தகுதியானது',
+    notEligible: 'தகுதியற்றது',
+    receiving: 'பெறுகிறது',
+    supplementDescription: 'திரிபோஷா என்பது ஆரோக்கியமான வளர்ச்சியை ஆதரிக்க சுகாதார அமைச்சகத்தால் வழங்கப்படும் ஊட்டச்சத்து நிரப்பியாகும். சரியான பயன்பாட்டு வழிகாட்டுதல்களுக்கு உங்கள் மருத்துவச்சியிடம் ஆலோசிக்கவும்.',
+    viewDistributionSchedule: 'விநியோக அட்டவணையைக் காண்க',
+  },
+
+  // Schedule Screen
+  schedule: {
+    title: 'சந்திப்புகள்',
+    subtitle: 'சுகாதார அட்டவணை',
+    upcoming: 'வரவிருக்கும்',
+    past: 'கடந்த',
+    scheduleNew: 'புதிய சந்திப்பு திட்டமிடு',
+    reschedule: 'மீள்திட்டமிடு',
+    noUpcoming: 'வரவிருக்கும் சந்திப்புகள் இல்லை',
+    noPast: 'கடந்த சந்திப்புகள் இல்லை',
+    quickActions: 'விரைவு செயல்கள்',
+    findClinic: 'மருத்துவமனை கண்டுபிடி',
+    emergency: 'அவசரம்',
+    scheduled: 'திட்டமிடப்பட்டது',
+    completed: 'நிறைவு',
+    cancelled: 'ரத்து செய்யப்பட்டது',
+    notes: 'குறிப்புகள்:',
+  },
+
+  // Roles
+  roles: {
+    pediatrician: 'குழந்தை மருத்துவர்',
+    midwife: 'சமூக மருத்துவச்சி',
+    ambulance: 'ஆம்புலன்ஸ்',
+    communityHealthWorker: 'சமூக சுகாதார பணியாளர்',
+  },
+
+  // Time & Date
+  time: {
+    today: 'இன்று',
+    yesterday: 'நேற்று',
+    daysAgo: '{{days}} நாட்களுக்கு முன்',
+    weeksAgo: '{{weeks}} வாரங்களுக்கு முன்',
+    monthsAgo: '{{months}} மாதங்களுக்கு முன்',
+    at: 'அன்று',
+  },
+
+  // Settings
+  settings: {
+    title: 'அமைப்புகள்',
+    language: 'மொழி',
+    notifications: 'அறிவிப்புகள்',
+    darkMode: 'இருண்ட முறை',
+    sync: 'தரவை ஒத்திசை',
+    about: 'பற்றி',
+    logout: 'வெளியேறு',
+  },
+
+  // Errors
+  errors: {
+    networkError: 'பிணைய பிழை. உங்கள் இணைப்பை சரிபார்க்கவும்.',
+    syncError: 'தரவை ஒத்திசைக்க முடியவில்லை. பின்னர் மீண்டும் முயற்சிக்கும்.',
+    loadError: 'தரவை ஏற்ற முடியவில்லை.',
+    saveError: 'மாற்றங்களைச் சேமிக்க முடியவில்லை.',
+  },
+};

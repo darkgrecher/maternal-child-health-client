@@ -1,0 +1,236 @@
+/**
+ * English Language Translations
+ * 
+ * Default language file containing all UI strings for the application.
+ * This serves as the base for other language translations.
+ */
+
+export default {
+  // Common
+  common: {
+    save: 'Save',
+    cancel: 'Cancel',
+    edit: 'Edit',
+    delete: 'Delete',
+    confirm: 'Confirm',
+    loading: 'Loading...',
+    error: 'Error',
+    success: 'Success',
+    retry: 'Retry',
+    viewAll: 'View All',
+    call: 'Call',
+    back: 'Back',
+    next: 'Next',
+    done: 'Done',
+    add: 'Add',
+    update: 'Update',
+    search: 'Search',
+    noData: 'No data available',
+    syncPending: 'Sync pending',
+    synced: 'Synced',
+    offline: 'Offline',
+    online: 'Online',
+  },
+
+  // Navigation
+  navigation: {
+    home: 'Home',
+    profile: 'Profile',
+    vaccines: 'Vaccines',
+    growth: 'Growth',
+    feeding: 'Feeding',
+    schedule: 'Schedule',
+  },
+
+  // Home Screen
+  home: {
+    title: 'Child Health',
+    subtitle: 'Development Record',
+    welcomeBanner: 'Welcome to Your Family',
+    welcomeSubtitle: 'Child Health Development Record',
+    nextAppointment: 'Next Appointment',
+    growthPercentile: 'Growth Percentile',
+    immunizations: 'Immunizations',
+    overdueVaccines: 'Overdue Vaccines',
+    immunizationProgress: 'Immunization Progress',
+    overallProgress: 'Overall Progress',
+    vaccinesCompleted: '{{completed}} of {{total}} vaccines completed',
+    nextVaccine: 'Next: {{vaccine}} at {{age}}',
+    addRecord: 'Add Record',
+    aiChat: 'AI Chat',
+    emergencyContacts: 'Emergency Contacts',
+    recentActivities: 'Recent Activities',
+    dailyHealthTip: 'Daily Health Tip',
+    chdrNumber: 'CHDR No:',
+    monthsOld: '{{months}} months {{weeks}} weeks',
+    weight: 'Weight:',
+    height: 'Height:',
+  },
+
+  // Profile Screen
+  profile: {
+    title: 'Child Profile',
+    subtitle: 'Personal Information',
+    personalInfo: 'Personal Information',
+    birthInfo: 'Birth Information',
+    medicalInfo: 'Medical Information',
+    familyInfo: 'Family Information',
+    healthcareProviders: 'Healthcare Providers',
+    name: 'Name',
+    dateOfBirth: 'Date of Birth',
+    gender: 'Gender',
+    male: 'Male',
+    female: 'Female',
+    birthWeight: 'Birth Weight',
+    birthHeight: 'Birth Height',
+    bloodType: 'Blood Type',
+    allergies: 'Allergies',
+    noneKnown: 'None known',
+    specialConditions: 'Special Conditions',
+    none: 'None',
+    motherName: "Mother's Name",
+    fatherName: "Father's Name",
+    emergencyContact: 'Emergency Contact',
+    assignedMidwife: 'Assigned Midwife',
+    pediatrician: 'Pediatrician',
+  },
+
+  // Vaccines Screen
+  vaccines: {
+    title: 'Immunization',
+    subtitle: 'Vaccine Schedule',
+    immunizationComplete: 'Immunization Complete',
+    onTrack: 'On track',
+    vaccineCard: 'Vaccine Card',
+    certificate: 'Certificate',
+    nextVaccination: 'Next Vaccination',
+    scheduleAppointment: 'Schedule appointment with your midwife',
+    schedule: 'Schedule',
+    status: {
+      completed: 'Completed',
+      due: 'Due',
+      upcoming: 'Upcoming',
+      overdue: 'Overdue',
+      missed: 'Missed',
+    },
+    ageGroups: {
+      birth: 'Birth',
+      months2: '2 months',
+      months4: '4 months',
+      months6: '6 months',
+      months9: '9 months',
+      months12: '12 months',
+      months18: '18 months',
+    },
+    given: 'Given:',
+    dueDate: 'Due:',
+  },
+
+  // Growth Screen
+  growth: {
+    title: 'Growth Tracking',
+    subtitle: 'Development Monitor',
+    addMeasurement: 'Add Measurement',
+    photoProgress: 'Photo Progress',
+    growthCharts: 'Growth Charts',
+    weight: 'Weight',
+    height: 'Height',
+    head: 'Head',
+    weightForAge: 'Weight for Age',
+    heightForAge: 'Height for Age',
+    headCircumference: 'Head Circumference',
+    latest: 'Latest:',
+    atAge: 'at {{age}}m',
+    developmentMilestones: 'Development Milestones',
+    achieved: 'Achieved:',
+    expected: 'Expected:',
+    growthStatus: 'Growth Status',
+    growingWell: 'Your child is growing well within normal ranges',
+    nextMeasurement: 'Next measurement due:',
+    kg: 'kg',
+    cm: 'cm',
+    percentile: '{{value}}th',
+  },
+
+  // Feeding Screen
+  feeding: {
+    title: 'Feeding Guidelines',
+    subtitle: 'CHDR Nutrition Guide',
+    selectAge: "Select Child's Age",
+    ageRanges: {
+      months6_8: '6-8 months',
+      months9_11: '9-11 months',
+      months12_23: '12-23 months',
+    },
+    texture: 'Texture',
+    frequency: 'Frequency',
+    amountPerMeal: 'Amount per Meal',
+    tipsTitle: 'Tips for Responsive Feeding',
+    illnessTitle: 'Feeding During Illness',
+    illnessDescription: 'Inappropriate feeding during illness is a common cause for growth faltering. Pay special attention to feeding during illness with patience.',
+    feedingTip: 'Feeding time should be a pleasant experience. It need not be a battle between caregiver and child.',
+    supplementTitle: 'Thriposha Supplementation',
+    eligibilityStatus: 'Eligibility Status',
+    eligible: 'Eligible',
+    notEligible: 'Not Eligible',
+    receiving: 'Receiving',
+    supplementDescription: 'Thriposha is a nutritional supplement provided by the Ministry of Health to support healthy growth and development. Consult your midwife for proper usage guidelines.',
+    viewDistributionSchedule: 'View Distribution Schedule',
+  },
+
+  // Schedule Screen
+  schedule: {
+    title: 'Appointments',
+    subtitle: 'Healthcare Schedule',
+    upcoming: 'Upcoming',
+    past: 'Past',
+    scheduleNew: 'Schedule New Appointment',
+    reschedule: 'Reschedule',
+    noUpcoming: 'No upcoming appointments',
+    noPast: 'No past appointments',
+    quickActions: 'Quick Actions',
+    findClinic: 'Find Clinic',
+    emergency: 'Emergency',
+    scheduled: 'Scheduled',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+    notes: 'Notes:',
+  },
+
+  // Roles
+  roles: {
+    pediatrician: 'Pediatrician',
+    midwife: 'Community Midwife',
+    ambulance: 'Ambulance',
+    communityHealthWorker: 'Community Health Worker',
+  },
+
+  // Time & Date
+  time: {
+    today: 'Today',
+    yesterday: 'Yesterday',
+    daysAgo: '{{days}} days ago',
+    weeksAgo: '{{weeks}} weeks ago',
+    monthsAgo: '{{months}} months ago',
+    at: 'at',
+  },
+
+  // Settings
+  settings: {
+    title: 'Settings',
+    language: 'Language',
+    notifications: 'Notifications',
+    darkMode: 'Dark Mode',
+    sync: 'Sync Data',
+    about: 'About',
+    logout: 'Logout',
+  },
+
+  // Errors
+  errors: {
+    networkError: 'Network error. Please check your connection.',
+    syncError: 'Failed to sync data. Will retry later.',
+    loadError: 'Failed to load data.',
+    saveError: 'Failed to save changes.',
+  },
+};
