@@ -82,6 +82,26 @@ export default {
     noChildProfile: 'No child profile found',
     failedToSave: 'Failed to save activity',
     failedToDelete: 'Failed to delete activity',
+    swipeToSwitch: '← Swipe to switch profiles →',
+    welcomeTitle: 'Welcome!',
+    noChildMessage: "Add your child's profile to start tracking their health journey",
+    addChild: 'Add Child Profile',
+  },
+
+  // Add Child Screen
+  addChild: {
+    title: 'Add Child Profile',
+    firstNameRequired: 'First name is required',
+    lastNameRequired: 'Last name is required',
+    birthWeightRequired: 'Valid birth weight is required',
+    birthHeightRequired: 'Valid birth height is required',
+    childAdded: 'Child profile created successfully',
+    failedToCreate: 'Failed to create child profile',
+    enterFirstName: 'Enter first name',
+    enterLastName: 'Enter last name',
+    enterMotherName: "Enter mother's name",
+    enterFatherName: "Enter father's name",
+    enterEmergencyContact: 'Enter emergency contact number',
   },
 
   // Profile Screen
@@ -303,12 +323,24 @@ export default {
   // Settings
   settings: {
     title: 'Settings',
+    subtitle: 'App Preferences',
     language: 'Language',
     notifications: 'Notifications',
     darkMode: 'Dark Mode',
     sync: 'Sync Data',
     about: 'About',
     logout: 'Logout',
+    version: 'Version',
+    appName: 'App Name',
+    childProfiles: 'Child Profiles',
+    childProfilesDescription: "Manage your children's profiles. Swipe left/right on the home screen to switch between profiles.",
+    addAnotherChild: 'Add Another Child Profile',
+    addAnotherChildDescription: 'Add profile for twins, siblings, or another child',
+    profileSwitched: 'Switched to child profile',
+    deleteChild: 'Delete Child Profile',
+    deleteChildConfirm: "Are you sure you want to delete {{name}}'s profile? This action cannot be undone.",
+    deleteChildFailed: 'Failed to delete child profile',
+    cannotDeleteLastChild: 'Cannot delete the only child profile',
   },
 
   // Errors

@@ -374,6 +374,7 @@ export type RootStackParamList = {
   AppointmentDetails: { appointmentId: string };
   Settings: undefined;
   Activities: undefined;
+  AddChild: undefined;
 };
 
 export type TabParamList = {

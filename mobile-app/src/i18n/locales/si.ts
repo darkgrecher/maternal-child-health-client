@@ -78,6 +78,26 @@ export default {
     noChildProfile: 'ළමා පැතිකඩක් හමු නොවිණි',
     failedToSave: 'ක්‍රියාකාරකම් සුරැකීම අසමත් විය',
     failedToDelete: 'ක්‍රියාකාරකම් මකා දැමීම අසමත් විය',
+    swipeToSwitch: '← පැතිකඩ මාරු කිරීමට ස්වයිප් කරන්න →',
+    welcomeTitle: 'සාදරයෙන් පිළිගනිමු!',
+    noChildMessage: 'සෞඛ්‍ය ගමන නිරීක්ෂණය ආරම්භ කිරීමට ඔබේ දරුවාගේ පැතිකඩ එක් කරන්න',
+    addChild: 'ළමා පැතිකඩ එක් කරන්න',
+  },
+
+  // Add Child Screen
+  addChild: {
+    title: 'ළමා පැතිකඩ එක් කරන්න',
+    firstNameRequired: 'මුල් නම අවශ්‍යයි',
+    lastNameRequired: 'අවසාන නම අවශ්‍යයි',
+    birthWeightRequired: 'වලංගු උපන් බර අවශ්‍යයි',
+    birthHeightRequired: 'වලංගු උපන් උස අවශ්‍යයි',
+    childAdded: 'ළමා පැතිකඩ සාර්ථකව නිර්මාණය කරන ලදී',
+    failedToCreate: 'ළමා පැතිකඩ නිර්මාණය කිරීම අසාර්ථක විය',
+    enterFirstName: 'මුල් නම ඇතුළත් කරන්න',
+    enterLastName: 'අවසාන නම ඇතුළත් කරන්න',
+    enterMotherName: 'මවගේ නම ඇතුළත් කරන්න',
+    enterFatherName: 'පියාගේ නම ඇතුළත් කරන්න',
+    enterEmergencyContact: 'හදිසි සම්බන්ධතා අංකය ඇතුළත් කරන්න',
   },
 
   // Profile Screen
@@ -251,12 +271,24 @@ export default {
   // Settings
   settings: {
     title: 'සැකසුම්',
+    subtitle: 'යෙදුම් මනාපයන්',
     language: 'භාෂාව',
     notifications: 'දැනුම්දීම්',
     darkMode: 'අඳුරු ප්‍රකාරය',
     sync: 'දත්ත සමමුහුර්ත කරන්න',
     about: 'ගැන',
     logout: 'පිටවීම',
+    version: 'අනුවාදය',
+    appName: 'යෙදුම් නම',
+    childProfiles: 'ළමා පැතිකඩ',
+    childProfilesDescription: 'ඔබේ දරුවන්ගේ පැතිකඩ කළමනාකරණය කරන්න. පැතිකඩ මාරු කිරීමට මුල් තිරයේ වමට/දකුණට ස්වයිප් කරන්න.',
+    addAnotherChild: 'තවත් ළමා පැතිකඩක් එක් කරන්න',
+    addAnotherChildDescription: 'නිවුන්, සහෝදරයන් හෝ වෙනත් දරුවෙකු සඳහා පැතිකඩ එක් කරන්න',
+    profileSwitched: 'ළමා පැතිකඩ වෙත මාරු විය',
+    deleteChild: 'ළමා පැතිකඩ මකන්න',
+    deleteChildConfirm: '{{name}}ගේ පැතිකඩ මැකීමට ඔබට විශ්වාසද? මෙම ක්‍රියාව අහෝසි කළ නොහැක.',
+    deleteChildFailed: 'ළමා පැතිකඩ මැකීම අසාර්ථක විය',
+    cannotDeleteLastChild: 'එකම ළමා පැතිකඩ මැකීමට නොහැක',
   },
 
   // Errors

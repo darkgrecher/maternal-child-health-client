@@ -27,6 +27,7 @@ import {
   ScheduleScreen,
   SettingsScreen,
   ActivitiesScreen,
+  AddChildScreen,
   AuthScreen,
 } from '../screens';
 
@@ -146,6 +147,7 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="Activities" component={ActivitiesScreen} />
+      <Stack.Screen name="AddChild" component={AddChildScreen} />
     </Stack.Navigator>
   );
 };

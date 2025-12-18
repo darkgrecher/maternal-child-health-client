@@ -3,9 +3,10 @@
  * 
  * Main dashboard showing child summary, immunization progress,
  * emergency contacts, and recent activities.
+ * Supports swipe gestures to switch between multiple child profiles.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,6 +19,9 @@ import {
   Alert,
   Modal,
   TextInput,
+  PanResponder,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +37,9 @@ import { mockActivities, mockEmergencyContacts, mockHealthTip } from '../data/mo
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList, TabParamList, Activity } from '../types';
 import { format } from 'date-fns';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const SWIPE_THRESHOLD = 50;
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Home'>,
@@ -53,13 +60,78 @@ const HomeScreen: React.FC = () => {
   const [recordTitle, setRecordTitle] = useState('');
   const [recordDescription, setRecordDescription] = useState('');
   
+  // Swipe animation
+  const swipeAnim = useRef(new Animated.Value(0)).current;
+  const [isSwiping, setIsSwiping] = useState(false);
+  
   // Store hooks
-  const { profile, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay } = useChildStore();
+  const { profile, children, selectedChildId, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay, selectChild } = useChildStore();
   const { fetchChildVaccinationRecords, getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine } = useVaccineStore();
   const { getNextAppointment, fetchAppointments } = useAppointmentStore();
   const { accessToken } = useAuthStore();
   const { getLatestMeasurement: getLatestGrowthMeasurement, fetchGrowthData } = useGrowthStore();
   const { activities, fetchActivities, createActivity, deleteActivity: deleteActivityFromStore, getRecentActivities } = useActivityStore();
+
+  // Get current child index
+  const currentChildIndex = children.findIndex(c => c.id === selectedChildId);
+
+  // Pan responder for swipe gestures
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only respond to horizontal swipes when there are multiple children
+        const { dx, dy } = gestureState;
+        return children.length > 1 && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10;
+      },
+      onPanResponderGrant: () => {
+        setIsSwiping(true);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        swipeAnim.setValue(gestureState.dx);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const { dx, vx } = gestureState;
+        
+        // Determine if swipe should trigger profile change
+        if (dx > SWIPE_THRESHOLD || vx > 0.5) {
+          // Swipe right - go to previous child
+          switchToPreviousChild();
+        } else if (dx < -SWIPE_THRESHOLD || vx < -0.5) {
+          // Swipe left - go to next child
+          switchToNextChild();
+        }
+        
+        // Reset animation
+        Animated.spring(swipeAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 10,
+        }).start(() => setIsSwiping(false));
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(swipeAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start(() => setIsSwiping(false));
+      },
+    })
+  ).current;
+
+  // Switch to next child profile
+  const switchToNextChild = () => {
+    if (children.length <= 1) return;
+    const nextIndex = (currentChildIndex + 1) % children.length;
+    selectChild(children[nextIndex].id);
+  };
+
+  // Switch to previous child profile
+  const switchToPreviousChild = () => {
+    if (children.length <= 1) return;
+    const prevIndex = currentChildIndex <= 0 ? children.length - 1 : currentChildIndex - 1;
+    selectChild(children[prevIndex].id);
+  };
 
   // Fetch real data on mount when authenticated
   useEffect(() => {
@@ -268,11 +340,18 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
+      <Animated.View 
+        style={[
+          styles.swipeContainer,
+          { transform: [{ translateX: swipeAnim }] }
+        ]}
+        {...panResponder.panHandlers}
       >
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
 
       {/* Welcome Banner */}
       <Card style={styles.welcomeBanner} padding="none">
@@ -312,6 +391,33 @@ const HomeScreen: React.FC = () => {
               </View>
             </View>
           </View>
+          
+          {/* Profile Indicator Dots - Only show when multiple children */}
+          {children.length > 1 && (
+            <View style={styles.profileIndicatorInCard}>
+              <View style={styles.profileIndicatorDots}>
+                {children.map((child, index) => (
+                  <TouchableOpacity
+                    key={child.id}
+                    style={[
+                      styles.profileDot,
+                      index === currentChildIndex && styles.profileDotActive,
+                    ]}
+                    onPress={() => selectChild(child.id)}
+                  >
+                    {index === currentChildIndex && (
+                      <Text style={styles.profileDotText}>
+                        {child.firstName.charAt(0)}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.swipeHint}>
+                {t('home.swipeToSwitch', '← Swipe to switch profiles →')}
+              </Text>
+            </View>
+          )}
         </Card>
       )}
 
@@ -499,6 +605,7 @@ const HomeScreen: React.FC = () => {
       {/* Bottom spacing */}
       <View style={{ height: SPACING.xl }} />
       </ScrollView>
+      </Animated.View>
       
       <FloatingChatButton />
 
@@ -617,6 +724,49 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.gray[100],
     paddingHorizontal: SPACING.md,
     zIndex: 1000,
+  },
+  profileIndicatorContainer: {
+    alignItems: 'center',
+    paddingBottom: SPACING.sm,
+  },
+  profileIndicatorInCard: {
+    alignItems: 'center',
+    paddingTop: SPACING.md,
+    marginTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray[100],
+  },
+  profileIndicatorDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  profileDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.gray[300],
+  },
+  profileDotActive: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileDotText: {
+    fontSize: FONT_SIZE.xs,
+    fontWeight: FONT_WEIGHT.bold,
+    color: COLORS.white,
+  },
+  swipeHint: {
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.gray[400],
+    marginTop: SPACING.xs,
+  },
+  swipeContainer: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,

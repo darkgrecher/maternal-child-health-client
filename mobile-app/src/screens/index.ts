@@ -11,5 +11,6 @@ export { default as FeedingScreen } from './FeedingScreen';
 export { default as ScheduleScreen } from './ScheduleScreen';
 export { default as SettingsScreen } from './SettingsScreen';
 export { default as ActivitiesScreen } from './ActivitiesScreen';
+export { default as AddChildScreen } from './AddChildScreen';
 export { LoginScreen } from './LoginScreen';
 export { AuthScreen } from './AuthScreen';

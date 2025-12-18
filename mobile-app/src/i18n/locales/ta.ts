@@ -78,6 +78,26 @@ export default {
     noChildProfile: 'குழந்தை சுயவிவரம் கிடைக்கவில்லை',
     failedToSave: 'செயல்பாட்டைச் சேமிக்க முடியவில்லை',
     failedToDelete: 'செயல்பாட்டை நீக்க முடியவில்லை',
+    swipeToSwitch: '← சுயவிவரங்களை மாற்ற ஸ்வைப் செய்யவும் →',
+    welcomeTitle: 'வரவேற்கிறோம்!',
+    noChildMessage: 'உங்கள் குழந்தையின் சுகாதார பயணத்தை கண்காணிக்க சுயவிவரத்தை சேர்க்கவும்',
+    addChild: 'குழந்தை சுயவிவரம் சேர்க்கவும்',
+  },
+
+  // Add Child Screen
+  addChild: {
+    title: 'குழந்தை சுயவிவரம் சேர்க்கவும்',
+    firstNameRequired: 'முதல் பெயர் தேவை',
+    lastNameRequired: 'கடைசி பெயர் தேவை',
+    birthWeightRequired: 'சரியான பிறப்பு எடை தேவை',
+    birthHeightRequired: 'சரியான பிறப்பு உயரம் தேவை',
+    childAdded: 'குழந்தை சுயவிவரம் வெற்றிகரமாக உருவாக்கப்பட்டது',
+    failedToCreate: 'குழந்தை சுயவிவரத்தை உருவாக்க முடியவில்லை',
+    enterFirstName: 'முதல் பெயரை உள்ளிடவும்',
+    enterLastName: 'கடைசி பெயரை உள்ளிடவும்',
+    enterMotherName: 'தாயின் பெயரை உள்ளிடவும்',
+    enterFatherName: 'தந்தையின் பெயரை உள்ளிடவும்',
+    enterEmergencyContact: 'அவசர தொடர்பு எண்ணை உள்ளிடவும்',
   },
 
   // Profile Screen
@@ -251,12 +271,24 @@ export default {
   // Settings
   settings: {
     title: 'அமைப்புகள்',
+    subtitle: 'பயன்பாட்டு விருப்பங்கள்',
     language: 'மொழி',
     notifications: 'அறிவிப்புகள்',
     darkMode: 'இருண்ட முறை',
     sync: 'தரவை ஒத்திசை',
     about: 'பற்றி',
     logout: 'வெளியேறு',
+    version: 'பதிப்பு',
+    appName: 'பயன்பாட்டு பெயர்',
+    childProfiles: 'குழந்தை சுயவிவரங்கள்',
+    childProfilesDescription: 'உங்கள் குழந்தைகளின் சுயவிவரங்களை நிர்வகிக்கவும். சுயவிவரங்களை மாற்ற முகப்புத் திரையில் இடது/வலது ஸ்வைப் செய்யவும்.',
+    addAnotherChild: 'மற்றொரு குழந்தை சுயவிவரம் சேர்க்கவும்',
+    addAnotherChildDescription: 'இரட்டையர்கள், உடன்பிறப்புகள் அல்லது மற்றொரு குழந்தைக்கு சுயவிவரம் சேர்க்கவும்',
+    profileSwitched: 'குழந்தை சுயவிவரத்திற்கு மாற்றப்பட்டது',
+    deleteChild: 'குழந்தை சுயவிவரத்தை நீக்கு',
+    deleteChildConfirm: '{{name}} இன் சுயவிவரத்தை நீக்க விரும்புகிறீர்களா? இந்த செயலை செயல்தவிர்க்க முடியாது.',
+    deleteChildFailed: 'குழந்தை சுயவிவரத்தை நீக்க முடியவில்லை',
+    cannotDeleteLastChild: 'ஒரே குழந்தை சுயவிவரத்தை நீக்க முடியாது',
   },
 
   // Errors

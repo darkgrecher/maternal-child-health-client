@@ -146,11 +146,16 @@ const ProfileScreen: React.FC = () => {
             <Text style={styles.profileDob}>
               Born: {format(new Date(profile.dateOfBirth), 'M/d/yyyy')}
             </Text>
-            <Badge 
-              text={profile.gender === 'female' ? t('profile.female') : t('profile.male')} 
-              variant="primary"
-              size="small"
-            />
+            <View style={styles.genderBadgeContainer}>
+              <View style={[
+                styles.genderBadge,
+                { backgroundColor: profile.gender === 'female' ? COLORS.primary : COLORS.info }
+              ]}>
+                <Text style={styles.genderBadgeText}>
+                  {profile.gender === 'female' ? t('profile.female') : t('profile.male')}
+                </Text>
+              </View>
+            </View>
             <TouchableOpacity 
               style={styles.editButton}
               onPress={handleEditProfile}
@@ -368,6 +373,31 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
     marginBottom: SPACING.sm,
+  },
+  genderBadgeContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  genderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.full,
+    gap: SPACING.sm,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  genderBadgeText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.semibold,
+    color: COLORS.white,
+    textTransform: 'capitalize',
+    letterSpacing: 0.5,
   },
   editButton: {
     flexDirection: 'row',
