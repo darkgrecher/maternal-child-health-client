@@ -19,12 +19,22 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format } from 'date-fns';
 
 import { Card, Header, ProgressBar, Badge, TabButton, Button, FloatingChatButton } from '../components/common';
 import { useVaccineStore, useChildStore } from '../stores';
 import { VaccinationRecord, VaccinationStatus } from '../services/vaccineService';
+import { RootStackParamList, TabParamList } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
+
+type VaccinesScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Vaccines'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 /**
  * Get badge variant based on vaccine status
@@ -230,6 +240,7 @@ const AdministerModal: React.FC<AdministerModalProps> = ({
  */
 const VaccinesScreen: React.FC = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation<VaccinesScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState('schedule');
   const [selectedRecord, setSelectedRecord] = useState<VaccinationRecord | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -349,9 +360,17 @@ const VaccinesScreen: React.FC = () => {
         subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
         icon="shield-checkmark-outline"
         iconColor={COLORS.success}
-        rightIcon="notifications-outline"
-        onRightPress={() => {
+        tertiaryRightIcon="notifications-outline"
+        onTertiaryRightPress={() => {
           // TODO: Navigate to notifications
+        }}
+        secondaryRightIcon="settings-outline"
+        onSecondaryRightPress={() => {
+          navigation.navigate('Settings');
+        }}
+        rightIcon="person-circle-outline"
+        onRightPress={() => {
+          navigation.navigate('ProfileMain');
         }}
       />
       

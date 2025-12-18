@@ -24,13 +24,9 @@ import { format } from 'date-fns';
 import { Card, Header, Avatar, SectionTitle, InfoRow, Badge, FloatingChatButton } from '../components/common';
 import { useChildStore, useAuthStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
+import { RootStackParamList } from '../types';
 
-type ProfileStackParamList = {
-  ProfileMain: undefined;
-  EditProfile: { childId?: string; isNew?: boolean };
-};
-
-type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 /**
  * Profile Screen Component
@@ -118,9 +114,13 @@ const ProfileScreen: React.FC = () => {
         subtitle={t('profile.subtitle')}
         icon="person-circle-outline"
         iconColor={COLORS.primary}
-        rightIcon="notifications-outline"
-        onRightPress={() => {
+        tertiaryRightIcon="notifications-outline"
+        onTertiaryRightPress={() => {
           // TODO: Navigate to notifications
+        }}
+        secondaryRightIcon="settings-outline"
+        onSecondaryRightPress={() => {
+          navigation.navigate('Settings');
         }}
       />
       

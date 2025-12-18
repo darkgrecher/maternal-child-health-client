@@ -25,6 +25,7 @@ import {
   GrowthScreen,
   FeedingScreen,
   ScheduleScreen,
+  SettingsScreen,
   AuthScreen,
 } from '../screens';
 
@@ -44,7 +45,6 @@ type IoniconsName = keyof typeof Ionicons.glyphMap;
  */
 const tabIcons: Record<keyof TabParamList, { focused: IoniconsName; unfocused: IoniconsName }> = {
   Home: { focused: 'home', unfocused: 'home-outline' },
-  Profile: { focused: 'person-circle', unfocused: 'person-circle-outline' },
   Vaccines: { focused: 'shield-checkmark', unfocused: 'shield-checkmark-outline' },
   Growth: { focused: 'trending-up', unfocused: 'trending-up-outline' },
   Feeding: { focused: 'restaurant', unfocused: 'restaurant-outline' },
@@ -111,11 +111,6 @@ const TabNavigator: React.FC = () => {
         options={{ tabBarLabel: t('navigation.home') }}
       />
       <Tab.Screen 
-        name="Profile" 
-        component={ProfileStackNavigator}
-        options={{ tabBarLabel: t('navigation.profile') }}
-      />
-      <Tab.Screen 
         name="Vaccines" 
         component={VaccinesScreen}
         options={{ tabBarLabel: t('navigation.vaccines') }}
@@ -146,6 +141,9 @@ const RootNavigator: React.FC = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Main" component={TabNavigator} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
     </Stack.Navigator>
   );
 };

@@ -367,7 +367,8 @@ export interface AppSettings {
  */
 export type RootStackParamList = {
   Main: undefined;
-  EditProfile: { childId: string };
+  ProfileMain: undefined;
+  EditProfile: { childId?: string; isNew?: boolean };
   AddMeasurement: { childId: string };
   VaccineDetails: { vaccineId: string };
   AppointmentDetails: { appointmentId: string };
@@ -376,7 +377,6 @@ export type RootStackParamList = {
 
 export type TabParamList = {
   Home: undefined;
-  Profile: undefined;
   Vaccines: undefined;
   Growth: undefined;
   Feeding: undefined;

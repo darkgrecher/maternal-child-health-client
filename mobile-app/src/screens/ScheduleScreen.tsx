@@ -19,12 +19,21 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format, isPast, isFuture, isToday } from 'date-fns';
 
 import { Card, Header, SectionTitle, Badge, Button, TabButton, FloatingChatButton } from '../components/common';
 import { useAppointmentStore, useChildStore } from '../stores';
-import { Appointment, AppointmentType } from '../types';
+import { Appointment, AppointmentType, RootStackParamList, TabParamList } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
+
+type ScheduleScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Schedule'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 type TabType = 'upcoming' | 'past';
 
@@ -228,6 +237,7 @@ const QuickActionButton: React.FC<{
  */
 const ScheduleScreen: React.FC = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation<ScheduleScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
   
@@ -334,9 +344,17 @@ const ScheduleScreen: React.FC = () => {
         subtitle={t('schedule.subtitle')}
         icon="calendar-outline"
         iconColor={COLORS.info}
-        rightIcon="notifications-outline"
-        onRightPress={() => {
+        tertiaryRightIcon="notifications-outline"
+        onTertiaryRightPress={() => {
           // TODO: Navigate to notifications
+        }}
+        secondaryRightIcon="settings-outline"
+        onSecondaryRightPress={() => {
+          navigation.navigate('Settings');
+        }}
+        rightIcon="person-circle-outline"
+        onRightPress={() => {
+          navigation.navigate('ProfileMain');
         }}
       />
       

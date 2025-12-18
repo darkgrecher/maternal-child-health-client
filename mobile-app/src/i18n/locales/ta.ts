@@ -92,6 +92,17 @@ export default {
     emergencyContact: 'அவசர தொடர்பு',
     assignedMidwife: 'நியமிக்கப்பட்ட மருத்துவச்சி',
     pediatrician: 'குழந்தை மருத்துவர்',
+    editProfile: 'சுயவிவரத்தைத் திருத்து',
+  },
+
+  // Settings Screen
+  settings: {
+    title: 'அமைப்புகள்',
+    subtitle: 'பயன்பாட்டு விருப்பத்தேர்வுகள்',
+    language: 'மொழி',
+    about: 'பற்றி',
+    version: 'பதிப்பு',
+    appName: 'பயன்பாட்டின் பெயர்',
   },
 
   // Vaccines Screen

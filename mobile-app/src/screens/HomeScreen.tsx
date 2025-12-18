@@ -20,12 +20,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton } from '../components/common';
 import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore } from '../stores';
 import { mockActivities, mockEmergencyContacts, mockHealthTip } from '../data/mockData';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
+import { RootStackParamList, TabParamList } from '../types';
 import { format } from 'date-fns';
+
+type HomeScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Home'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 /**
  * Home Dashboard Screen Component
@@ -33,7 +42,7 @@ import { format } from 'date-fns';
 const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   
   // Store hooks
   const { profile, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay } = useChildStore();
@@ -130,12 +139,26 @@ const HomeScreen: React.FC = () => {
               <Text style={styles.headerSubtitle}>{t('home.subtitle')}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color={COLORS.textPrimary} />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>8</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            <TouchableOpacity style={styles.headerIconButton}>
+              <Ionicons name="notifications-outline" size={24} color={COLORS.textPrimary} />
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>8</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerIconButton}
+              onPress={() => navigation.navigate('Settings')}
+            >
+              <Ionicons name="settings-outline" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerIconButton}
+              onPress={() => navigation.navigate('ProfileMain')}
+            >
+              <Ionicons name="person-circle-outline" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -465,6 +488,15 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: FONT_SIZE.xs,
     color: COLORS.textSecondary,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  headerIconButton: {
+    position: 'relative',
+    padding: SPACING.xs,
   },
   notificationButton: {
     position: 'relative',

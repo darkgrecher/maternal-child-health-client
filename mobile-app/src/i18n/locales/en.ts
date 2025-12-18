@@ -96,6 +96,17 @@ export default {
     emergencyContact: 'Emergency Contact',
     assignedMidwife: 'Assigned Midwife',
     pediatrician: 'Pediatrician',
+    editProfile: 'Edit Profile',
+  },
+
+  // Settings Screen
+  settings: {
+    title: 'Settings',
+    subtitle: 'App Preferences',
+    language: 'Language',
+    about: 'About',
+    version: 'Version',
+    appName: 'App Name',
   },
 
   // Vaccines Screen

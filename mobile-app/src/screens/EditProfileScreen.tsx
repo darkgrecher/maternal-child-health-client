@@ -28,12 +28,7 @@ import { format } from 'date-fns';
 import { useChildStore } from '../stores';
 import { Card } from '../components/common';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, FONT_WEIGHT } from '../constants';
-import { ChildProfile } from '../types';
-
-type RootStackParamList = {
-  EditProfile: { childId?: string; isNew?: boolean };
-  Profile: undefined;
-};
+import { ChildProfile, RootStackParamList } from '../types';
 
 type EditProfileRouteProp = RouteProp<RootStackParamList, 'EditProfile'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

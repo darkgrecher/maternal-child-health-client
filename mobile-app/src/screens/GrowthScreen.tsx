@@ -20,13 +20,23 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format } from 'date-fns';
 import Svg, { Line, Path, Circle, G, Text as SvgText } from 'react-native-svg';
 
 import { Card, Header, SectionTitle, Button, FloatingChatButton } from '../components/common';
 import { useChildStore, useGrowthStore } from '../stores';
+import { RootStackParamList, TabParamList } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { GrowthMeasurement, ChartData } from '../services/growthService';
+
+type GrowthScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Growth'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - SPACING.md * 4;
@@ -513,6 +523,7 @@ const ChartTypeSelector: React.FC<{
  */
 const GrowthScreen: React.FC = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation<GrowthScreenNavigationProp>();
   const [selectedChart, setSelectedChart] = useState<ChartType>('weight');
   const [showAddModal, setShowAddModal] = useState(false);
   
@@ -617,9 +628,17 @@ const GrowthScreen: React.FC = () => {
         subtitle={t('growth.subtitle')}
         icon="trending-up-outline"
         iconColor={COLORS.success}
-        rightIcon="notifications-outline"
-        onRightPress={() => {
+        tertiaryRightIcon="notifications-outline"
+        onTertiaryRightPress={() => {
           // TODO: Navigate to notifications
+        }}
+        secondaryRightIcon="settings-outline"
+        onSecondaryRightPress={() => {
+          navigation.navigate('Settings');
+        }}
+        rightIcon="person-circle-outline"
+        onRightPress={() => {
+          navigation.navigate('ProfileMain');
         }}
       />
       

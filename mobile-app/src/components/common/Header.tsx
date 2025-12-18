@@ -23,9 +23,11 @@ interface HeaderProps {
   icon?: IconName;
   iconColor?: string;
   transparent?: boolean;
-  // Support for secondary right icon (e.g., notifications alongside edit)
+  // Support for multiple right icons (notification, settings, profile)
   secondaryRightIcon?: IconName;
   onSecondaryRightPress?: () => void;
+  tertiaryRightIcon?: IconName;
+  onTertiaryRightPress?: () => void;
 }
 
 /**
@@ -44,6 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   transparent = false,
   secondaryRightIcon,
   onSecondaryRightPress,
+  tertiaryRightIcon,
+  onTertiaryRightPress,
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -85,6 +89,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right side - Action buttons */}
         <View style={styles.rightSection}>
           <View style={styles.rightButtonsContainer}>
+            {tertiaryRightIcon && (
+              <TouchableOpacity onPress={onTertiaryRightPress} style={styles.rightButton}>
+                <Ionicons name={tertiaryRightIcon} size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            )}
             {secondaryRightIcon && (
               <TouchableOpacity onPress={onSecondaryRightPress} style={styles.rightButton}>
                 <Ionicons name={secondaryRightIcon} size={24} color={COLORS.textPrimary} />

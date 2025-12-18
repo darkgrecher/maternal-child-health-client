@@ -16,11 +16,21 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, Header, SectionTitle, Badge, Button, FloatingChatButton } from '../components/common';
 import { useChildStore } from '../stores';
+import { RootStackParamList, TabParamList } from '../types';
 import { FEEDING_GUIDELINES } from '../constants';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
+
+type FeedingScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Feeding'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 /**
  * Age Range Selector Component
@@ -86,6 +96,7 @@ const IllnessItem: React.FC<{ text: string }> = ({ text }) => {
  */
 const FeedingScreen: React.FC = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation<FeedingScreenNavigationProp>();
   const { getChildAgeInMonths } = useChildStore();
   const childAge = getChildAgeInMonths();
   
@@ -135,9 +146,17 @@ const FeedingScreen: React.FC = () => {
         subtitle={t('feeding.subtitle')}
         icon="restaurant-outline"
         iconColor={COLORS.warning}
-        rightIcon="notifications-outline"
-        onRightPress={() => {
+        tertiaryRightIcon="notifications-outline"
+        onTertiaryRightPress={() => {
           // TODO: Navigate to notifications
+        }}
+        secondaryRightIcon="settings-outline"
+        onSecondaryRightPress={() => {
+          navigation.navigate('Settings');
+        }}
+        rightIcon="person-circle-outline"
+        onRightPress={() => {
+          navigation.navigate('ProfileMain');
         }}
       />
       

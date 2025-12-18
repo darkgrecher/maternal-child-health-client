@@ -92,6 +92,17 @@ export default {
     emergencyContact: 'හදිසි සම්බන්ධතාව',
     assignedMidwife: 'පවරන ලද මිඩ්වයිෆ්',
     pediatrician: 'ළමා රෝග විශේෂඥ',
+    editProfile: 'පැතිකඩ සංස්කරණය කරන්න',
+  },
+
+  // Settings Screen
+  settings: {
+    title: 'සැකසුම්',
+    subtitle: 'යෙදුම් මනාපයන්',
+    language: 'භාෂාව',
+    about: 'පිළිබඳව',
+    version: 'අනුවාදය',
+    appName: 'යෙදුමේ නම',
   },
 
   // Vaccines Screen
