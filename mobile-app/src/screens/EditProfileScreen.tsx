@@ -84,6 +84,7 @@ const EditProfileScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<EditProfileRouteProp>();
+  const insets = useSafeAreaInsets();
   
   const { childId, isNew } = route.params || {};
   const { profile, children, createChild, updateChildApi, isLoading } = useChildStore();
@@ -230,7 +231,7 @@ const EditProfileScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Custom Header with back button */}
-      <View style={styles.headerContainer}>
+      <View style={[styles.headerContainer, { paddingTop: insets.top + SPACING.sm }]}>
         <TouchableOpacity style={styles.headerButton} onPress={handleCancel}>
           <Ionicons name="close" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>

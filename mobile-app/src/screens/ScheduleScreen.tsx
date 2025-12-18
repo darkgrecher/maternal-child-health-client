@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { format, isPast, isFuture, isToday } from 'date-fns';
 
-import { Card, Header, SectionTitle, Badge, Button, TabButton } from '../components/common';
+import { Card, Header, SectionTitle, Badge, Button, TabButton, FloatingChatButton } from '../components/common';
 import { useAppointmentStore, useChildStore } from '../stores';
 import { Appointment, AppointmentType } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
@@ -334,6 +334,10 @@ const ScheduleScreen: React.FC = () => {
         subtitle={t('schedule.subtitle')}
         icon="calendar-outline"
         iconColor={COLORS.info}
+        rightIcon="notifications-outline"
+        onRightPress={() => {
+          // TODO: Navigate to notifications
+        }}
       />
       
       <ScrollView 
@@ -520,6 +524,8 @@ const ScheduleScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={{ height: SPACING.xl }} />
       </ScrollView>
+      
+      <FloatingChatButton />
     </View>
   );
 };

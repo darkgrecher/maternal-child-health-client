@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
-import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button } from '../components/common';
+import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton } from '../components/common';
 import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore } from '../stores';
 import { mockActivities, mockEmergencyContacts, mockHealthTip } from '../data/mockData';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
@@ -117,29 +117,33 @@ const HomeScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="heart" size={24} color={COLORS.primary} />
+    <View style={styles.container}>
+      {/* Fixed Header */}
+      <View style={[styles.fixedHeader, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="heart" size={24} color={COLORS.primary} />
+            </View>
+            <View>
+              <Text style={styles.headerTitle}>{t('home.title')}</Text>
+              <Text style={styles.headerSubtitle}>{t('home.subtitle')}</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.headerTitle}>{t('home.title')}</Text>
-            <Text style={styles.headerSubtitle}>{t('home.subtitle')}</Text>
-          </View>
+          <TouchableOpacity style={styles.notificationButton}>
+            <Ionicons name="notifications-outline" size={24} color={COLORS.textPrimary} />
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>8</Text>
+            </View>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.notificationButton}>
-          <Ionicons name="notifications-outline" size={24} color={COLORS.textPrimary} />
-          <View style={styles.notificationBadge}>
-            <Text style={styles.notificationBadgeText}>8</Text>
-          </View>
-        </TouchableOpacity>
       </View>
+
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
 
       {/* Welcome Banner */}
       <Card style={styles.welcomeBanner} padding="none">
@@ -252,14 +256,7 @@ const HomeScreen: React.FC = () => {
           title={t('home.addRecord')}
           icon="add"
           onPress={() => {}}
-          style={styles.primaryActionButton}
-        />
-        <Button
-          title={t('home.aiChat')}
-          icon="chatbubble-outline"
-          variant="outline"
-          onPress={() => {}}
-          style={styles.secondaryActionButton}
+          style={styles.fullWidthButton}
         />
       </View>
 
@@ -333,7 +330,10 @@ const HomeScreen: React.FC = () => {
 
       {/* Bottom spacing */}
       <View style={{ height: SPACING.xl }} />
-    </ScrollView>
+      </ScrollView>
+      
+      <FloatingChatButton />
+    </View>
   );
 };
 
@@ -374,6 +374,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  fixedHeader: {
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[100],
+    paddingHorizontal: SPACING.md,
+    zIndex: 1000,
+  },
+  scrollView: {
+    flex: 1,
   },
   content: {
     paddingHorizontal: SPACING.md,
@@ -601,15 +611,10 @@ const styles = StyleSheet.create({
 
   // Action Buttons
   actionButtonsRow: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
     marginBottom: SPACING.sm,
   },
-  primaryActionButton: {
-    flex: 1,
-  },
-  secondaryActionButton: {
-    flex: 1,
+  fullWidthButton: {
+    width: '100%',
   },
 
   // Emergency Contacts

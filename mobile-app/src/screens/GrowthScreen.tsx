@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import Svg, { Line, Path, Circle, G, Text as SvgText } from 'react-native-svg';
 
-import { Card, Header, SectionTitle, Button } from '../components/common';
+import { Card, Header, SectionTitle, Button, FloatingChatButton } from '../components/common';
 import { useChildStore, useGrowthStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { GrowthMeasurement, ChartData } from '../services/growthService';
@@ -617,6 +617,10 @@ const GrowthScreen: React.FC = () => {
         subtitle={t('growth.subtitle')}
         icon="trending-up-outline"
         iconColor={COLORS.success}
+        rightIcon="notifications-outline"
+        onRightPress={() => {
+          // TODO: Navigate to notifications
+        }}
       />
       
       <ScrollView 
@@ -729,6 +733,8 @@ const GrowthScreen: React.FC = () => {
         onSubmit={handleAddMeasurement}
         isLoading={isLoading}
       />
+      
+      <FloatingChatButton />
     </View>
   );
 };

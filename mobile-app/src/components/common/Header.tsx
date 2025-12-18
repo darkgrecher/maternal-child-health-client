@@ -23,6 +23,9 @@ interface HeaderProps {
   icon?: IconName;
   iconColor?: string;
   transparent?: boolean;
+  // Support for secondary right icon (e.g., notifications alongside edit)
+  secondaryRightIcon?: IconName;
+  onSecondaryRightPress?: () => void;
 }
 
 /**
@@ -39,6 +42,8 @@ export const Header: React.FC<HeaderProps> = ({
   icon,
   iconColor = COLORS.primary,
   transparent = false,
+  secondaryRightIcon,
+  onSecondaryRightPress,
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -77,18 +82,25 @@ export const Header: React.FC<HeaderProps> = ({
           </View>
         </View>
 
-        {/* Right side - Action button */}
+        {/* Right side - Action buttons */}
         <View style={styles.rightSection}>
-          {(rightIcon || rightText) && (
-            <TouchableOpacity onPress={onRightPress} style={styles.rightButton}>
-              {rightIcon && (
-                <Ionicons name={rightIcon} size={24} color={COLORS.textPrimary} />
-              )}
-              {rightText && (
-                <Text style={styles.rightText}>{rightText}</Text>
-              )}
-            </TouchableOpacity>
-          )}
+          <View style={styles.rightButtonsContainer}>
+            {secondaryRightIcon && (
+              <TouchableOpacity onPress={onSecondaryRightPress} style={styles.rightButton}>
+                <Ionicons name={secondaryRightIcon} size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            )}
+            {(rightIcon || rightText) && (
+              <TouchableOpacity onPress={onRightPress} style={styles.rightButton}>
+                {rightIcon && (
+                  <Ionicons name={rightIcon} size={24} color={COLORS.textPrimary} />
+                )}
+                {rightText && (
+                  <Text style={styles.rightText}>{rightText}</Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
     </View>
@@ -119,8 +131,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rightSection: {
-    width: 40,
+    minWidth: 40,
     alignItems: 'flex-end',
+  },
+  rightButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
   titleRow: {
     flexDirection: 'row',

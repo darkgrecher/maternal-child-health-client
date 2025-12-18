@@ -21,7 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format } from 'date-fns';
 
-import { Card, Header, Avatar, SectionTitle, InfoRow, Badge } from '../components/common';
+import { Card, Header, Avatar, SectionTitle, InfoRow, Badge, FloatingChatButton } from '../components/common';
 import { useChildStore, useAuthStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 
@@ -118,8 +118,10 @@ const ProfileScreen: React.FC = () => {
         subtitle={t('profile.subtitle')}
         icon="person-circle-outline"
         iconColor={COLORS.primary}
-        rightIcon="create-outline"
-        onRightPress={handleEditProfile}
+        rightIcon="notifications-outline"
+        onRightPress={() => {
+          // TODO: Navigate to notifications
+        }}
       />
       
       <ScrollView 
@@ -149,6 +151,13 @@ const ProfileScreen: React.FC = () => {
               variant="primary"
               size="small"
             />
+            <TouchableOpacity 
+              style={styles.editButton}
+              onPress={handleEditProfile}
+            >
+              <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+              <Text style={styles.editButtonText}>{t('profile.editProfile', 'Edit Profile')}</Text>
+            </TouchableOpacity>
           </View>
         </Card>
 
@@ -272,6 +281,8 @@ const ProfileScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={{ height: SPACING.xl }} />
       </ScrollView>
+      
+      <FloatingChatButton />
     </View>
   );
 };
@@ -357,6 +368,23 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
     marginBottom: SPACING.sm,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '10',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.md,
+    gap: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
+  },
+  editButtonText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.medium,
+    color: COLORS.primary,
   },
 
   // Section Cards

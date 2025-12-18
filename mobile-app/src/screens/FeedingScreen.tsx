@@ -17,7 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { Card, Header, SectionTitle, Badge, Button } from '../components/common';
+import { Card, Header, SectionTitle, Badge, Button, FloatingChatButton } from '../components/common';
 import { useChildStore } from '../stores';
 import { FEEDING_GUIDELINES } from '../constants';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
@@ -135,6 +135,10 @@ const FeedingScreen: React.FC = () => {
         subtitle={t('feeding.subtitle')}
         icon="restaurant-outline"
         iconColor={COLORS.warning}
+        rightIcon="notifications-outline"
+        onRightPress={() => {
+          // TODO: Navigate to notifications
+        }}
       />
       
       <ScrollView 
@@ -271,6 +275,8 @@ const FeedingScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={{ height: SPACING.xl }} />
       </ScrollView>
+      
+      <FloatingChatButton />
     </View>
   );
 };

@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 
-import { Card, Header, ProgressBar, Badge, TabButton, Button } from '../components/common';
+import { Card, Header, ProgressBar, Badge, TabButton, Button, FloatingChatButton } from '../components/common';
 import { useVaccineStore, useChildStore } from '../stores';
 import { VaccinationRecord, VaccinationStatus } from '../services/vaccineService';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
@@ -349,6 +349,10 @@ const VaccinesScreen: React.FC = () => {
         subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
         icon="shield-checkmark-outline"
         iconColor={COLORS.success}
+        rightIcon="notifications-outline"
+        onRightPress={() => {
+          // TODO: Navigate to notifications
+        }}
       />
       
       <ScrollView 
@@ -476,6 +480,8 @@ const VaccinesScreen: React.FC = () => {
         isLoading={isLoading}
         t={t}
       />
+      
+      <FloatingChatButton />
     </View>
   );
 };
