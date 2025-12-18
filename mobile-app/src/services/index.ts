@@ -4,3 +4,4 @@ export * from './auth0Service';
 export * from './childService';
 export * from './vaccineService';
 export * from './growthService';
+export * from './appointmentService';

@@ -38,7 +38,7 @@ const HomeScreen: React.FC = () => {
   // Store hooks
   const { profile, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay } = useChildStore();
   const { fetchChildVaccinationRecords, getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine } = useVaccineStore();
-  const { getNextAppointment, loadMockData: loadAppointmentData } = useAppointmentStore();
+  const { getNextAppointment, fetchAppointments } = useAppointmentStore();
   const { accessToken } = useAuthStore();
   const { getLatestMeasurement: getLatestGrowthMeasurement, fetchGrowthData } = useGrowthStore();
 
@@ -47,11 +47,9 @@ const HomeScreen: React.FC = () => {
     if (accessToken) {
       fetchChildren();
     }
-    // Still load appointment mock data for now
-    loadAppointmentData();
   }, [accessToken]);
 
-  // Fetch vaccination records and growth data when profile changes
+  // Fetch vaccination records, growth data, and appointments when profile changes
   useEffect(() => {
     if (profile?.id) {
       // Only fetch data from API if profile has valid UUID (not mock data)
@@ -59,6 +57,7 @@ const HomeScreen: React.FC = () => {
       if (isValidUuid) {
         fetchChildVaccinationRecords(profile.id);
         fetchGrowthData(profile.id);
+        fetchAppointments(profile.id);
       }
     }
   }, [profile?.id]);

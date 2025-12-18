@@ -249,24 +249,32 @@ export interface Appointment {
   
   // Schedule
   dateTime: string;
-  duration?: number; // in minutes
+  duration?: number | null; // in minutes
   
   // Location
   location: string;
-  address?: string;
+  address?: string | null;
   
   // Provider
-  provider: HealthcareProvider;
+  providerName?: string | null;
+  providerRole?: string | null;
+  providerPhone?: string | null;
   
   // Status & Notes
   status: AppointmentStatus;
-  notes?: string;
+  notes?: string | null;
   reminderSent?: boolean;
   
   // Metadata
   createdAt: string;
   updatedAt: string;
-  syncStatus: SyncStatus;
+  
+  // Child info (when included)
+  child?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
 }
 
 // ============================================================================

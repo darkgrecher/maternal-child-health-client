@@ -5,7 +5,7 @@
  * allows managing appointments and finding clinics.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,14 +14,16 @@ import {
   TouchableOpacity,
   Linking,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { format, isPast, isFuture, isToday, addDays } from 'date-fns';
+import { format, isPast, isFuture, isToday } from 'date-fns';
 
 import { Card, Header, SectionTitle, Badge, Button, TabButton } from '../components/common';
 import { useAppointmentStore, useChildStore } from '../stores';
-import { Appointment } from '../types';
+import { Appointment, AppointmentType } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 
 type TabType = 'upcoming' | 'past';
@@ -36,8 +38,8 @@ const AppointmentCard: React.FC<{
   onCall?: () => void;
 }> = ({ appointment, onReschedule, onCancel, onCall }) => {
   const { t } = useTranslation();
-  const isUpcoming = isFuture(new Date(appointment.date)) || isToday(new Date(appointment.date));
-  const appointmentDate = new Date(appointment.date);
+  const appointmentDate = new Date(appointment.dateTime);
+  const isUpcoming = isFuture(appointmentDate) || isToday(appointmentDate);
   
   const getStatusBadge = () => {
     if (appointment.status === 'completed') {
@@ -46,20 +48,32 @@ const AppointmentCard: React.FC<{
     if (appointment.status === 'cancelled') {
       return <Badge text={t('schedule.cancelled')} variant="error" size="small" />;
     }
+    if (appointment.status === 'missed') {
+      return <Badge text={t('schedule.missed')} variant="error" size="small" />;
+    }
+    if (appointment.status === 'rescheduled') {
+      return <Badge text={t('schedule.rescheduled')} variant="warning" size="small" />;
+    }
     if (isToday(appointmentDate)) {
       return <Badge text={t('schedule.today')} variant="warning" size="small" />;
     }
     return <Badge text={t('schedule.scheduled')} variant="info" size="small" />;
   };
 
-  const getTypeIcon = () => {
+  const getTypeIcon = (): keyof typeof Ionicons.glyphMap => {
     switch (appointment.type) {
       case 'vaccination':
         return 'medical-outline';
-      case 'checkup':
+      case 'general_checkup':
         return 'fitness-outline';
-      case 'growth_monitoring':
+      case 'growth_check':
         return 'analytics-outline';
+      case 'development_check':
+        return 'body-outline';
+      case 'specialist':
+        return 'person-outline';
+      case 'emergency':
+        return 'alert-circle-outline';
       default:
         return 'calendar-outline';
     }
@@ -69,13 +83,31 @@ const AppointmentCard: React.FC<{
     switch (appointment.type) {
       case 'vaccination':
         return COLORS.primary;
-      case 'checkup':
+      case 'general_checkup':
         return COLORS.info;
-      case 'growth_monitoring':
+      case 'growth_check':
         return COLORS.success;
+      case 'development_check':
+        return COLORS.warning;
+      case 'specialist':
+        return '#9C27B0';
+      case 'emergency':
+        return COLORS.error;
       default:
         return COLORS.textSecondary;
     }
+  };
+
+  const getTypeLabel = (type: AppointmentType): string => {
+    const typeLabels: Record<AppointmentType, string> = {
+      vaccination: t('schedule.types.vaccination'),
+      growth_check: t('schedule.types.growth_check'),
+      development_check: t('schedule.types.development_check'),
+      general_checkup: t('schedule.types.general_checkup'),
+      specialist: t('schedule.types.specialist'),
+      emergency: t('schedule.types.emergency'),
+    };
+    return typeLabels[type] || type;
   };
 
   return (
@@ -87,7 +119,7 @@ const AppointmentCard: React.FC<{
         <View style={styles.appointmentInfo}>
           <Text style={styles.appointmentTitle}>{appointment.title}</Text>
           <Text style={styles.appointmentType}>
-            {t(`schedule.types.${appointment.type}`)}
+            {getTypeLabel(appointment.type)}
           </Text>
         </View>
         {getStatusBadge()}
@@ -100,10 +132,14 @@ const AppointmentCard: React.FC<{
             {format(appointmentDate, 'EEEE, MMMM d, yyyy')}
           </Text>
         </View>
-        {appointment.time && (
+        <View style={styles.detailRow}>
+          <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
+          <Text style={styles.detailText}>{format(appointmentDate, 'h:mm a')}</Text>
+        </View>
+        {appointment.duration && (
           <View style={styles.detailRow}>
-            <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
-            <Text style={styles.detailText}>{appointment.time}</Text>
+            <Ionicons name="hourglass-outline" size={16} color={COLORS.textSecondary} />
+            <Text style={styles.detailText}>{appointment.duration} min</Text>
           </View>
         )}
         {appointment.location && (
@@ -112,10 +148,19 @@ const AppointmentCard: React.FC<{
             <Text style={styles.detailText}>{appointment.location}</Text>
           </View>
         )}
-        {appointment.doctor && (
+        {appointment.address && (
+          <View style={styles.detailRow}>
+            <Ionicons name="navigate-outline" size={16} color={COLORS.textSecondary} />
+            <Text style={styles.detailText}>{appointment.address}</Text>
+          </View>
+        )}
+        {appointment.providerName && (
           <View style={styles.detailRow}>
             <Ionicons name="person-outline" size={16} color={COLORS.textSecondary} />
-            <Text style={styles.detailText}>{appointment.doctor}</Text>
+            <Text style={styles.detailText}>
+              {appointment.providerName}
+              {appointment.providerRole ? ` (${appointment.providerRole})` : ''}
+            </Text>
           </View>
         )}
       </View>
@@ -145,7 +190,7 @@ const AppointmentCard: React.FC<{
               </Text>
             </TouchableOpacity>
           )}
-          {onCall && (
+          {onCall && appointment.providerPhone && (
             <TouchableOpacity style={styles.actionButton} onPress={onCall}>
               <Ionicons name="call-outline" size={16} color={COLORS.success} />
               <Text style={[styles.actionText, { color: COLORS.success }]}>
@@ -184,16 +229,33 @@ const QuickActionButton: React.FC<{
 const ScheduleScreen: React.FC = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
-  const { appointments, cancelAppointment } = useAppointmentStore();
+  const [refreshing, setRefreshing] = useState(false);
+  
+  const { profile: selectedChild } = useChildStore();
+  const { 
+    upcomingAppointments, 
+    pastAppointments, 
+    isLoading, 
+    error,
+    fetchAppointments,
+    cancelAppointmentApi,
+  } = useAppointmentStore();
 
-  // Filter appointments
-  const upcomingAppointments = appointments
-    .filter(apt => apt.status === 'scheduled' && (isFuture(new Date(apt.date)) || isToday(new Date(apt.date))))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // Fetch appointments when component mounts or child changes
+  useEffect(() => {
+    if (selectedChild?.id) {
+      fetchAppointments(selectedChild.id);
+    }
+  }, [selectedChild?.id]);
 
-  const pastAppointments = appointments
-    .filter(apt => apt.status !== 'scheduled' || isPast(new Date(apt.date)))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // Pull to refresh
+  const onRefresh = async () => {
+    if (selectedChild?.id) {
+      setRefreshing(true);
+      await fetchAppointments(selectedChild.id);
+      setRefreshing(false);
+    }
+  };
 
   const handleReschedule = (appointment: Appointment) => {
     Alert.alert(
@@ -203,7 +265,13 @@ const ScheduleScreen: React.FC = () => {
         { text: t('common.cancel'), style: 'cancel' },
         { 
           text: t('schedule.contactClinic'), 
-          onPress: () => Linking.openURL('tel:+94112345678')
+          onPress: () => {
+            if (appointment.providerPhone) {
+              Linking.openURL(`tel:${appointment.providerPhone}`);
+            } else {
+              Linking.openURL('tel:+94112345678');
+            }
+          }
         },
       ]
     );
@@ -218,14 +286,23 @@ const ScheduleScreen: React.FC = () => {
         { 
           text: t('common.yes'), 
           style: 'destructive',
-          onPress: () => cancelAppointment(appointment.id)
+          onPress: async () => {
+            const success = await cancelAppointmentApi(appointment.id);
+            if (success) {
+              Alert.alert(t('common.success'), t('schedule.cancelSuccess'));
+            }
+          }
         },
       ]
     );
   };
 
-  const handleCall = () => {
-    Linking.openURL('tel:+94112345678');
+  const handleCall = (appointment: Appointment) => {
+    if (appointment.providerPhone) {
+      Linking.openURL(`tel:${appointment.providerPhone}`);
+    } else {
+      Linking.openURL('tel:+94112345678');
+    }
   };
 
   const handleFindClinic = () => {
@@ -263,6 +340,14 @@ const ScheduleScreen: React.FC = () => {
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
       >
         {/* Quick Actions */}
         <Card style={styles.quickActionsCard}>
@@ -308,7 +393,24 @@ const ScheduleScreen: React.FC = () => {
         </View>
 
         {/* Appointments List */}
-        {displayedAppointments.length === 0 ? (
+        {isLoading && !refreshing ? (
+          <Card style={styles.emptyCard}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.emptyTitle}>{t('common.loading')}</Text>
+          </Card>
+        ) : error ? (
+          <Card style={styles.emptyCard}>
+            <Ionicons name="alert-circle-outline" size={48} color={COLORS.error} />
+            <Text style={styles.emptyTitle}>{t('common.error')}</Text>
+            <Text style={styles.emptyDescription}>{error}</Text>
+            <Button
+              title={t('common.retry')}
+              variant="primary"
+              style={{ marginTop: SPACING.md }}
+              onPress={onRefresh}
+            />
+          </Card>
+        ) : displayedAppointments.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Ionicons 
               name={activeTab === 'upcoming' ? 'calendar-outline' : 'archive-outline'} 
@@ -344,7 +446,7 @@ const ScheduleScreen: React.FC = () => {
                 appointment={appointment}
                 onReschedule={() => handleReschedule(appointment)}
                 onCancel={() => handleCancel(appointment)}
-                onCall={handleCall}
+                onCall={() => handleCall(appointment)}
               />
             ))}
           </>

@@ -46,7 +46,6 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
   
   const { setOnlineStatus } = useAppStore();
   const { loadMockData: loadChildData } = useChildStore();
-  const { loadMockData: loadAppointmentData } = useAppointmentStore();
   const { status, accessToken, setStatus, fetchProfile } = useAuthStore();
 
   useEffect(() => {
@@ -66,10 +65,9 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
           setStatus('unauthenticated');
         }
         
-        // Load mock data for development
-        // In production, this would load from AsyncStorage or API
+        // Load mock data for development (child data only)
+        // Appointment data is now fetched from API in each screen
         loadChildData();
-        loadAppointmentData();
         
         // Set online status (could be from NetInfo in production)
         setOnlineStatus(true);
