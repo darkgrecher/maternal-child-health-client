@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
 import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button } from '../components/common';
-import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore } from '../stores';
+import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore } from '../stores';
 import { mockActivities, mockEmergencyContacts, mockHealthTip } from '../data/mockData';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { format } from 'date-fns';
@@ -36,10 +36,11 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   
   // Store hooks
-  const { profile, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay, getLatestMeasurement } = useChildStore();
+  const { profile, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay } = useChildStore();
   const { fetchChildVaccinationRecords, getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine } = useVaccineStore();
   const { getNextAppointment, loadMockData: loadAppointmentData } = useAppointmentStore();
   const { accessToken } = useAuthStore();
+  const { getLatestMeasurement: getLatestGrowthMeasurement, fetchGrowthData } = useGrowthStore();
 
   // Fetch real data on mount when authenticated
   useEffect(() => {
@@ -50,15 +51,20 @@ const HomeScreen: React.FC = () => {
     loadAppointmentData();
   }, [accessToken]);
 
-  // Fetch vaccination records when profile changes
+  // Fetch vaccination records and growth data when profile changes
   useEffect(() => {
     if (profile?.id) {
-      fetchChildVaccinationRecords(profile.id);
+      // Only fetch data from API if profile has valid UUID (not mock data)
+      const isValidUuid = profile.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      if (isValidUuid) {
+        fetchChildVaccinationRecords(profile.id);
+        fetchGrowthData(profile.id);
+      }
     }
   }, [profile?.id]);
 
   const ageDisplay = getChildAgeDisplay();
-  const latestMeasurement = getLatestMeasurement();
+  const latestMeasurement = getLatestGrowthMeasurement();
   const vaccineProgress = getCompletionPercentage();
   const completedVaccines = getCompletedCount();
   const totalVaccines = getTotalCount();

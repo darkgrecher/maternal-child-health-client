@@ -82,8 +82,13 @@ export const useVaccineStore = create<VaccineState>()(
           const data = await vaccineService.getChildVaccinationRecords(childId);
           set({ vaccinationData: data, isLoading: false });
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Failed to fetch vaccination records';
-          set({ error: message, isLoading: false });
+          console.error('Failed to fetch vaccination records:', error);
+          // Silently fail for mock data or non-existent children
+          set({ 
+            vaccinationData: null,
+            error: null, // Don't show error to user for missing child
+            isLoading: false 
+          });
         }
       },
 
