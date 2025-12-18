@@ -46,7 +46,6 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
   
   const { setOnlineStatus } = useAppStore();
   const { loadMockData: loadChildData } = useChildStore();
-  const { loadMockData: loadVaccineData } = useVaccineStore();
   const { loadMockData: loadAppointmentData } = useAppointmentStore();
   const { status, accessToken, setStatus, fetchProfile } = useAuthStore();
 
@@ -70,7 +69,6 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
         // Load mock data for development
         // In production, this would load from AsyncStorage or API
         loadChildData();
-        loadVaccineData();
         loadAppointmentData();
         
         // Set online status (could be from NetInfo in production)

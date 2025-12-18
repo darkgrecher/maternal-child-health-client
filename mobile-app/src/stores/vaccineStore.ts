@@ -8,116 +8,105 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Vaccine, VaccineGroup, VaccinationStatus, SyncStatus } from '../types';
-import { mockVaccines } from '../data/mockData';
+import {
+  vaccineService,
+  Vaccine,
+  VaccinationRecord,
+  VaccinationStatistics,
+  ChildVaccinationData,
+  AdministerVaccineRequest,
+} from '../services/vaccineService';
+
+export interface VaccineRecordGroup {
+  ageGroup: string;
+  records: VaccinationRecord[];
+}
 
 interface VaccineState {
   // Data
   vaccines: Vaccine[];
+  vaccinationData: ChildVaccinationData | null;
+  currentChildId: string | null;
   
   // Loading states
   isLoading: boolean;
   error: string | null;
   
-  // Actions
-  setVaccines: (vaccines: Vaccine[]) => void;
-  updateVaccine: (id: string, updates: Partial<Vaccine>) => void;
-  markVaccineCompleted: (id: string, administeredDate: string, details?: Partial<Vaccine>) => void;
+  // API Actions
+  fetchVaccines: () => Promise<void>;
+  fetchChildVaccinationRecords: (childId: string) => Promise<void>;
+  administerVaccine: (childId: string, vaccineId: string, data?: AdministerVaccineRequest) => Promise<void>;
   
   // Utility
-  loadMockData: () => void;
   clearData: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   
-  // Computed values
-  getVaccinesByAgeGroup: () => VaccineGroup[];
+  // Computed values from vaccinationData
+  getVaccinesByAgeGroup: () => VaccineRecordGroup[];
   getCompletedCount: () => number;
   getTotalCount: () => number;
   getCompletionPercentage: () => number;
   getOverdueCount: () => number;
-  getDueVaccines: () => Vaccine[];
-  getNextVaccine: () => Vaccine | null;
+  getPendingCount: () => number;
+  getNextVaccine: () => VaccinationRecord | null;
+  getStatistics: () => VaccinationStatistics | null;
 }
-
-/**
- * Group vaccines by age milestone
- */
-const groupVaccinesByAge = (vaccines: Vaccine[]): VaccineGroup[] => {
-  const ageLabels: { [key: number]: string } = {
-    0: 'Birth',
-    2: '2 months',
-    4: '4 months',
-    6: '6 months',
-    9: '9 months',
-    12: '12 months',
-    18: '18 months',
-  };
-
-  const groups: { [key: number]: Vaccine[] } = {};
-  
-  vaccines.forEach((vaccine) => {
-    const age = vaccine.scheduledAgeMonths;
-    if (!groups[age]) {
-      groups[age] = [];
-    }
-    groups[age].push(vaccine);
-  });
-
-  return Object.entries(groups)
-    .map(([ageStr, vaccineList]) => ({
-      ageMonths: parseInt(ageStr),
-      ageLabel: ageLabels[parseInt(ageStr)] || `${ageStr} months`,
-      vaccines: vaccineList,
-    }))
-    .sort((a, b) => a.ageMonths - b.ageMonths);
-};
 
 export const useVaccineStore = create<VaccineState>()(
   persist(
     (set, get) => ({
       // Initial state
       vaccines: [],
+      vaccinationData: null,
+      currentChildId: null,
       isLoading: false,
       error: null,
 
-      // Set all vaccines
-      setVaccines: (vaccines) => set({ vaccines }),
+      // Fetch all vaccines (schedule reference)
+      fetchVaccines: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const vaccines = await vaccineService.getAllVaccines();
+          set({ vaccines, isLoading: false });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to fetch vaccines';
+          set({ error: message, isLoading: false });
+        }
+      },
 
-      // Update a specific vaccine
-      updateVaccine: (id, updates) => set((state) => ({
-        vaccines: state.vaccines.map((v) =>
-          v.id === id 
-            ? { ...v, ...updates, syncStatus: 'pending' as SyncStatus } 
-            : v
-        ),
-      })),
+      // Fetch vaccination records for a child
+      fetchChildVaccinationRecords: async (childId: string) => {
+        set({ isLoading: true, error: null, currentChildId: childId });
+        try {
+          const data = await vaccineService.getChildVaccinationRecords(childId);
+          set({ vaccinationData: data, isLoading: false });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to fetch vaccination records';
+          set({ error: message, isLoading: false });
+        }
+      },
 
-      // Mark vaccine as completed
-      markVaccineCompleted: (id, administeredDate, details = {}) => set((state) => ({
-        vaccines: state.vaccines.map((v) =>
-          v.id === id
-            ? {
-                ...v,
-                ...details,
-                administeredDate,
-                status: 'completed' as VaccinationStatus,
-                syncStatus: 'pending' as SyncStatus,
-              }
-            : v
-        ),
-      })),
-
-      // Load mock data for development
-      loadMockData: () => set({
-        vaccines: mockVaccines,
-        isLoading: false,
-        error: null,
-      }),
+      // Administer a vaccine
+      administerVaccine: async (childId: string, vaccineId: string, data: AdministerVaccineRequest = {}) => {
+        set({ isLoading: true, error: null });
+        try {
+          await vaccineService.administerVaccine(childId, vaccineId, data);
+          // Refresh the vaccination records
+          const updatedData = await vaccineService.getChildVaccinationRecords(childId);
+          set({ vaccinationData: updatedData, isLoading: false });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to administer vaccine';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
 
       // Clear all data
       clearData: () => set({
         vaccines: [],
+        vaccinationData: null,
+        currentChildId: null,
         error: null,
       }),
 
@@ -127,51 +116,67 @@ export const useVaccineStore = create<VaccineState>()(
       // Set error state
       setError: (error) => set({ error }),
 
-      // Get vaccines grouped by age
+      // Get vaccines grouped by age from vaccination data
       getVaccinesByAgeGroup: () => {
-        const { vaccines } = get();
-        return groupVaccinesByAge(vaccines);
+        const { vaccinationData } = get();
+        if (!vaccinationData) return [];
+
+        const groups: Record<string, VaccinationRecord[]> = {};
+        for (const record of vaccinationData.schedule) {
+          const ageGroup = record.vaccine.ageGroup;
+          if (!groups[ageGroup]) {
+            groups[ageGroup] = [];
+          }
+          groups[ageGroup].push(record);
+        }
+
+        // Sort by vaccine sortOrder within each group
+        return Object.entries(groups).map(([ageGroup, records]) => ({
+          ageGroup,
+          records: records.sort((a, b) => a.vaccine.sortOrder - b.vaccine.sortOrder),
+        }));
       },
 
       // Get count of completed vaccines
       getCompletedCount: () => {
-        const { vaccines } = get();
-        return vaccines.filter((v) => v.status === 'completed').length;
+        const { vaccinationData } = get();
+        return vaccinationData?.statistics.completed ?? 0;
       },
 
       // Get total vaccine count
       getTotalCount: () => {
-        const { vaccines } = get();
-        return vaccines.length;
+        const { vaccinationData } = get();
+        return vaccinationData?.statistics.total ?? 0;
       },
 
       // Get completion percentage
       getCompletionPercentage: () => {
-        const { vaccines } = get();
-        if (vaccines.length === 0) return 0;
-        const completed = vaccines.filter((v) => v.status === 'completed').length;
-        return Math.round((completed / vaccines.length) * 100);
+        const { vaccinationData } = get();
+        return vaccinationData?.statistics.completionPercentage ?? 0;
       },
 
       // Get count of overdue vaccines
       getOverdueCount: () => {
-        const { vaccines } = get();
-        return vaccines.filter((v) => v.status === 'overdue' || v.status === 'due').length;
+        const { vaccinationData } = get();
+        return vaccinationData?.statistics.overdue ?? 0;
       },
 
-      // Get list of due vaccines
-      getDueVaccines: () => {
-        const { vaccines } = get();
-        return vaccines.filter((v) => v.status === 'due' || v.status === 'overdue');
+      // Get count of pending vaccines
+      getPendingCount: () => {
+        const { vaccinationData } = get();
+        return vaccinationData?.statistics.pending ?? 0;
       },
 
       // Get next upcoming vaccine
       getNextVaccine: () => {
-        const { vaccines } = get();
-        const upcomingOrDue = vaccines
-          .filter((v) => v.status === 'due' || v.status === 'upcoming')
-          .sort((a, b) => a.scheduledAgeMonths - b.scheduledAgeMonths);
-        return upcomingOrDue[0] || null;
+        const { vaccinationData } = get();
+        return vaccinationData?.nextVaccine ?? null;
+      },
+
+      // Get full statistics
+      getStatistics: () => {
+        const { vaccinationData } = get();
+        return vaccinationData?.statistics ?? null;
       },
     }),
     {
@@ -179,6 +184,8 @@ export const useVaccineStore = create<VaccineState>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         vaccines: state.vaccines,
+        currentChildId: state.currentChildId,
+        // Don't persist vaccinationData - always fetch fresh
       }),
     }
   )

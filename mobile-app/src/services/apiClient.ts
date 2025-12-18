@@ -5,7 +5,9 @@
  */
 
 import { API_BASE_URL } from '../config/api';
-import { useAuthStore } from '../stores/auth0Store';
+
+// Dynamic import to avoid circular dependency
+const getAuthStore = () => require('../stores/auth0Store').useAuthStore;
 
 interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;
@@ -34,6 +36,7 @@ class ApiClient {
 
     // Add authorization header if required
     if (requiresAuth) {
+      const useAuthStore = getAuthStore();
       const accessToken = useAuthStore.getState().accessToken;
       if (accessToken) {
         (headers as Record<string, string>)['Authorization'] = `Bearer ${accessToken}`;
@@ -53,6 +56,7 @@ class ApiClient {
         const refreshed = await this.tryRefreshToken();
         if (refreshed) {
           // Retry the original request with new token
+          const useAuthStore = getAuthStore();
           const newToken = useAuthStore.getState().accessToken;
           (headers as Record<string, string>)['Authorization'] = `Bearer ${newToken}`;
           
@@ -64,6 +68,7 @@ class ApiClient {
           return this.handleResponse<T>(retryResponse);
         } else {
           // Refresh failed, logout user
+          const useAuthStore = getAuthStore();
           useAuthStore.getState().logout();
           throw new Error('Session expired. Please sign in again.');
         }
@@ -93,6 +98,7 @@ class ApiClient {
    * Try to refresh the access token
    */
   private async tryRefreshToken(): Promise<boolean> {
+    const useAuthStore = getAuthStore();
     const refreshToken = useAuthStore.getState().refreshToken;
     if (!refreshToken) return false;
 

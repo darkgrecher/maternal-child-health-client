@@ -37,7 +37,7 @@ const HomeScreen: React.FC = () => {
   
   // Store hooks
   const { profile, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay, getLatestMeasurement } = useChildStore();
-  const { getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine, loadMockData: loadVaccineData } = useVaccineStore();
+  const { fetchChildVaccinationRecords, getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine } = useVaccineStore();
   const { getNextAppointment, loadMockData: loadAppointmentData } = useAppointmentStore();
   const { accessToken } = useAuthStore();
 
@@ -46,10 +46,16 @@ const HomeScreen: React.FC = () => {
     if (accessToken) {
       fetchChildren();
     }
-    // Still load vaccine and appointment mock data for now
-    loadVaccineData();
+    // Still load appointment mock data for now
     loadAppointmentData();
   }, [accessToken]);
+
+  // Fetch vaccination records when profile changes
+  useEffect(() => {
+    if (profile?.id) {
+      fetchChildVaccinationRecords(profile.id);
+    }
+  }, [profile?.id]);
 
   const ageDisplay = getChildAgeDisplay();
   const latestMeasurement = getLatestMeasurement();
@@ -228,8 +234,8 @@ const HomeScreen: React.FC = () => {
         {nextVaccine && (
           <Text style={styles.nextVaccineText}>
             {t('home.nextVaccine', { 
-              vaccine: nextVaccine.shortName, 
-              age: `${nextVaccine.scheduledAgeMonths} months` 
+              vaccine: nextVaccine.vaccine.shortName, 
+              age: nextVaccine.vaccine.ageGroup 
             })}
           </Text>
         )}
