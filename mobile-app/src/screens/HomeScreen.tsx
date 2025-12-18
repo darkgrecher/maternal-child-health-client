@@ -5,7 +5,7 @@
  * emergency contacts, and recent activities.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,9 @@ import {
   Image,
   Linking,
   ActivityIndicator,
+  Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -25,10 +28,10 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton } from '../components/common';
-import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore } from '../stores';
+import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore } from '../stores';
 import { mockActivities, mockEmergencyContacts, mockHealthTip } from '../data/mockData';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
-import { RootStackParamList, TabParamList } from '../types';
+import { RootStackParamList, TabParamList, Activity } from '../types';
 import { format } from 'date-fns';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
@@ -44,12 +47,19 @@ const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<HomeScreenNavigationProp>();
   
+  // Modal state
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [selectedRecordType, setSelectedRecordType] = useState<'growth' | 'vaccination' | 'appointment' | null>(null);
+  const [recordTitle, setRecordTitle] = useState('');
+  const [recordDescription, setRecordDescription] = useState('');
+  
   // Store hooks
   const { profile, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay } = useChildStore();
   const { fetchChildVaccinationRecords, getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine } = useVaccineStore();
   const { getNextAppointment, fetchAppointments } = useAppointmentStore();
   const { accessToken } = useAuthStore();
   const { getLatestMeasurement: getLatestGrowthMeasurement, fetchGrowthData } = useGrowthStore();
+  const { activities, fetchActivities, createActivity, deleteActivity: deleteActivityFromStore, getRecentActivities } = useActivityStore();
 
   // Fetch real data on mount when authenticated
   useEffect(() => {
@@ -67,6 +77,7 @@ const HomeScreen: React.FC = () => {
         fetchChildVaccinationRecords(profile.id);
         fetchGrowthData(profile.id);
         fetchAppointments(profile.id);
+        fetchActivities(profile.id);
       }
     }
   }, [profile?.id]);
@@ -92,6 +103,101 @@ const HomeScreen: React.FC = () => {
    */
   const handleAddChild = () => {
     navigation.navigate('Profile' as never);
+  };
+
+  /**
+   * Handle add record button - show options for different record types
+   */
+  const handleAddRecord = () => {
+    Alert.alert(
+      t('home.addRecord'),
+      t('home.selectRecordType', 'Select the type of record you want to add'),
+      [
+        {
+          text: t('home.addGrowthRecord', 'Growth Measurement'),
+          onPress: () => {
+            setSelectedRecordType('growth');
+            setIsAddModalVisible(true);
+          }
+        },
+        {
+          text: t('home.addVaccineRecord', 'Vaccine Record'),
+          onPress: () => {
+            setSelectedRecordType('vaccination');
+            setIsAddModalVisible(true);
+          }
+        },
+        {
+          text: t('home.addAppointment', 'Schedule Appointment'),
+          onPress: () => {
+            setSelectedRecordType('appointment');
+            setIsAddModalVisible(true);
+          }
+        },
+        {
+          text: t('common.cancel', 'Cancel'),
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
+  /**
+   * Handle saving a new record
+   */
+  const handleSaveRecord = async () => {
+    if (!recordTitle.trim()) {
+      Alert.alert(t('common.error'), t('home.titleRequired', 'Please enter a title'));
+      return;
+    }
+
+    if (!profile?.id) {
+      Alert.alert(t('common.error'), t('home.noChildProfile', 'No child profile found'));
+      return;
+    }
+
+    try {
+      await createActivity(profile.id, {
+        type: selectedRecordType as 'growth' | 'vaccination' | 'appointment',
+        title: recordTitle,
+        description: recordDescription,
+        icon: selectedRecordType || 'add',
+      });
+      
+      setIsAddModalVisible(false);
+      setRecordTitle('');
+      setRecordDescription('');
+      setSelectedRecordType(null);
+    } catch (error) {
+      Alert.alert(t('common.error'), t('home.failedToSave', 'Failed to save activity'));
+    }
+  };
+
+  /**
+   * Handle long press on activity to delete
+   */
+  const handleLongPressActivity = (activityId: string, activityTitle: string) => {
+    Alert.alert(
+      t('home.deleteRecord', 'Delete Record'),
+      t('home.deleteRecordConfirm', `Are you sure you want to delete "${activityTitle}"?`),
+      [
+        {
+          text: t('common.cancel', 'Cancel'),
+          style: 'cancel'
+        },
+        {
+          text: t('common.delete', 'Delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteActivityFromStore(activityId);
+            } catch (error) {
+              Alert.alert(t('common.error'), t('home.failedToDelete', 'Failed to delete activity'));
+            }
+          }
+        }
+      ]
+    );
   };
 
   // Show loading state
@@ -211,36 +317,60 @@ const HomeScreen: React.FC = () => {
 
       {/* Quick Stats Row */}
       <View style={styles.statsRow}>
-        <Card style={styles.statCard}>
-          <Ionicons name="calendar-outline" size={20} color={COLORS.info} />
-          <Text style={styles.statLabel}>{t('home.nextAppointment')}</Text>
-          <Text style={styles.statValue}>
-            {nextAppointment 
-              ? format(new Date(nextAppointment.dateTime), 'MMM dd, yyyy')
-              : '-'
-            }
-          </Text>
-        </Card>
-        <Card style={styles.statCard}>
-          <Ionicons name="trending-up" size={20} color={COLORS.success} />
-          <Text style={styles.statLabel}>{t('home.growthPercentile')}</Text>
-          <Text style={styles.statValue}>
-            {latestMeasurement?.weightPercentile || 65}th
-          </Text>
-        </Card>
+        <TouchableOpacity 
+          style={{ flex: 1 }}
+          onPress={() => navigation.navigate('Schedule')}
+          activeOpacity={0.7}
+        >
+          <Card style={styles.statCard}>
+            <Ionicons name="calendar-outline" size={20} color={COLORS.info} />
+            <Text style={styles.statLabel}>{t('home.nextAppointment')}</Text>
+            <Text style={styles.statValue}>
+              {nextAppointment 
+                ? format(new Date(nextAppointment.dateTime), 'MMM dd, yyyy')
+                : '-'
+              }
+            </Text>
+          </Card>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={{ flex: 1 }}
+          onPress={() => navigation.navigate('Growth')}
+          activeOpacity={0.7}
+        >
+          <Card style={styles.statCard}>
+            <Ionicons name="trending-up" size={20} color={COLORS.success} />
+            <Text style={styles.statLabel}>{t('home.growthPercentile')}</Text>
+            <Text style={styles.statValue}>
+              {latestMeasurement?.weightPercentile ? `${Math.round(latestMeasurement.weightPercentile)}th` : '-'}
+            </Text>
+          </Card>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.statsRow}>
-        <Card style={styles.statCard}>
-          <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} />
-          <Text style={styles.statLabel}>{t('home.immunizations')}</Text>
-          <Text style={styles.statValue}>{vaccineProgress}%</Text>
-        </Card>
-        <Card style={styles.statCard}>
-          <Ionicons name="alert-circle-outline" size={20} color={COLORS.error} />
-          <Text style={styles.statLabel}>{t('home.overdueVaccines')}</Text>
-          <Text style={styles.statValue}>{overdueCount}</Text>
-        </Card>
+        <TouchableOpacity 
+          style={{ flex: 1 }}
+          onPress={() => navigation.navigate('Vaccines')}
+          activeOpacity={0.7}
+        >
+          <Card style={styles.statCard}>
+            <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.statLabel}>{t('home.immunizations')}</Text>
+            <Text style={styles.statValue}>{vaccineProgress}%</Text>
+          </Card>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={{ flex: 1 }}
+          onPress={() => navigation.navigate('Vaccines')}
+          activeOpacity={0.7}
+        >
+          <Card style={styles.statCard}>
+            <Ionicons name="alert-circle-outline" size={20} color={COLORS.error} />
+            <Text style={styles.statLabel}>{t('home.overdueVaccines')}</Text>
+            <Text style={styles.statValue}>{overdueCount}</Text>
+          </Card>
+        </TouchableOpacity>
       </View>
 
       {/* Immunization Progress Card */}
@@ -274,14 +404,16 @@ const HomeScreen: React.FC = () => {
       </Card>
 
       {/* Quick Actions */}
+      {/* Add Record button hidden per user request
       <View style={styles.actionButtonsRow}>
         <Button
           title={t('home.addRecord')}
           icon="add"
-          onPress={() => {}}
+          onPress={handleAddRecord}
           style={styles.fullWidthButton}
         />
       </View>
+      */}
 
       {/* Emergency Contacts */}
       <Card style={styles.emergencyCard}>
@@ -312,28 +444,41 @@ const HomeScreen: React.FC = () => {
         <SectionTitle 
           title={t('home.recentActivities')} 
           actionText={t('common.viewAll')}
-          onActionPress={() => {}}
+          onActionPress={() => navigation.navigate('Activities')}
         />
-        {mockActivities.slice(0, 4).map((activity) => (
-          <View key={activity.id} style={styles.activityRow}>
-            <View style={[
-              styles.activityIcon, 
-              { backgroundColor: getActivityColor(activity.type) + '20' }
-            ]}>
-              <Ionicons 
-                name={getActivityIcon(activity.type)} 
-                size={16} 
-                color={getActivityColor(activity.type)} 
-              />
-            </View>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>{activity.title}</Text>
-              <Text style={styles.activityDate}>
-                {formatActivityDate(activity.date)}
-              </Text>
-            </View>
+        {getRecentActivities(4).length === 0 ? (
+          <View style={styles.emptyActivitiesContainer}>
+            <Ionicons name="document-text-outline" size={48} color={COLORS.gray[300]} />
+            <Text style={styles.emptyActivitiesText}>{t('activities.noActivities', 'No Activities Yet')}</Text>
+            <Text style={styles.emptyActivitiesSubtext}>{t('activities.noActivitiesMessage', 'Activities will appear here as you add them')}</Text>
           </View>
-        ))}
+        ) : (
+          getRecentActivities(4).map((activity) => (
+            <TouchableOpacity 
+              key={activity.id} 
+              style={styles.activityRow}
+              onLongPress={() => handleLongPressActivity(activity.id, activity.title)}
+              delayLongPress={500}
+            >
+              <View style={[
+                styles.activityIcon, 
+                { backgroundColor: getActivityColor(activity.type) + '20' }
+              ]}>
+                <Ionicons 
+                  name={getActivityIcon(activity.type)} 
+                  size={16} 
+                  color={getActivityColor(activity.type)} 
+                />
+              </View>
+              <View style={styles.activityContent}>
+                <Text style={styles.activityTitle}>{activity.title}</Text>
+                <Text style={styles.activityDate}>
+                  {formatActivityDate(activity.date)}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
       </Card>
 
       {/* Daily Health Tip */}
@@ -356,6 +501,74 @@ const HomeScreen: React.FC = () => {
       </ScrollView>
       
       <FloatingChatButton />
+
+      {/* Add Record Modal */}
+      <Modal
+        visible={isAddModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsAddModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {t('home.addRecord')} - {selectedRecordType === 'growth' ? t('home.addGrowthRecord') : 
+                  selectedRecordType === 'vaccination' ? t('home.addVaccineRecord') : 
+                  t('home.addAppointment')}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setIsAddModalVisible(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.inputLabel}>{t('home.recordTitle', 'Title')} *</Text>
+              <TextInput
+                style={styles.input}
+                value={recordTitle}
+                onChangeText={setRecordTitle}
+                placeholder={t('home.recordTitlePlaceholder', 'Enter title')}
+                placeholderTextColor={COLORS.gray[400]}
+              />
+
+              <Text style={styles.inputLabel}>{t('home.recordDescription', 'Description')}</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={recordDescription}
+                onChangeText={setRecordDescription}
+                placeholder={t('home.recordDescriptionPlaceholder', 'Enter description (optional)')}
+                placeholderTextColor={COLORS.gray[400]}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => {
+                    setIsAddModalVisible(false);
+                    setRecordTitle('');
+                    setRecordDescription('');
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton]}
+                  onPress={handleSaveRecord}
+                >
+                  <Text style={styles.saveButtonText}>{t('common.save', 'Save')}</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -717,6 +930,22 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.xs,
     color: COLORS.textSecondary,
   },
+  emptyActivitiesContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+    gap: SPACING.sm,
+  },
+  emptyActivitiesText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.medium,
+    color: COLORS.gray[400],
+    marginTop: SPACING.xs,
+  },
+  emptyActivitiesSubtext: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.gray[400],
+    textAlign: 'center',
+  },
 
   // Health Tip
   healthTipCard: {
@@ -756,6 +985,87 @@ const styles = StyleSheet.create({
   healthTipSourceText: {
     fontSize: FONT_SIZE.xs,
     color: COLORS.textSecondary,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: BORDER_RADIUS.xl,
+    borderTopRightRadius: BORDER_RADIUS.xl,
+    maxHeight: '80%',
+    paddingBottom: SPACING.xl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[100],
+  },
+  modalTitle: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: FONT_WEIGHT.bold,
+    color: COLORS.textPrimary,
+    flex: 1,
+  },
+  modalCloseButton: {
+    padding: SPACING.xs,
+  },
+  modalBody: {
+    padding: SPACING.lg,
+  },
+  inputLabel: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+    marginTop: SPACING.sm,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    fontSize: FONT_SIZE.md,
+    color: COLORS.textPrimary,
+    backgroundColor: COLORS.white,
+  },
+  textArea: {
+    height: 100,
+    paddingTop: SPACING.md,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginTop: SPACING.xl,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: COLORS.gray[100],
+  },
+  cancelButtonText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+    color: COLORS.textSecondary,
+  },
+  saveButton: {
+    backgroundColor: COLORS.primary,
+  },
+  saveButtonText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+    color: COLORS.white,
   },
 });
 

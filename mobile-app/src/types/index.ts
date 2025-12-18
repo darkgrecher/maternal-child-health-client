@@ -373,6 +373,7 @@ export type RootStackParamList = {
   VaccineDetails: { vaccineId: string };
   AppointmentDetails: { appointmentId: string };
   Settings: undefined;
+  Activities: undefined;
 };
 
 export type TabParamList = {

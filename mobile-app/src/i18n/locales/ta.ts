@@ -56,6 +56,17 @@ export default {
     vaccinesCompleted: '{{total}} இல் {{completed}} தடுப்பூசிகள் நிறைவு',
     nextVaccine: 'அடுத்தது: {{vaccine}} - {{age}}',
     addRecord: 'பதிவு சேர்',
+    selectRecordType: 'நீங்கள் சேர்க்க விரும்பும் பதிவு வகையைத் தேர்ந்தெடுக்கவும்',
+    addGrowthRecord: 'வளர்ச்சி அளவீடு',
+    addVaccineRecord: 'தடுப்பூசி பதிவு',
+    addAppointment: 'சந்திப்பு திட்டமிடுக',
+    recordTitle: 'தலைப்பு',
+    recordTitlePlaceholder: 'தலைப்பை உள்ளிடவும்',
+    recordDescription: 'விளக்கம்',
+    recordDescriptionPlaceholder: 'விளக்கத்தை உள்ளிடவும் (விரும்பமானது)',
+    titleRequired: 'தயவுசெய்து தலைப்பை உள்ளிடவும்',
+    deleteRecord: 'பதிவை நீக்கு',
+    deleteRecordConfirm: 'இந்த பதிவை நீக்க விரும்புகிறீர்களா?',
     aiChat: 'AI அரட்டை',
     emergencyContacts: 'அவசர தொடர்புகள்',
     recentActivities: 'சமீபத்திய நடவடிக்கைகள்',
@@ -64,6 +75,9 @@ export default {
     monthsOld: '{{months}} மாதங்கள் {{weeks}} வாரங்கள்',
     weight: 'எடை:',
     height: 'உயரம்:',
+    noChildProfile: 'குழந்தை சுயவிவரம் கிடைக்கவில்லை',
+    failedToSave: 'செயல்பாட்டைச் சேமிக்க முடியவில்லை',
+    failedToDelete: 'செயல்பாட்டை நீக்க முடியவில்லை',
   },
 
   // Profile Screen
@@ -223,6 +237,15 @@ export default {
     weeksAgo: '{{weeks}} வாரங்களுக்கு முன்',
     monthsAgo: '{{months}} மாதங்களுக்கு முன்',
     at: 'அன்று',
+  },
+
+  // Activities Screen
+  activities: {
+    title: 'அனைத்து செயல்பாடுகள்',
+    noActivities: 'இன்னும் செயல்பாடுகள் இல்லை',
+    noActivitiesMessage: 'நீங்கள் செயல்பாடுகளைச் சேர்க்கும்போது அவை இங்கே தோன்றும்',
+    deleteError: 'செயல்பாட்டை நீக்க முடியவில்லை',
+    deleteSuccess: 'செயல்பாடு வெற்றிகரமாக நீக்கப்பட்டது',
   },
 
   // Settings

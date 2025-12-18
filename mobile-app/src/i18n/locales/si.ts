@@ -56,6 +56,17 @@ export default {
     vaccinesCompleted: '{{total}} න් {{completed}} එන්නත් සම්පූර්ණයි',
     nextVaccine: 'ඊළඟ: {{vaccine}} - {{age}}',
     addRecord: 'වාර්තාව එකතු කරන්න',
+    selectRecordType: 'ඔබට එකතු කිරීමට අවශ්‍ය වාර්තා වර්ගය තෝරන්න',
+    addGrowthRecord: 'වර්ධන මිනුම',
+    addVaccineRecord: 'එන්නත් වාර්තාව',
+    addAppointment: 'හමුවීමක් සැලසුම් කරන්න',
+    recordTitle: 'මාතෘකාව',
+    recordTitlePlaceholder: 'මාතෘකාව ඇතුළත් කරන්න',
+    recordDescription: 'විස්තරය',
+    recordDescriptionPlaceholder: 'විස්තරය ඇතුළත් කරන්න (විකල්ප)',
+    titleRequired: 'කරුණාකර මාතෘකාවක් ඇතුළත් කරන්න',
+    deleteRecord: 'වාර්තාව මකන්න',
+    deleteRecordConfirm: 'මෙම වාර්තාව මකා දැමීමට ඔබට විශ්වාසද?',
     aiChat: 'AI චැට්',
     emergencyContacts: 'හදිසි සම්බන්ධතා',
     recentActivities: 'මෑත ක්‍රියාකාරකම්',
@@ -64,6 +75,9 @@ export default {
     monthsOld: 'මාස {{months}} සති {{weeks}}',
     weight: 'බර:',
     height: 'උස:',
+    noChildProfile: 'ළමා පැතිකඩක් හමු නොවිණි',
+    failedToSave: 'ක්‍රියාකාරකම් සුරැකීම අසමත් විය',
+    failedToDelete: 'ක්‍රියාකාරකම් මකා දැමීම අසමත් විය',
   },
 
   // Profile Screen
@@ -223,6 +237,15 @@ export default {
     weeksAgo: 'සති {{weeks}}කට පෙර',
     monthsAgo: 'මාස {{months}}කට පෙර',
     at: 'දී',
+  },
+
+  // Activities Screen
+  activities: {
+    title: 'සියලුම ක්‍රියාකාරකම්',
+    noActivities: 'තවම ක්‍රියාකාරකම් නැත',
+    noActivitiesMessage: 'ඔබ ක්‍රියාකාරකම් එකතු කරන විට ඒවා මෙහි දිස්වනු ඇත',
+    deleteError: 'ක්‍රියාකාරකම් මකා දැමීම අසමත් විය',
+    deleteSuccess: 'ක්‍රියාකාරකම් සාර්ථකව මකා දමන ලදී',
   },
 
   // Settings

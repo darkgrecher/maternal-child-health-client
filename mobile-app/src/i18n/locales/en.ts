@@ -60,6 +60,17 @@ export default {
     vaccinesCompleted: '{{completed}} of {{total}} vaccines completed',
     nextVaccine: 'Next: {{vaccine}} at {{age}}',
     addRecord: 'Add Record',
+    selectRecordType: 'Select the type of record you want to add',
+    addGrowthRecord: 'Growth Measurement',
+    addVaccineRecord: 'Vaccine Record',
+    addAppointment: 'Schedule Appointment',
+    recordTitle: 'Title',
+    recordTitlePlaceholder: 'Enter title',
+    recordDescription: 'Description',
+    recordDescriptionPlaceholder: 'Enter description (optional)',
+    titleRequired: 'Please enter a title',
+    deleteRecord: 'Delete Record',
+    deleteRecordConfirm: 'Are you sure you want to delete this record?',
     aiChat: 'AI Chat',
     emergencyContacts: 'Emergency Contacts',
     recentActivities: 'Recent Activities',
@@ -68,6 +79,9 @@ export default {
     monthsOld: '{{months}} months {{weeks}} weeks',
     weight: 'Weight:',
     height: 'Height:',
+    noChildProfile: 'No child profile found',
+    failedToSave: 'Failed to save activity',
+    failedToDelete: 'Failed to delete activity',
   },
 
   // Profile Screen
@@ -275,6 +289,15 @@ export default {
     weeksAgo: '{{weeks}} weeks ago',
     monthsAgo: '{{months}} months ago',
     at: 'at',
+  },
+
+  // Activities Screen
+  activities: {
+    title: 'All Activities',
+    noActivities: 'No Activities Yet',
+    noActivitiesMessage: 'Activities will appear here as you add them',
+    deleteError: 'Failed to delete activity',
+    deleteSuccess: 'Activity deleted successfully',
   },
 
   // Settings
