@@ -540,7 +540,10 @@ const GrowthScreen: React.FC = () => {
     getLatestMeasurement,
   } = useGrowthStore();
 
-  const latestMeasurement = getLatestMeasurement();
+  // Only use growth data if it belongs to the current profile
+  const latestMeasurement = (growthData?.childId === profile?.id && growthData?.measurements.length > 0)
+    ? growthData.measurements[growthData.measurements.length - 1]
+    : null;
 
   // Fetch data when profile changes
   useEffect(() => {
@@ -703,7 +706,7 @@ const GrowthScreen: React.FC = () => {
         <Card style={styles.historyCard}>
           <SectionTitle title={t('growth.measurementHistory')} />
           
-          {growthData?.measurements && growthData.measurements.length > 0 ? (
+          {growthData?.childId === profile?.id && growthData?.measurements && growthData.measurements.length > 0 ? (
             [...growthData.measurements].reverse().slice(0, 5).map((measurement) => (
               <MeasurementItem
                 key={measurement.id}

@@ -58,12 +58,18 @@ export const useGrowthStore = create<GrowthState>()(
 
       // Fetch growth data for a child
       fetchGrowthData: async (childId: string) => {
-        set({ isLoading: true, error: null });
+        const { currentChildId } = get();
+        
+        // Clear old data if switching to a different child
+        if (currentChildId && currentChildId !== childId) {
+          set({ growthData: null, chartData: null });
+        }
+        
+        set({ isLoading: true, error: null, currentChildId: childId });
         try {
           const data = await growthService.getChildMeasurements(childId);
           set({
             growthData: data,
-            currentChildId: childId,
             isLoading: false,
           });
         } catch (error) {
@@ -80,6 +86,13 @@ export const useGrowthStore = create<GrowthState>()(
 
       // Fetch chart data for visualization
       fetchChartData: async (childId: string, chartType: 'weight' | 'height' | 'head') => {
+        const { currentChildId } = get();
+        
+        // Clear old chart data if switching to a different child
+        if (currentChildId && currentChildId !== childId) {
+          set({ chartData: null });
+        }
+        
         set({ isChartLoading: true, error: null });
         try {
           const data = await growthService.getChartData(childId, chartType);
@@ -171,8 +184,12 @@ export const useGrowthStore = create<GrowthState>()(
 
       // Get latest measurement
       getLatestMeasurement: () => {
-        const { growthData } = get();
-        if (!growthData || growthData.measurements.length === 0) {
+        const { growthData, currentChildId } = get();
+        if (!growthData || !currentChildId || growthData.measurements.length === 0) {
+          return null;
+        }
+        // Verify the data belongs to the current child
+        if (growthData.childId !== currentChildId) {
           return null;
         }
         return growthData.measurements[growthData.measurements.length - 1];

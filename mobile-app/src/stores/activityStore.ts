@@ -50,6 +50,13 @@ export const useActivityStore = create<ActivityState>()(
 
       // Fetch all activities for a child
       fetchActivities: async (childId: string) => {
+        const { currentChildId } = get();
+        
+        // Clear old data if switching to a different child
+        if (currentChildId && currentChildId !== childId) {
+          set({ activities: [] });
+        }
+        
         set({ isLoading: true, error: null, currentChildId: childId });
         try {
           const activities = await activityService.getChildActivities(childId);

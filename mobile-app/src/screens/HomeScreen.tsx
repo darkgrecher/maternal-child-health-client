@@ -174,7 +174,7 @@ const HomeScreen: React.FC = () => {
    * Navigate to add child profile
    */
   const handleAddChild = () => {
-    navigation.navigate('Profile' as never);
+    navigation.navigate('AddChild');
   };
 
   /**

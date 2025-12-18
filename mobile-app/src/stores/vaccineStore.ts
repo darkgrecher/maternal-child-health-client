@@ -77,12 +77,22 @@ export const useVaccineStore = create<VaccineState>()(
 
       // Fetch vaccination records for a child
       fetchChildVaccinationRecords: async (childId: string) => {
+        const { currentChildId } = get();
+        
+        // Clear old data if switching to a different child
+        if (currentChildId && currentChildId !== childId) {
+          set({ vaccinationData: null });
+        }
+        
         set({ isLoading: true, error: null, currentChildId: childId });
         try {
           const data = await vaccineService.getChildVaccinationRecords(childId);
           set({ vaccinationData: data, isLoading: false });
-        } catch (error) {
-          console.error('Failed to fetch vaccination records:', error);
+        } catch (error: any) {
+          // Only log errors that are not "Child not found" to avoid console noise
+          if (!error?.message?.includes('Child not found')) {
+            console.error('Failed to fetch vaccination records:', error);
+          }
           // Silently fail for mock data or non-existent children
           set({ 
             vaccinationData: null,

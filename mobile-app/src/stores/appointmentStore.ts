@@ -71,6 +71,13 @@ export const useAppointmentStore = create<AppointmentState>()(
        * Fetch all appointments for a specific child
        */
       fetchAppointments: async (childId: string) => {
+        const state = get();
+        
+        // Clear old data if switching to a different child
+        if (state.appointments.length > 0 && state.appointments[0]?.childId !== childId) {
+          set({ appointments: [], upcomingAppointments: [], pastAppointments: [], summary: null });
+        }
+        
         // Skip if childId is not a valid UUID (likely mock data)
         if (!UUID_REGEX.test(childId)) {
           set({ appointments: [], upcomingAppointments: [], pastAppointments: [], summary: null, error: null });
