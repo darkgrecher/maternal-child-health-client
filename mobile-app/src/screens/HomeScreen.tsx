@@ -14,13 +14,15 @@ import {
   TouchableOpacity,
   Image,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 
 import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button } from '../components/common';
-import { useChildStore, useVaccineStore, useAppointmentStore } from '../stores';
+import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore } from '../stores';
 import { mockActivities, mockEmergencyContacts, mockHealthTip } from '../data/mockData';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { format } from 'date-fns';
@@ -31,18 +33,23 @@ import { format } from 'date-fns';
 const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   
   // Store hooks
-  const { profile, getChildAgeDisplay, getLatestMeasurement, loadMockData: loadChildData } = useChildStore();
+  const { profile, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay, getLatestMeasurement } = useChildStore();
   const { getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine, loadMockData: loadVaccineData } = useVaccineStore();
   const { getNextAppointment, loadMockData: loadAppointmentData } = useAppointmentStore();
+  const { accessToken } = useAuthStore();
 
-  // Load mock data on mount
+  // Fetch real data on mount when authenticated
   useEffect(() => {
-    loadChildData();
+    if (accessToken) {
+      fetchChildren();
+    }
+    // Still load vaccine and appointment mock data for now
     loadVaccineData();
     loadAppointmentData();
-  }, []);
+  }, [accessToken]);
 
   const ageDisplay = getChildAgeDisplay();
   const latestMeasurement = getLatestMeasurement();
@@ -59,6 +66,44 @@ const HomeScreen: React.FC = () => {
   const handleCall = (phone: string) => {
     Linking.openURL(`tel:${phone}`);
   };
+
+  /**
+   * Navigate to add child profile
+   */
+  const handleAddChild = () => {
+    navigation.navigate('Profile' as never);
+  };
+
+  // Show loading state
+  if (isLoadingChild && !profile) {
+    return (
+      <View style={[styles.container, styles.centerContent, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
+      </View>
+    );
+  }
+
+  // Show empty state if no child profile
+  if (!profile) {
+    return (
+      <View style={[styles.container, styles.centerContent, { paddingTop: insets.top }]}>
+        <View style={styles.emptyStateContainer}>
+          <View style={styles.emptyIconContainer}>
+            <Ionicons name="happy-outline" size={64} color={COLORS.gray[300]} />
+          </View>
+          <Text style={styles.emptyTitle}>{t('home.welcomeTitle', 'Welcome!')}</Text>
+          <Text style={styles.emptySubtitle}>
+            {t('home.noChildMessage', 'Add your child\'s profile to start tracking their health journey')}
+          </Text>
+          <TouchableOpacity style={styles.addChildButton} onPress={handleAddChild}>
+            <Ionicons name="add-circle-outline" size={24} color={COLORS.white} />
+            <Text style={styles.addChildButtonText}>{t('home.addChild', 'Add Child Profile')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView 
@@ -321,6 +366,54 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: SPACING.md,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: FONT_SIZE.md,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORS.gray[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  emptyTitle: {
+    fontSize: FONT_SIZE.xl,
+    fontWeight: FONT_WEIGHT.bold,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.sm,
+  },
+  emptySubtitle: {
+    fontSize: FONT_SIZE.md,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: SPACING.lg,
+  },
+  addChildButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.sm,
+  },
+  addChildButtonText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+    color: COLORS.white,
   },
   
   // Header

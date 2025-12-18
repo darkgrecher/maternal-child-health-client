@@ -24,9 +24,21 @@ import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../constants';
 export const LoginScreen: React.FC = () => {
   const { t } = useTranslation();
   const { request, response, promptAsync, isReady, redirectUri } = useGoogleAuth();
-  const { signInWithGoogle, status, error, setError } = useAuthStore();
+  const authStore = useAuthStore();
+  const { status, error } = authStore;
 
   const isLoading = status === 'loading';
+
+  // Handle authentication with backend
+  const handleGoogleSignIn = useCallback(async (params: { idToken?: string; code?: string; redirectUri?: string }) => {
+    try {
+      await authStore.signInWithGoogle(params.idToken || '', params.code, params.redirectUri);
+    } catch (err) {
+      console.log('Sign in error:', err);
+      const message = err instanceof Error ? err.message : 'Authentication failed';
+      Alert.alert('Sign In Error', message);
+    }
+  }, [authStore]);
 
   // Handle Google Sign-In response
   useEffect(() => {
@@ -41,24 +53,13 @@ export const LoginScreen: React.FC = () => {
         handleGoogleSignIn({ code, redirectUri });
       } else {
         console.log('❌ No authorization code in response');
-        setError('No authorization code received from Google');
+        authStore.setError('No authorization code received from Google');
       }
     } else if (response?.type === 'error') {
       console.log('❌ OAuth Error:', response.error);
-      setError(`Google Sign-In failed: ${response.error?.message || 'Unknown error'}`);
+      authStore.setError(`Google Sign-In failed: ${response.error?.message || 'Unknown error'}`);
     }
-  }, [response, redirectUri, handleGoogleSignIn, setError]);
-
-  // Handle authentication with backend
-  const handleGoogleSignIn = useCallback(async (params: { idToken?: string; code?: string; redirectUri?: string }) => {
-    try {
-      await signInWithGoogle(params.idToken || '', params.code, params.redirectUri);
-    } catch (err) {
-      console.log('Sign in error:', err);
-      const message = err instanceof Error ? err.message : 'Authentication failed';
-      Alert.alert('Sign In Error', message);
-    }
-  }, [signInWithGoogle]);
+  }, [response, redirectUri, handleGoogleSignIn, authStore]);
 
   // Handle sign in button press
   const handleSignInPress = useCallback(async () => {
@@ -67,9 +68,9 @@ export const LoginScreen: React.FC = () => {
       return;
     }
     
-    setError(null);
+    authStore.setError(null);
     await promptAsync();
-  }, [isReady, promptAsync, setError]);
+  }, [isReady, promptAsync, authStore]);
 
   return (
     <SafeAreaView style={styles.container}>

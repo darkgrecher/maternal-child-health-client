@@ -20,6 +20,7 @@ import { useAuthStore } from '../stores';
 import {
   HomeScreen,
   ProfileScreen,
+  EditProfileScreen,
   VaccinesScreen,
   GrowthScreen,
   FeedingScreen,
@@ -33,6 +34,7 @@ import { RootStackParamList, TabParamList } from '../types';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator<TabParamList>();
+const ProfileStack = createNativeStackNavigator();
 
 // Icon type mapping
 type IoniconsName = keyof typeof Ionicons.glyphMap;
@@ -57,6 +59,18 @@ const AuthNavigator: React.FC = () => {
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Auth" component={AuthScreen} />
     </AuthStack.Navigator>
+  );
+};
+
+/**
+ * Profile Stack Navigator - Profile with Edit capability
+ */
+const ProfileStackNavigator: React.FC = () => {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
+    </ProfileStack.Navigator>
   );
 };
 
@@ -98,7 +112,7 @@ const TabNavigator: React.FC = () => {
       />
       <Tab.Screen 
         name="Profile" 
-        component={ProfileScreen}
+        component={ProfileStackNavigator}
         options={{ tabBarLabel: t('navigation.profile') }}
       />
       <Tab.Screen 

@@ -19,7 +19,7 @@ interface AuthState {
   error: string | null;
   
   // Actions
-  signInWithGoogle: (idToken: string) => Promise<void>;
+  signInWithGoogle: (idToken: string, code?: string, redirectUri?: string) => Promise<void>;
   refreshAccessToken: () => Promise<boolean>;
   fetchProfile: () => Promise<void>;
   logout: () => Promise<void>;
@@ -173,6 +173,11 @@ export const useAuthStore = create<AuthState>()(
           status: 'unauthenticated',
           error: null,
         });
+        
+        // Clear child data on logout
+        // Import at runtime to avoid circular dependency
+        const { useChildStore } = require('./childStore');
+        useChildStore.getState().clearData();
       },
 
       /**

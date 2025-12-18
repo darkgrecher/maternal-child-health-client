@@ -5,7 +5,7 @@
  * medical information, family info, and healthcare providers.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,23 +13,39 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format } from 'date-fns';
 
 import { Card, Header, Avatar, SectionTitle, InfoRow, Badge } from '../components/common';
 import { useChildStore, useAuthStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 
+type ProfileStackParamList = {
+  ProfileMain: undefined;
+  EditProfile: { childId?: string; isNew?: boolean };
+};
+
+type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
+
 /**
  * Profile Screen Component
  */
 const ProfileScreen: React.FC = () => {
   const { t } = useTranslation();
-  const { profile, getChildAgeDisplay } = useChildStore();
+  const navigation = useNavigation<NavigationProp>();
+  const { profile, children, isLoading, fetchChildren, getChildAgeDisplay } = useChildStore();
   const { user, logout } = useAuthStore();
   const ageDisplay = getChildAgeDisplay();
+
+  // Fetch children data on mount
+  useEffect(() => {
+    fetchChildren();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert(
@@ -46,6 +62,33 @@ const ProfileScreen: React.FC = () => {
     );
   };
 
+  const handleEditProfile = () => {
+    if (profile) {
+      navigation.navigate('EditProfile', { childId: profile.id, isNew: false });
+    }
+  };
+
+  const handleAddChild = () => {
+    navigation.navigate('EditProfile', { isNew: true });
+  };
+
+  if (isLoading && !profile) {
+    return (
+      <View style={styles.container}>
+        <Header 
+          title={t('profile.title')} 
+          subtitle={t('profile.subtitle')}
+          icon="person-circle-outline"
+          iconColor={COLORS.primary}
+        />
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
+        </View>
+      </View>
+    );
+  }
+
   if (!profile) {
     return (
       <View style={styles.container}>
@@ -56,7 +99,13 @@ const ProfileScreen: React.FC = () => {
           iconColor={COLORS.primary}
         />
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>{t('common.noData')}</Text>
+          <Ionicons name="person-add-outline" size={64} color={COLORS.gray[300]} />
+          <Text style={styles.emptyTitle}>{t('profile.noChildTitle', 'No Child Profile')}</Text>
+          <Text style={styles.emptyText}>{t('profile.noChildMessage', 'Add your child\'s information to get started')}</Text>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddChild}>
+            <Ionicons name="add-circle-outline" size={24} color={COLORS.white} />
+            <Text style={styles.addButtonText}>{t('profile.addChild', 'Add Child')}</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -70,9 +119,7 @@ const ProfileScreen: React.FC = () => {
         icon="person-circle-outline"
         iconColor={COLORS.primary}
         rightIcon="create-outline"
-        onRightPress={() => {
-          // TODO: Navigate to edit profile
-        }}
+        onRightPress={handleEditProfile}
       />
       
       <ScrollView 
@@ -241,14 +288,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingBottom: SPACING.xl,
   },
+  loadingState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.md,
+  },
+  loadingText: {
+    fontSize: FONT_SIZE.md,
+    color: COLORS.textSecondary,
+  },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: SPACING.xl,
+    gap: SPACING.md,
+  },
+  emptyTitle: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: FONT_WEIGHT.semibold,
+    color: COLORS.textPrimary,
+    marginTop: SPACING.sm,
   },
   emptyText: {
     fontSize: FONT_SIZE.md,
     color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.md,
+    gap: SPACING.sm,
+  },
+  addButtonText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+    color: COLORS.white,
   },
 
   // Profile Header

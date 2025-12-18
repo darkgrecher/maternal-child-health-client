@@ -5,7 +5,7 @@
  */
 
 import { API_BASE_URL } from '../config/api';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../stores/auth0Store';
 
 interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;

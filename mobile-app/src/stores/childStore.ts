@@ -9,6 +9,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ChildProfile, GrowthMeasurement, DevelopmentMilestone, SyncStatus } from '../types';
+import { childService, CreateChildRequest, UpdateChildRequest } from '../services/childService';
 import {
   mockChildProfile,
   mockGrowthMeasurements,
@@ -18,6 +19,8 @@ import {
 interface ChildState {
   // Data
   profile: ChildProfile | null;
+  children: ChildProfile[];
+  selectedChildId: string | null;
   growthMeasurements: GrowthMeasurement[];
   milestones: DevelopmentMilestone[];
   
@@ -25,7 +28,15 @@ interface ChildState {
   isLoading: boolean;
   error: string | null;
   
-  // Actions
+  // API Actions
+  fetchChildren: () => Promise<void>;
+  fetchChild: (childId: string) => Promise<void>;
+  createChild: (data: CreateChildRequest) => Promise<ChildProfile>;
+  updateChildApi: (childId: string, data: UpdateChildRequest) => Promise<ChildProfile>;
+  deleteChild: (childId: string) => Promise<void>;
+  selectChild: (childId: string) => void;
+  
+  // Local Actions
   setProfile: (profile: ChildProfile) => void;
   updateProfile: (updates: Partial<ChildProfile>) => void;
   
@@ -78,15 +89,121 @@ export const useChildStore = create<ChildState>()(
     (set, get) => ({
       // Initial state
       profile: null,
+      children: [],
+      selectedChildId: null,
       growthMeasurements: [],
       milestones: [],
       isLoading: false,
       error: null,
 
+      // Fetch all children from API
+      fetchChildren: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const children = await childService.getChildren();
+          const currentSelectedId = get().selectedChildId;
+          
+          // Find currently selected child in new data, or default to first
+          let selectedChild = children.find(c => c.id === currentSelectedId);
+          if (!selectedChild && children.length > 0) {
+            selectedChild = children[0];
+          }
+          
+          set({ 
+            children, 
+            profile: selectedChild || null,
+            selectedChildId: selectedChild?.id || null,
+            isLoading: false 
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to fetch children';
+          set({ error: message, isLoading: false });
+        }
+      },
+
+      // Fetch single child from API
+      fetchChild: async (childId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const child = await childService.getChild(childId);
+          set({ profile: child, selectedChildId: childId, isLoading: false });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to fetch child';
+          set({ error: message, isLoading: false });
+        }
+      },
+
+      // Create new child via API
+      createChild: async (data: CreateChildRequest) => {
+        set({ isLoading: true, error: null });
+        try {
+          const child = await childService.createChild(data);
+          set((state) => ({
+            children: [child, ...state.children],
+            profile: child,
+            selectedChildId: child.id,
+            isLoading: false,
+          }));
+          return child;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to create child';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Update child via API
+      updateChildApi: async (childId: string, data: UpdateChildRequest) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updated = await childService.updateChild(childId, data);
+          set((state) => ({
+            children: state.children.map((c) => c.id === childId ? updated : c),
+            profile: state.profile?.id === childId ? updated : state.profile,
+            isLoading: false,
+          }));
+          return updated;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to update child';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Delete child via API
+      deleteChild: async (childId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          await childService.deleteChild(childId);
+          set((state) => {
+            const newChildren = state.children.filter((c) => c.id !== childId);
+            const needNewSelection = state.selectedChildId === childId;
+            return {
+              children: newChildren,
+              profile: needNewSelection ? (newChildren[0] || null) : state.profile,
+              selectedChildId: needNewSelection ? (newChildren[0]?.id || null) : state.selectedChildId,
+              isLoading: false,
+            };
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to delete child';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Select a child
+      selectChild: (childId: string) => {
+        const child = get().children.find((c) => c.id === childId);
+        if (child) {
+          set({ profile: child, selectedChildId: childId });
+        }
+      },
+
       // Set complete profile
       setProfile: (profile) => set({ profile }),
 
-      // Update profile with partial data
+      // Update profile with partial data (local only)
       updateProfile: (updates) => set((state) => ({
         profile: state.profile 
           ? { 
@@ -173,6 +290,8 @@ export const useChildStore = create<ChildState>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         profile: state.profile,
+        children: state.children,
+        selectedChildId: state.selectedChildId,
         growthMeasurements: state.growthMeasurements,
         milestones: state.milestones,
       }),

@@ -34,6 +34,7 @@ interface AuthState {
   
   // Actions
   loginWithAuth0: (auth0Tokens: Auth0Tokens, auth0User: Auth0User) => Promise<void>;
+  signInWithGoogle: (idToken: string, code?: string, redirectUri?: string) => Promise<void>;
   refreshAccessToken: () => Promise<boolean>;
   fetchProfile: () => Promise<void>;
   logout: () => Promise<void>;
@@ -81,6 +82,38 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Authentication failed';
+          set({ status: 'error', error: message });
+          throw error;
+        }
+      },
+
+      /**
+       * Sign in with Google OAuth
+       * Validates Google ID token with backend and stores app tokens
+       */
+      signInWithGoogle: async (idToken: string, code?: string, redirectUri?: string) => {
+        set({ status: 'loading', error: null });
+        
+        try {
+          // Send Google token to backend for validation
+          const response = await apiClient.post<{
+            accessToken: string;
+            refreshToken: string;
+            user: AppUser;
+          }>(API_ENDPOINTS.AUTH.GOOGLE, {
+            idToken,
+            code,
+            redirectUri,
+          });
+          
+          set({
+            accessToken: response.data.accessToken,
+            refreshToken: response.data.refreshToken,
+            user: response.data.user,
+            status: 'authenticated',
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Google authentication failed';
           set({ status: 'error', error: message });
           throw error;
         }
