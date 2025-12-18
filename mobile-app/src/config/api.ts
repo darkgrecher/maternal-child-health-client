@@ -5,8 +5,9 @@
  */
 
 // API Base URL - Update this with your server URL
+// Using local network IP instead of localhost for Expo Go on physical devices
 export const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:3000/api'  // Development
+  ? 'http://192.168.1.100:3000/api'  // Development - Use your local IP for physical devices
   : 'https://your-production-server.com/api';  // Production
 
 /**
@@ -15,6 +16,7 @@ export const API_BASE_URL = __DEV__
 export const API_ENDPOINTS = {
   AUTH: {
     GOOGLE: '/auth/google',
+    AUTH0: '/auth/auth0',
     REFRESH: '/auth/refresh',
     ME: '/auth/me',
     LOGOUT: '/auth/logout',

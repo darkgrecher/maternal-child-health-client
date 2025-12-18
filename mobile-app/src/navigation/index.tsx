@@ -24,7 +24,7 @@ import {
   GrowthScreen,
   FeedingScreen,
   ScheduleScreen,
-  LoginScreen,
+  AuthScreen,
 } from '../screens';
 
 // Types
@@ -50,12 +50,12 @@ const tabIcons: Record<keyof TabParamList, { focused: IoniconsName; unfocused: I
 };
 
 /**
- * Auth Navigator - Login flow
+ * Auth Navigator - Login/Signup flow
  */
 const AuthNavigator: React.FC = () => {
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Auth" component={AuthScreen} />
     </AuthStack.Navigator>
   );
 };
