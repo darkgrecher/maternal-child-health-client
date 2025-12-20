@@ -7,6 +7,7 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, ViewStyle } from 'react-native';
 import { COLORS, BORDER_RADIUS, FONT_SIZE, FONT_WEIGHT } from '../../constants';
+import { useThemeStore } from '../../stores';
 
 interface AvatarProps {
   uri?: string;
@@ -49,6 +50,7 @@ export const Avatar: React.FC<AvatarProps> = ({
 }) => {
   const dimension = sizeMap[size];
   const fontSize = fontSizeMap[size];
+  const { colors } = useThemeStore();
 
   if (uri) {
     return (
@@ -67,11 +69,11 @@ export const Avatar: React.FC<AvatarProps> = ({
     <View
       style={[
         styles.placeholder,
-        { width: dimension, height: dimension, borderRadius: dimension / 2 },
+        { width: dimension, height: dimension, borderRadius: dimension / 2, backgroundColor: colors.primaryLight },
         style,
       ]}
     >
-      <Text style={[styles.initials, { fontSize }]}>{getInitials(name)}</Text>
+      <Text style={[styles.initials, { fontSize, color: colors.primary }]}>{getInitials(name)}</Text>
     </View>
   );
 };

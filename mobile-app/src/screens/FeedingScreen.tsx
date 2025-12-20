@@ -22,6 +22,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, Header, SectionTitle, Badge, Button, FloatingChatButton } from '../components/common';
+import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
 import { useChildStore, useThemeStore } from '../stores';
 import { RootStackParamList, TabParamList } from '../types';
 import { FEEDING_GUIDELINES } from '../constants';
@@ -128,23 +129,26 @@ const FeedingScreen: React.FC = () => {
 
   if (!guideline) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Header 
-          title={t('feeding.title')} 
-          subtitle={t('feeding.subtitle')}
-          icon="restaurant-outline"
-          iconColor={colors.warning}
-        />
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>{t('common.noData')}</Text>
+      <SwipeableTabNavigator>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <Header 
+            title={t('feeding.title')} 
+            subtitle={t('feeding.subtitle')}
+            icon="restaurant-outline"
+            iconColor={colors.warning}
+          />
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>{t('common.noData')}</Text>
+          </View>
         </View>
-      </View>
+      </SwipeableTabNavigator>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
+    <SwipeableTabNavigator>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Header 
         title={t('feeding.title')} 
         subtitle={t('feeding.subtitle')}
         icon="restaurant-outline"
@@ -299,7 +303,8 @@ const FeedingScreen: React.FC = () => {
       </ScrollView>
       
       <FloatingChatButton />
-    </View>
+      </View>
+    </SwipeableTabNavigator>
   );
 };
 

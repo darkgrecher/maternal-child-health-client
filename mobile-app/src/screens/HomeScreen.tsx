@@ -32,6 +32,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton } from '../components/common';
+import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
 import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore } from '../stores';
 import { mockActivities, mockEmergencyContacts, mockHealthTip } from '../data/mockData';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
@@ -287,36 +288,41 @@ const HomeScreen: React.FC = () => {
   // Show loading state
   if (isLoadingChild && !profile) {
     return (
-      <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
-      </View>
+      <SwipeableTabNavigator>
+        <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
+        </View>
+      </SwipeableTabNavigator>
     );
   }
 
   // Show empty state if no child profile
   if (!profile) {
     return (
-      <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <View style={styles.emptyStateContainer}>
-          <View style={[styles.emptyIconContainer, { backgroundColor: colors.gray[100] }]}>
-            <Ionicons name="happy-outline" size={64} color={colors.gray[300]} />
+      <SwipeableTabNavigator>
+        <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+          <View style={styles.emptyStateContainer}>
+            <View style={[styles.emptyIconContainer, { backgroundColor: colors.gray[100] }]}>
+              <Ionicons name="happy-outline" size={64} color={colors.gray[300]} />
+            </View>
+            <Text style={styles.emptyTitle}>{t('home.welcomeTitle', 'Welcome!')}</Text>
+            <Text style={styles.emptySubtitle}>
+              {t('home.noChildMessage', 'Add your child\'s profile to start tracking their health journey')}
+            </Text>
+            <TouchableOpacity style={[styles.addChildButton, { backgroundColor: colors.primary }]} onPress={handleAddChild}>
+              <Ionicons name="add-circle-outline" size={24} color={colors.white} />
+              <Text style={styles.addChildButtonText}>{t('home.addChild', 'Add Child Profile')}</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.emptyTitle}>{t('home.welcomeTitle', 'Welcome!')}</Text>
-          <Text style={styles.emptySubtitle}>
-            {t('home.noChildMessage', 'Add your child\'s profile to start tracking their health journey')}
-          </Text>
-          <TouchableOpacity style={[styles.addChildButton, { backgroundColor: colors.primary }]} onPress={handleAddChild}>
-            <Ionicons name="add-circle-outline" size={24} color={colors.white} />
-            <Text style={styles.addChildButtonText}>{t('home.addChild', 'Add Child Profile')}</Text>
-          </TouchableOpacity>
         </View>
-      </View>
+      </SwipeableTabNavigator>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SwipeableTabNavigator>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Fixed Header */}
       <View style={[styles.fixedHeader, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <View style={styles.header}>
@@ -413,12 +419,16 @@ const HomeScreen: React.FC = () => {
                     key={child.id}
                     style={[
                       styles.profileDot,
-                      index === currentChildIndex && styles.profileDotActive,
+                      { backgroundColor: colors.gray[300] },
+                      index === currentChildIndex && [
+                        styles.profileDotActive,
+                        { backgroundColor: colors.primary },
+                      ],
                     ]}
                     onPress={() => selectChild(child.id)}
                   >
                     {index === currentChildIndex && (
-                      <Text style={styles.profileDotText}>
+                      <Text style={[styles.profileDotText, { color: colors.white }]}>
                         {child.firstName.charAt(0)}
                       </Text>
                     )}
@@ -433,38 +443,7 @@ const HomeScreen: React.FC = () => {
         </Card>
       )}
 
-      {/* Quick Stats Row */}
-      <View style={styles.statsRow}>
-        <TouchableOpacity 
-          style={{ flex: 1 }}
-          onPress={() => navigation.navigate('Schedule')}
-          activeOpacity={0.7}
-        >
-          <Card style={styles.statCard}>
-            <Ionicons name="calendar-outline" size={20} color={colors.info} />
-            <Text style={styles.statLabel}>{t('home.nextAppointment')}</Text>
-            <Text style={styles.statValue}>
-              {nextAppointment 
-                ? format(new Date(nextAppointment.dateTime), 'MMM dd, yyyy')
-                : '-'
-              }
-            </Text>
-          </Card>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={{ flex: 1 }}
-          onPress={() => navigation.navigate('Growth')}
-          activeOpacity={0.7}
-        >
-          <Card style={styles.statCard}>
-            <Ionicons name="trending-up" size={20} color={colors.success} />
-            <Text style={styles.statLabel}>{t('home.growthPercentile')}</Text>
-            <Text style={styles.statValue}>
-              {latestMeasurement?.weightPercentile ? `${Math.round(latestMeasurement.weightPercentile)}th` : '-'}
-            </Text>
-          </Card>
-        </TouchableOpacity>
-      </View>
+      {/* Quick Stats Row (Next appointment & Growth percentile removed) */}
 
       <View style={styles.statsRow}>
         <TouchableOpacity 
@@ -688,7 +667,8 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </View>
+      </View>
+    </SwipeableTabNavigator>
   );
 };
 
@@ -757,13 +737,13 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: COLORS.gray[300],
+    // backgroundColor applied dynamically via inline styles
   },
   profileDotActive: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: COLORS.primary,
+    // backgroundColor applied dynamically via inline styles
     alignItems: 'center',
     justifyContent: 'center',
   },

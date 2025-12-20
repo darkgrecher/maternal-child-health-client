@@ -28,6 +28,7 @@ import { format } from 'date-fns';
 import Svg, { Line, Path, Circle, G, Text as SvgText } from 'react-native-svg';
 
 import { Card, Header, SectionTitle, Button, FloatingChatButton } from '../components/common';
+import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
 import { useChildStore, useGrowthStore, useThemeStore } from '../stores';
 import { RootStackParamList, TabParamList } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
@@ -617,23 +618,26 @@ const GrowthScreen: React.FC = () => {
 
   if (isLoading && !growthData) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Header 
-          title={t('growth.title')} 
-          subtitle={t('growth.subtitle')}
-          icon="trending-up-outline"
-          iconColor={colors.success}
-        />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+      <SwipeableTabNavigator>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <Header 
+            title={t('growth.title')} 
+            subtitle={t('growth.subtitle')}
+            icon="trending-up-outline"
+            iconColor={colors.success}
+          />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
         </View>
-      </View>
+      </SwipeableTabNavigator>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
+    <SwipeableTabNavigator>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Header 
         title={t('growth.title')} 
         subtitle={t('growth.subtitle')}
         icon="trending-up-outline"
@@ -764,7 +768,8 @@ const GrowthScreen: React.FC = () => {
       />
       
       <FloatingChatButton />
-    </View>
+      </View>
+    </SwipeableTabNavigator>
   );
 };
 

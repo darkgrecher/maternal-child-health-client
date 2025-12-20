@@ -26,6 +26,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format, isPast, isFuture, isToday } from 'date-fns';
 
 import { Card, Header, SectionTitle, Badge, Button, TabButton, FloatingChatButton } from '../components/common';
+import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
 import { useAppointmentStore, useChildStore, useThemeStore } from '../stores';
 import { Appointment, AppointmentType, RootStackParamList, TabParamList } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
@@ -340,8 +341,9 @@ const ScheduleScreen: React.FC = () => {
   const displayedAppointments = activeTab === 'upcoming' ? upcomingAppointments : pastAppointments;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
+    <SwipeableTabNavigator>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Header 
         title={t('schedule.title')} 
         subtitle={t('schedule.subtitle')}
         icon="calendar-outline"
@@ -546,7 +548,8 @@ const ScheduleScreen: React.FC = () => {
       </ScrollView>
       
       <FloatingChatButton />
-    </View>
+      </View>
+    </SwipeableTabNavigator>
   );
 };
 

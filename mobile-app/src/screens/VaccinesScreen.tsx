@@ -26,6 +26,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format } from 'date-fns';
 
 import { Card, Header, ProgressBar, Badge, TabButton, Button, FloatingChatButton } from '../components/common';
+import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
 import { useVaccineStore, useChildStore, useThemeStore } from '../stores';
 import { VaccinationRecord, VaccinationStatus } from '../services/vaccineService';
 import { RootStackParamList, TabParamList } from '../types';
@@ -320,45 +321,50 @@ const VaccinesScreen: React.FC = () => {
   // Show loading state
   if (isLoading && !vaccinationData) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Header 
-          title={t('vaccines.title', 'Immunization')} 
-          subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
-          icon="shield-checkmark-outline"
-          iconColor={colors.success}
-        />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('common.loading', 'Loading...')}</Text>
+      <SwipeableTabNavigator>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <Header 
+            title={t('vaccines.title', 'Immunization')} 
+            subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
+            icon="shield-checkmark-outline"
+            iconColor={colors.success}
+          />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('common.loading', 'Loading...')}</Text>
+          </View>
         </View>
-      </View>
+      </SwipeableTabNavigator>
     );
   }
 
   // Show empty state if no profile
   if (!profile) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Header 
-          title={t('vaccines.title', 'Immunization')} 
-          subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
-          icon="shield-checkmark-outline"
-          iconColor={colors.success}
-        />
-        <View style={styles.emptyContainer}>
-          <Ionicons name="person-add-outline" size={64} color={colors.gray[300]} />
-          <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('vaccines.noChild', 'No Child Profile')}</Text>
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            {t('vaccines.addChildFirst', 'Add a child profile to view vaccination schedule')}
-          </Text>
+      <SwipeableTabNavigator>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <Header 
+            title={t('vaccines.title', 'Immunization')} 
+            subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
+            icon="shield-checkmark-outline"
+            iconColor={colors.success}
+          />
+          <View style={styles.emptyContainer}>
+            <Ionicons name="person-add-outline" size={64} color={colors.gray[300]} />
+            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('vaccines.noChild', 'No Child Profile')}</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              {t('vaccines.addChildFirst', 'Add a child profile to view vaccination schedule')}
+            </Text>
+          </View>
         </View>
-      </View>
+      </SwipeableTabNavigator>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
+    <SwipeableTabNavigator>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Header 
         title={t('vaccines.title', 'Immunization')} 
         subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
         icon="shield-checkmark-outline"
@@ -504,7 +510,8 @@ const VaccinesScreen: React.FC = () => {
       />
       
       <FloatingChatButton />
-    </View>
+      </View>
+    </SwipeableTabNavigator>
   );
 };
 
