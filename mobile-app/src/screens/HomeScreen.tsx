@@ -32,7 +32,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton } from '../components/common';
-import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore } from '../stores';
+import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore } from '../stores';
 import { mockActivities, mockEmergencyContacts, mockHealthTip } from '../data/mockData';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList, TabParamList, Activity } from '../types';
@@ -71,6 +71,18 @@ const HomeScreen: React.FC = () => {
   const { accessToken } = useAuthStore();
   const { getLatestMeasurement: getLatestGrowthMeasurement, fetchGrowthData } = useGrowthStore();
   const { activities, fetchActivities, createActivity, deleteActivity: deleteActivityFromStore, getRecentActivities } = useActivityStore();
+  const { colors } = useThemeStore();
+
+  // Dynamic activity color function using theme colors
+  const getActivityColorDynamic = (type: string): string => {
+    switch (type) {
+      case 'vaccination': return colors.info;
+      case 'growth': return colors.success;
+      case 'milestone': return colors.warning;
+      case 'checkup': return colors.primary;
+      default: return colors.gray[500];
+    }
+  };
 
   // Get current child index
   const currentChildIndex = children.findIndex(c => c.id === selectedChildId);
@@ -275,8 +287,8 @@ const HomeScreen: React.FC = () => {
   // Show loading state
   if (isLoadingChild && !profile) {
     return (
-      <View style={[styles.container, styles.centerContent, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
       </View>
     );
@@ -285,17 +297,17 @@ const HomeScreen: React.FC = () => {
   // Show empty state if no child profile
   if (!profile) {
     return (
-      <View style={[styles.container, styles.centerContent, { paddingTop: insets.top }]}>
+      <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <View style={styles.emptyStateContainer}>
-          <View style={styles.emptyIconContainer}>
-            <Ionicons name="happy-outline" size={64} color={COLORS.gray[300]} />
+          <View style={[styles.emptyIconContainer, { backgroundColor: colors.gray[100] }]}>
+            <Ionicons name="happy-outline" size={64} color={colors.gray[300]} />
           </View>
           <Text style={styles.emptyTitle}>{t('home.welcomeTitle', 'Welcome!')}</Text>
           <Text style={styles.emptySubtitle}>
             {t('home.noChildMessage', 'Add your child\'s profile to start tracking their health journey')}
           </Text>
-          <TouchableOpacity style={styles.addChildButton} onPress={handleAddChild}>
-            <Ionicons name="add-circle-outline" size={24} color={COLORS.white} />
+          <TouchableOpacity style={[styles.addChildButton, { backgroundColor: colors.primary }]} onPress={handleAddChild}>
+            <Ionicons name="add-circle-outline" size={24} color={colors.white} />
             <Text style={styles.addChildButtonText}>{t('home.addChild', 'Add Child Profile')}</Text>
           </TouchableOpacity>
         </View>
@@ -304,23 +316,23 @@ const HomeScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Fixed Header */}
-      <View style={[styles.fixedHeader, { paddingTop: insets.top }]}>
+      <View style={[styles.fixedHeader, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="heart" size={24} color={COLORS.primary} />
+            <View style={[styles.logoContainer, { backgroundColor: colors.primaryLight }]}>
+              <Ionicons name="heart" size={24} color={colors.primary} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>{t('home.title')}</Text>
-              <Text style={styles.headerSubtitle}>{t('home.subtitle')}</Text>
+              <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('home.title')}</Text>
+              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{t('home.subtitle')}</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.headerIconButton}>
-              <Ionicons name="notifications-outline" size={24} color={COLORS.textPrimary} />
-              <View style={styles.notificationBadge}>
+              <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
+              <View style={[styles.notificationBadge, { backgroundColor: colors.primary }]}>
                 <Text style={styles.notificationBadgeText}>8</Text>
               </View>
             </TouchableOpacity>
@@ -328,13 +340,13 @@ const HomeScreen: React.FC = () => {
               style={styles.headerIconButton}
               onPress={() => navigation.navigate('Settings')}
             >
-              <Ionicons name="settings-outline" size={24} color={COLORS.textPrimary} />
+              <Ionicons name="settings-outline" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerIconButton}
               onPress={() => navigation.navigate('ProfileMain')}
             >
-              <Ionicons name="person-circle-outline" size={24} color={COLORS.textPrimary} />
+              <Ionicons name="person-circle-outline" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -364,7 +376,7 @@ const HomeScreen: React.FC = () => {
           <Text style={styles.bannerSubtitle}>{t('home.welcomeSubtitle')}</Text>
         </View>
         <View style={styles.bannerDecoration}>
-          <Ionicons name="sparkles" size={24} color={COLORS.warning} />
+          <Ionicons name="sparkles" size={24} color={colors.warning} />
         </View>
       </Card>
 
@@ -429,7 +441,7 @@ const HomeScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Card style={styles.statCard}>
-            <Ionicons name="calendar-outline" size={20} color={COLORS.info} />
+            <Ionicons name="calendar-outline" size={20} color={colors.info} />
             <Text style={styles.statLabel}>{t('home.nextAppointment')}</Text>
             <Text style={styles.statValue}>
               {nextAppointment 
@@ -445,7 +457,7 @@ const HomeScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Card style={styles.statCard}>
-            <Ionicons name="trending-up" size={20} color={COLORS.success} />
+            <Ionicons name="trending-up" size={20} color={colors.success} />
             <Text style={styles.statLabel}>{t('home.growthPercentile')}</Text>
             <Text style={styles.statValue}>
               {latestMeasurement?.weightPercentile ? `${Math.round(latestMeasurement.weightPercentile)}th` : '-'}
@@ -461,7 +473,7 @@ const HomeScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Card style={styles.statCard}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} />
+            <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
             <Text style={styles.statLabel}>{t('home.immunizations')}</Text>
             <Text style={styles.statValue}>{vaccineProgress}%</Text>
           </Card>
@@ -472,7 +484,7 @@ const HomeScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Card style={styles.statCard}>
-            <Ionicons name="alert-circle-outline" size={20} color={COLORS.error} />
+            <Ionicons name="alert-circle-outline" size={20} color={colors.error} />
             <Text style={styles.statLabel}>{t('home.overdueVaccines')}</Text>
             <Text style={styles.statValue}>{overdueCount}</Text>
           </Card>
@@ -484,7 +496,7 @@ const HomeScreen: React.FC = () => {
         <SectionTitle 
           title={t('home.immunizationProgress')} 
           icon="shield-checkmark-outline" 
-          iconColor={COLORS.primary}
+          iconColor={colors.primary}
         />
         <View style={styles.progressSection}>
           <Text style={styles.progressLabel}>{t('home.overallProgress')}</Text>
@@ -493,7 +505,7 @@ const HomeScreen: React.FC = () => {
             height={10} 
             showLabel 
             labelPosition="right"
-            color={COLORS.primary}
+            color={colors.primary}
           />
         </View>
         <Text style={styles.progressDetail}>
@@ -526,7 +538,7 @@ const HomeScreen: React.FC = () => {
         <SectionTitle 
           title={t('home.emergencyContacts')} 
           icon="call-outline" 
-          iconColor={COLORS.error}
+          iconColor={colors.error}
         />
         {mockEmergencyContacts.map((contact) => (
           <View key={contact.id} style={styles.contactRow}>
@@ -535,10 +547,10 @@ const HomeScreen: React.FC = () => {
               <Text style={styles.contactRole}>{contact.role}</Text>
             </View>
             <TouchableOpacity 
-              style={styles.callButton}
+              style={[styles.callButton, { backgroundColor: colors.error }]}
               onPress={() => handleCall(contact.phone)}
             >
-              <Ionicons name="call" size={16} color={COLORS.white} />
+              <Ionicons name="call" size={16} color={colors.white} />
               <Text style={styles.callButtonText}>{t('common.call')}</Text>
             </TouchableOpacity>
           </View>
@@ -554,7 +566,7 @@ const HomeScreen: React.FC = () => {
         />
         {getRecentActivities(4).length === 0 ? (
           <View style={styles.emptyActivitiesContainer}>
-            <Ionicons name="document-text-outline" size={48} color={COLORS.gray[300]} />
+            <Ionicons name="document-text-outline" size={48} color={colors.gray[300]} />
             <Text style={styles.emptyActivitiesText}>{t('activities.noActivities', 'No Activities Yet')}</Text>
             <Text style={styles.emptyActivitiesSubtext}>{t('activities.noActivitiesMessage', 'Activities will appear here as you add them')}</Text>
           </View>
@@ -568,12 +580,12 @@ const HomeScreen: React.FC = () => {
             >
               <View style={[
                 styles.activityIcon, 
-                { backgroundColor: getActivityColor(activity.type) + '20' }
+                { backgroundColor: getActivityColorDynamic(activity.type) + '20' }
               ]}>
                 <Ionicons 
                   name={getActivityIcon(activity.type)} 
                   size={16} 
-                  color={getActivityColor(activity.type)} 
+                  color={getActivityColorDynamic(activity.type)} 
                 />
               </View>
               <View style={styles.activityContent}>
@@ -588,16 +600,16 @@ const HomeScreen: React.FC = () => {
       </Card>
 
       {/* Daily Health Tip */}
-      <Card style={styles.healthTipCard}>
+      <Card style={[styles.healthTipCard, { backgroundColor: colors.info + '10' }]}>
         <View style={styles.healthTipHeader}>
-          <View style={styles.healthTipIcon}>
-            <Ionicons name="bulb" size={20} color={COLORS.info} />
+          <View style={[styles.healthTipIcon, { backgroundColor: colors.info + '20' }]}>
+            <Ionicons name="bulb" size={20} color={colors.info} />
           </View>
-          <Text style={styles.healthTipTitle}>{t('home.dailyHealthTip')}</Text>
+          <Text style={[styles.healthTipTitle, { color: colors.info }]}>{t('home.dailyHealthTip')}</Text>
         </View>
         <Text style={styles.healthTipContent}>{mockHealthTip.content}</Text>
         <View style={styles.healthTipSource}>
-          <Ionicons name="information-circle-outline" size={14} color={COLORS.textSecondary} />
+          <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
           <Text style={styles.healthTipSourceText}>{mockHealthTip.source}</Text>
         </View>
       </Card>
@@ -617,9 +629,9 @@ const HomeScreen: React.FC = () => {
         onRequestClose={() => setIsAddModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.white }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
                 {t('home.addRecord')} - {selectedRecordType === 'growth' ? t('home.addGrowthRecord') : 
                   selectedRecordType === 'vaccination' ? t('home.addVaccineRecord') : 
                   t('home.addAppointment')}
@@ -628,27 +640,27 @@ const HomeScreen: React.FC = () => {
                 onPress={() => setIsAddModalVisible(false)}
                 style={styles.modalCloseButton}
               >
-                <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
-              <Text style={styles.inputLabel}>{t('home.recordTitle', 'Title')} *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>{t('home.recordTitle', 'Title')} *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
                 value={recordTitle}
                 onChangeText={setRecordTitle}
                 placeholder={t('home.recordTitlePlaceholder', 'Enter title')}
-                placeholderTextColor={COLORS.gray[400]}
+                placeholderTextColor={colors.gray[400]}
               />
 
-              <Text style={styles.inputLabel}>{t('home.recordDescription', 'Description')}</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>{t('home.recordDescription', 'Description')}</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { borderColor: colors.gray[200], color: colors.textPrimary }]}
                 value={recordDescription}
                 onChangeText={setRecordDescription}
                 placeholder={t('home.recordDescriptionPlaceholder', 'Enter description (optional)')}
-                placeholderTextColor={COLORS.gray[400]}
+                placeholderTextColor={colors.gray[400]}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -656,20 +668,20 @@ const HomeScreen: React.FC = () => {
 
               <View style={styles.modalActions}>
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
+                  style={[styles.modalButton, styles.cancelButton, { borderColor: colors.gray[300] }]}
                   onPress={() => {
                     setIsAddModalVisible(false);
                     setRecordTitle('');
                     setRecordDescription('');
                   }}
                 >
-                  <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+                  <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.saveButton]}
+                  style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
                   onPress={handleSaveRecord}
                 >
-                  <Text style={styles.saveButtonText}>{t('common.save', 'Save')}</Text>
+                  <Text style={[styles.saveButtonText, { color: colors.white }]}>{t('common.save', 'Save')}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>

@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +25,7 @@ import { format } from 'date-fns';
 
 import { Card, Header, Button } from '../components/common';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
-import { useChildStore } from '../stores';
+import { useChildStore, useThemeStore } from '../stores';
 import { Gender, BloodType } from '../types';
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
@@ -42,6 +43,7 @@ const AddChildScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { createChild, isLoading } = useChildStore();
+  const { colors } = useThemeStore();
 
   // Form state
   const [firstName, setFirstName] = useState('');
@@ -118,16 +120,20 @@ const AddChildScreen: React.FC = () => {
         onBackPress={() => navigation.goBack()}
       />
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
       >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Personal Information */}
         <Card style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="person-outline" size={20} color={COLORS.primary} />
+            <Ionicons name="person-outline" size={20} color={colors.primary} />
             <Text style={styles.sectionTitle}>{t('profile.personalInfo', 'Personal Information')}</Text>
           </View>
 
@@ -138,7 +144,7 @@ const AddChildScreen: React.FC = () => {
               value={firstName}
               onChangeText={setFirstName}
               placeholder={t('addChild.enterFirstName', 'Enter first name')}
-              placeholderTextColor={COLORS.gray[400]}
+              placeholderTextColor={colors.gray[400]}
             />
           </View>
 
@@ -149,7 +155,7 @@ const AddChildScreen: React.FC = () => {
               value={lastName}
               onChangeText={setLastName}
               placeholder={t('addChild.enterLastName', 'Enter last name')}
-              placeholderTextColor={COLORS.gray[400]}
+              placeholderTextColor={colors.gray[400]}
             />
           </View>
 
@@ -160,7 +166,7 @@ const AddChildScreen: React.FC = () => {
               onPress={() => setShowDatePicker(true)}
             >
               <Text style={styles.dateText}>{format(dateOfBirth, 'MMMM dd, yyyy')}</Text>
-              <Ionicons name="calendar-outline" size={20} color={COLORS.gray[400]} />
+              <Ionicons name="calendar-outline" size={20} color={colors.gray[400]} />
             </TouchableOpacity>
             {showDatePicker && (
               <DateTimePicker
@@ -181,14 +187,14 @@ const AddChildScreen: React.FC = () => {
                   key={option.value}
                   style={[
                     styles.optionButton,
-                    gender === option.value && styles.optionButtonSelected,
+                    gender === option.value && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => setGender(option.value)}
                 >
                   <Ionicons
                     name={option.value === 'male' ? 'male' : 'female'}
                     size={18}
-                    color={gender === option.value ? COLORS.white : COLORS.textPrimary}
+                    color={gender === option.value ? colors.white : colors.textPrimary}
                   />
                   <Text
                     style={[
@@ -207,7 +213,7 @@ const AddChildScreen: React.FC = () => {
         {/* Birth Information */}
         <Card style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="heart-outline" size={20} color={COLORS.success} />
+            <Ionicons name="heart-outline" size={20} color={colors.success} />
             <Text style={styles.sectionTitle}>{t('profile.birthInfo', 'Birth Information')}</Text>
           </View>
 
@@ -219,7 +225,7 @@ const AddChildScreen: React.FC = () => {
                 value={birthWeight}
                 onChangeText={setBirthWeight}
                 placeholder="3.5"
-                placeholderTextColor={COLORS.gray[400]}
+                placeholderTextColor={colors.gray[400]}
                 keyboardType="decimal-pad"
               />
             </View>
@@ -230,7 +236,7 @@ const AddChildScreen: React.FC = () => {
                 value={birthHeight}
                 onChangeText={setBirthHeight}
                 placeholder="50"
-                placeholderTextColor={COLORS.gray[400]}
+                placeholderTextColor={colors.gray[400]}
                 keyboardType="decimal-pad"
               />
             </View>
@@ -244,7 +250,7 @@ const AddChildScreen: React.FC = () => {
                   key={type}
                   style={[
                     styles.bloodTypeButton,
-                    bloodType === type && styles.bloodTypeButtonSelected,
+                    bloodType === type && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => setBloodType(type)}
                 >
@@ -265,7 +271,7 @@ const AddChildScreen: React.FC = () => {
         {/* Family Information */}
         <Card style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="people-outline" size={20} color={COLORS.info} />
+            <Ionicons name="people-outline" size={20} color={colors.info} />
             <Text style={styles.sectionTitle}>{t('profile.familyInfo', 'Family Information')}</Text>
           </View>
 
@@ -276,7 +282,7 @@ const AddChildScreen: React.FC = () => {
               value={motherName}
               onChangeText={setMotherName}
               placeholder={t('addChild.enterMotherName', "Enter mother's name")}
-              placeholderTextColor={COLORS.gray[400]}
+              placeholderTextColor={colors.gray[400]}
             />
           </View>
 
@@ -287,7 +293,7 @@ const AddChildScreen: React.FC = () => {
               value={fatherName}
               onChangeText={setFatherName}
               placeholder={t('addChild.enterFatherName', "Enter father's name")}
-              placeholderTextColor={COLORS.gray[400]}
+              placeholderTextColor={colors.gray[400]}
             />
           </View>
 
@@ -298,7 +304,7 @@ const AddChildScreen: React.FC = () => {
               value={emergencyContact}
               onChangeText={setEmergencyContact}
               placeholder={t('addChild.enterEmergencyContact', 'Enter emergency contact number')}
-              placeholderTextColor={COLORS.gray[400]}
+              placeholderTextColor={colors.gray[400]}
               keyboardType="phone-pad"
             />
           </View>
@@ -316,6 +322,7 @@ const AddChildScreen: React.FC = () => {
 
         <View style={{ height: SPACING.xl }} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -324,6 +331,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,

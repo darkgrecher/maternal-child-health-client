@@ -22,7 +22,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, Header, SectionTitle, Badge, Button, FloatingChatButton } from '../components/common';
-import { useChildStore } from '../stores';
+import { useChildStore, useThemeStore } from '../stores';
 import { RootStackParamList, TabParamList } from '../types';
 import { FEEDING_GUIDELINES } from '../constants';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
@@ -67,9 +67,10 @@ const AgeSelector: React.FC<{
  * Tip Item Component
  */
 const TipItem: React.FC<{ index: number; text: string }> = ({ index, text }) => {
+  const { colors } = useThemeStore();
   return (
     <View style={styles.tipItem}>
-      <View style={styles.tipNumber}>
+      <View style={[styles.tipNumber, { backgroundColor: colors.primary }]}>
         <Text style={styles.tipNumberText}>{index}</Text>
       </View>
       <Text style={styles.tipText}>{text}</Text>
@@ -81,10 +82,11 @@ const TipItem: React.FC<{ index: number; text: string }> = ({ index, text }) => 
  * Illness Feeding Item Component
  */
 const IllnessItem: React.FC<{ text: string }> = ({ text }) => {
+  const { colors } = useThemeStore();
   return (
     <View style={styles.illnessItem}>
       <View style={styles.illnessBullet}>
-        <Ionicons name="ellipse" size={8} color={COLORS.error} />
+        <Ionicons name="ellipse" size={8} color={colors.error} />
       </View>
       <Text style={styles.illnessText}>{text}</Text>
     </View>
@@ -98,6 +100,7 @@ const FeedingScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<FeedingScreenNavigationProp>();
   const { getChildAgeInMonths } = useChildStore();
+  const { colors } = useThemeStore();
   const childAge = getChildAgeInMonths();
   
   // Determine default age range based on child's age
@@ -125,12 +128,12 @@ const FeedingScreen: React.FC = () => {
 
   if (!guideline) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Header 
           title={t('feeding.title')} 
           subtitle={t('feeding.subtitle')}
           icon="restaurant-outline"
-          iconColor={COLORS.warning}
+          iconColor={colors.warning}
         />
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>{t('common.noData')}</Text>
@@ -140,12 +143,12 @@ const FeedingScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         title={t('feeding.title')} 
         subtitle={t('feeding.subtitle')}
         icon="restaurant-outline"
-        iconColor={COLORS.warning}
+        iconColor={colors.warning}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
           // TODO: Navigate to notifications
@@ -189,7 +192,7 @@ const FeedingScreen: React.FC = () => {
         {/* Main Guidelines Card */}
         <Card style={styles.guidelineCard}>
           <View style={styles.guidelineHeader}>
-            <Ionicons name="time-outline" size={20} color={COLORS.info} />
+            <Ionicons name="time-outline" size={20} color={colors.info} />
             <Text style={styles.guidelineHeaderText}>
               {guideline.ageRange.label}
             </Text>
@@ -198,7 +201,7 @@ const FeedingScreen: React.FC = () => {
           {/* Texture */}
           <View style={styles.guidelineSection}>
             <View style={styles.guidelineSectionHeader}>
-              <Ionicons name="grid-outline" size={16} color={COLORS.primary} />
+              <Ionicons name="grid-outline" size={16} color={colors.primary} />
               <Text style={styles.guidelineSectionTitle}>{t('feeding.texture')}</Text>
             </View>
             <Text style={styles.guidelineText}>{guideline.texture}</Text>
@@ -207,7 +210,7 @@ const FeedingScreen: React.FC = () => {
           {/* Frequency */}
           <View style={styles.guidelineSection}>
             <View style={styles.guidelineSectionHeader}>
-              <Ionicons name="repeat-outline" size={16} color={COLORS.success} />
+              <Ionicons name="repeat-outline" size={16} color={colors.success} />
               <Text style={styles.guidelineSectionTitle}>{t('feeding.frequency')}</Text>
             </View>
             <Text style={styles.guidelineText}>{guideline.frequency}</Text>
@@ -216,7 +219,7 @@ const FeedingScreen: React.FC = () => {
           {/* Amount */}
           <View style={styles.guidelineSection}>
             <View style={styles.guidelineSectionHeader}>
-              <Ionicons name="restaurant-outline" size={16} color={COLORS.warning} />
+              <Ionicons name="restaurant-outline" size={16} color={colors.warning} />
               <Text style={styles.guidelineSectionTitle}>{t('feeding.amountPerMeal')}</Text>
             </View>
             <Text style={styles.guidelineText}>{guideline.amountPerMeal}</Text>
@@ -228,7 +231,7 @@ const FeedingScreen: React.FC = () => {
           <SectionTitle 
             title={t('feeding.tipsTitle')} 
             icon="heart-outline"
-            iconColor={COLORS.error}
+            iconColor={colors.error}
           />
           
           {guideline.tips.map((tip, index) => (
@@ -245,7 +248,7 @@ const FeedingScreen: React.FC = () => {
           <SectionTitle 
             title={t('feeding.illnessTitle')} 
             icon="alert-circle-outline"
-            iconColor={COLORS.warning}
+            iconColor={colors.warning}
           />
           
           <Text style={styles.illnessDescription}>
@@ -258,10 +261,10 @@ const FeedingScreen: React.FC = () => {
         </Card>
 
         {/* Thriposha Supplementation Card */}
-        <Card style={styles.supplementCard}>
+        <Card style={[styles.supplementCard, { backgroundColor: colors.primary + '10' }]}>
           <View style={styles.supplementHeader}>
-            <View style={styles.supplementIcon}>
-              <Ionicons name="nutrition-outline" size={20} color={COLORS.primary} />
+            <View style={[styles.supplementIcon, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="nutrition-outline" size={20} color={colors.primary} />
             </View>
             <View style={styles.supplementTitleContainer}>
               <Text style={styles.supplementTitle}>{t('feeding.supplementTitle')}</Text>
@@ -303,7 +306,7 @@ const FeedingScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    // backgroundColor applied dynamically via inline styles
   },
   scrollView: {
     flex: 1,
@@ -436,7 +439,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.primary,
+    // backgroundColor applied dynamically via inline styles
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.sm,
@@ -494,7 +497,7 @@ const styles = StyleSheet.create({
   // Supplement Card
   supplementCard: {
     marginTop: SPACING.sm,
-    backgroundColor: COLORS.primary + '10',
+    // backgroundColor applied dynamically via inline styles
   },
   supplementHeader: {
     flexDirection: 'row',
@@ -504,7 +507,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.primary + '20',
+    // backgroundColor applied dynamically via inline styles
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.sm,

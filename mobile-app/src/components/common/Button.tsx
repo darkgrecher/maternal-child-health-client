@@ -15,7 +15,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT } from '../../constants';
+import { BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT } from '../../constants';
+import { useThemeStore } from '../../stores';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -49,9 +50,38 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const { colors } = useThemeStore();
+  
+  const getVariantStyle = () => {
+    switch (variant) {
+      case 'primary':
+        return { backgroundColor: colors.primary };
+      case 'secondary':
+        return { backgroundColor: colors.secondary };
+      case 'outline':
+        return { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.primary };
+      case 'ghost':
+        return { backgroundColor: 'transparent' };
+      case 'danger':
+        return { backgroundColor: colors.error };
+      default:
+        return { backgroundColor: colors.primary };
+    }
+  };
+  
+  const getTextColor = () => {
+    switch (variant) {
+      case 'outline':
+      case 'ghost':
+        return colors.primary;
+      default:
+        return colors.white;
+    }
+  };
+
   const buttonStyles = [
     styles.base,
-    styles[variant],
+    getVariantStyle(),
     styles[`size_${size}`],
     fullWidth && styles.fullWidth,
     disabled && styles.disabled,
@@ -60,7 +90,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   const textStyles = [
     styles.text,
-    styles[`text_${variant}`],
+    { color: getTextColor() },
     styles[`textSize_${size}`],
     disabled && styles.textDisabled,
     textStyle,
@@ -68,17 +98,17 @@ export const Button: React.FC<ButtonProps> = ({
 
   const iconSize = size === 'small' ? 16 : size === 'large' ? 24 : 20;
   const iconColor = variant === 'primary' || variant === 'danger' 
-    ? COLORS.white 
+    ? colors.white 
     : variant === 'secondary' 
-      ? COLORS.white 
-      : COLORS.primary;
+      ? colors.white 
+      : colors.primary;
 
   const renderContent = () => {
     if (loading) {
       return (
         <ActivityIndicator 
           size="small" 
-          color={variant === 'outline' || variant === 'ghost' ? COLORS.primary : COLORS.white} 
+          color={variant === 'outline' || variant === 'ghost' ? colors.primary : colors.white} 
         />
       );
     }
@@ -121,25 +151,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   
-  // Variants
-  primary: {
-    backgroundColor: COLORS.primary,
-  },
-  secondary: {
-    backgroundColor: COLORS.secondary,
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-  },
-  danger: {
-    backgroundColor: COLORS.error,
-  },
-  
   // Sizes
   size_small: {
     paddingVertical: SPACING.xs,
@@ -168,21 +179,6 @@ const styles = StyleSheet.create({
   // Text styles
   text: {
     fontWeight: FONT_WEIGHT.semibold,
-  },
-  text_primary: {
-    color: COLORS.white,
-  },
-  text_secondary: {
-    color: COLORS.white,
-  },
-  text_outline: {
-    color: COLORS.primary,
-  },
-  text_ghost: {
-    color: COLORS.primary,
-  },
-  text_danger: {
-    color: COLORS.white,
   },
   textDisabled: {
     opacity: 0.7,

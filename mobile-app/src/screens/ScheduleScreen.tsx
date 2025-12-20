@@ -26,7 +26,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format, isPast, isFuture, isToday } from 'date-fns';
 
 import { Card, Header, SectionTitle, Badge, Button, TabButton, FloatingChatButton } from '../components/common';
-import { useAppointmentStore, useChildStore } from '../stores';
+import { useAppointmentStore, useChildStore, useThemeStore } from '../stores';
 import { Appointment, AppointmentType, RootStackParamList, TabParamList } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 
@@ -47,6 +47,7 @@ const AppointmentCard: React.FC<{
   onCall?: () => void;
 }> = ({ appointment, onReschedule, onCancel, onCall }) => {
   const { t } = useTranslation();
+  const { colors } = useThemeStore();
   const appointmentDate = new Date(appointment.dateTime);
   const isUpcoming = isFuture(appointmentDate) || isToday(appointmentDate);
   
@@ -91,19 +92,19 @@ const AppointmentCard: React.FC<{
   const getTypeColor = () => {
     switch (appointment.type) {
       case 'vaccination':
-        return COLORS.primary;
+        return colors.primary;
       case 'general_checkup':
-        return COLORS.info;
+        return colors.info;
       case 'growth_check':
-        return COLORS.success;
+        return colors.success;
       case 'development_check':
-        return COLORS.warning;
+        return colors.warning;
       case 'specialist':
         return '#9C27B0';
       case 'emergency':
-        return COLORS.error;
+        return colors.error;
       default:
-        return COLORS.textSecondary;
+        return colors.textSecondary;
     }
   };
 
@@ -136,36 +137,36 @@ const AppointmentCard: React.FC<{
 
       <View style={styles.appointmentDetails}>
         <View style={styles.detailRow}>
-          <Ionicons name="calendar-outline" size={16} color={COLORS.textSecondary} />
+          <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.detailText}>
             {format(appointmentDate, 'EEEE, MMMM d, yyyy')}
           </Text>
         </View>
         <View style={styles.detailRow}>
-          <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
+          <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.detailText}>{format(appointmentDate, 'h:mm a')}</Text>
         </View>
         {appointment.duration && (
           <View style={styles.detailRow}>
-            <Ionicons name="hourglass-outline" size={16} color={COLORS.textSecondary} />
+            <Ionicons name="hourglass-outline" size={16} color={colors.textSecondary} />
             <Text style={styles.detailText}>{appointment.duration} min</Text>
           </View>
         )}
         {appointment.location && (
           <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={16} color={COLORS.textSecondary} />
+            <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
             <Text style={styles.detailText}>{appointment.location}</Text>
           </View>
         )}
         {appointment.address && (
           <View style={styles.detailRow}>
-            <Ionicons name="navigate-outline" size={16} color={COLORS.textSecondary} />
+            <Ionicons name="navigate-outline" size={16} color={colors.textSecondary} />
             <Text style={styles.detailText}>{appointment.address}</Text>
           </View>
         )}
         {appointment.providerName && (
           <View style={styles.detailRow}>
-            <Ionicons name="person-outline" size={16} color={COLORS.textSecondary} />
+            <Ionicons name="person-outline" size={16} color={colors.textSecondary} />
             <Text style={styles.detailText}>
               {appointment.providerName}
               {appointment.providerRole ? ` (${appointment.providerRole})` : ''}
@@ -185,24 +186,24 @@ const AppointmentCard: React.FC<{
         <View style={styles.appointmentActions}>
           {onReschedule && (
             <TouchableOpacity style={styles.actionButton} onPress={onReschedule}>
-              <Ionicons name="calendar-outline" size={16} color={COLORS.info} />
-              <Text style={[styles.actionText, { color: COLORS.info }]}>
+              <Ionicons name="calendar-outline" size={16} color={colors.info} />
+              <Text style={[styles.actionText, { color: colors.info }]}>
                 {t('schedule.reschedule')}
               </Text>
             </TouchableOpacity>
           )}
           {onCancel && (
             <TouchableOpacity style={styles.actionButton} onPress={onCancel}>
-              <Ionicons name="close-circle-outline" size={16} color={COLORS.error} />
-              <Text style={[styles.actionText, { color: COLORS.error }]}>
+              <Ionicons name="close-circle-outline" size={16} color={colors.error} />
+              <Text style={[styles.actionText, { color: colors.error }]}>
                 {t('schedule.cancel')}
               </Text>
             </TouchableOpacity>
           )}
           {onCall && appointment.providerPhone && (
             <TouchableOpacity style={styles.actionButton} onPress={onCall}>
-              <Ionicons name="call-outline" size={16} color={COLORS.success} />
-              <Text style={[styles.actionText, { color: COLORS.success }]}>
+              <Ionicons name="call-outline" size={16} color={colors.success} />
+              <Text style={[styles.actionText, { color: colors.success }]}>
                 {t('schedule.call')}
               </Text>
             </TouchableOpacity>
@@ -238,6 +239,7 @@ const QuickActionButton: React.FC<{
 const ScheduleScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<ScheduleScreenNavigationProp>();
+  const { colors } = useThemeStore();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
   
@@ -338,12 +340,12 @@ const ScheduleScreen: React.FC = () => {
   const displayedAppointments = activeTab === 'upcoming' ? upcomingAppointments : pastAppointments;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         title={t('schedule.title')} 
         subtitle={t('schedule.subtitle')}
         icon="calendar-outline"
-        iconColor={COLORS.info}
+        iconColor={colors.info}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
           // TODO: Navigate to notifications
@@ -366,8 +368,8 @@ const ScheduleScreen: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       >
@@ -378,7 +380,7 @@ const ScheduleScreen: React.FC = () => {
               icon="location-outline"
               label={t('schedule.findClinic')}
               onPress={handleFindClinic}
-              color={COLORS.info}
+              color={colors.info}
             />
             <QuickActionButton
               icon="add-circle-outline"
@@ -387,13 +389,13 @@ const ScheduleScreen: React.FC = () => {
                 // TODO: Open add appointment modal
                 Alert.alert(t('common.comingSoon'), t('schedule.addAppointmentMessage'));
               }}
-              color={COLORS.primary}
+              color={colors.primary}
             />
             <QuickActionButton
               icon="alert-circle-outline"
               label={t('schedule.emergency')}
               onPress={handleEmergency}
-              color={COLORS.error}
+              color={colors.error}
             />
           </View>
         </Card>
@@ -417,12 +419,12 @@ const ScheduleScreen: React.FC = () => {
         {/* Appointments List */}
         {isLoading && !refreshing ? (
           <Card style={styles.emptyCard}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.emptyTitle}>{t('common.loading')}</Text>
           </Card>
         ) : error ? (
           <Card style={styles.emptyCard}>
-            <Ionicons name="alert-circle-outline" size={48} color={COLORS.error} />
+            <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
             <Text style={styles.emptyTitle}>{t('common.error')}</Text>
             <Text style={styles.emptyDescription}>{error}</Text>
             <Button
@@ -437,7 +439,7 @@ const ScheduleScreen: React.FC = () => {
             <Ionicons 
               name={activeTab === 'upcoming' ? 'calendar-outline' : 'archive-outline'} 
               size={48} 
-              color={COLORS.gray[300]} 
+              color={colors.gray[300]} 
             />
             <Text style={styles.emptyTitle}>
               {activeTab === 'upcoming' 
@@ -478,7 +480,7 @@ const ScheduleScreen: React.FC = () => {
         {activeTab === 'upcoming' && upcomingAppointments.length > 0 && (
           <Card style={styles.reminderCard}>
             <View style={styles.reminderIcon}>
-              <Ionicons name="notifications-outline" size={24} color={COLORS.warning} />
+              <Ionicons name="notifications-outline" size={24} color={colors.warning} />
             </View>
             <View style={styles.reminderContent}>
               <Text style={styles.reminderTitle}>{t('schedule.reminderTitle')}</Text>
@@ -494,25 +496,25 @@ const ScheduleScreen: React.FC = () => {
           <SectionTitle 
             title={t('schedule.yourClinic')}
             icon="business-outline"
-            iconColor={COLORS.info}
+            iconColor={colors.info}
           />
           
           <View style={styles.clinicInfo}>
             <Text style={styles.clinicName}>MOH Office - Colombo South</Text>
             <View style={styles.clinicDetailRow}>
-              <Ionicons name="location-outline" size={16} color={COLORS.textSecondary} />
+              <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
               <Text style={styles.clinicDetailText}>
                 No. 123, Health Street, Colombo 03
               </Text>
             </View>
             <View style={styles.clinicDetailRow}>
-              <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
+              <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
               <Text style={styles.clinicDetailText}>
                 Monday - Friday: 8:00 AM - 4:00 PM
               </Text>
             </View>
             <View style={styles.clinicDetailRow}>
-              <Ionicons name="call-outline" size={16} color={COLORS.textSecondary} />
+              <Ionicons name="call-outline" size={16} color={colors.textSecondary} />
               <Text style={styles.clinicDetailText}>
                 +94 11 234 5678
               </Text>
@@ -521,18 +523,18 @@ const ScheduleScreen: React.FC = () => {
 
           <View style={styles.clinicActions}>
             <TouchableOpacity 
-              style={styles.clinicActionButton}
+              style={[styles.clinicActionButton, { backgroundColor: colors.primary }]}
               onPress={() => Linking.openURL('tel:+94112345678')}
             >
-              <Ionicons name="call" size={18} color={COLORS.white} />
+              <Ionicons name="call" size={18} color={colors.white} />
               <Text style={styles.clinicActionText}>{t('schedule.call')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.clinicActionButton, styles.clinicActionButtonSecondary]}
+              style={[styles.clinicActionButton, styles.clinicActionButtonSecondary, { borderColor: colors.primary }]}
               onPress={handleFindClinic}
             >
-              <Ionicons name="navigate" size={18} color={COLORS.primary} />
-              <Text style={[styles.clinicActionText, styles.clinicActionTextSecondary]}>
+              <Ionicons name="navigate" size={18} color={colors.primary} />
+              <Text style={[styles.clinicActionText, styles.clinicActionTextSecondary, { color: colors.primary }]}>
                 {t('schedule.directions')}
               </Text>
             </TouchableOpacity>
@@ -551,7 +553,7 @@ const ScheduleScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    // backgroundColor applied dynamically via inline styles
   },
   scrollView: {
     flex: 1,
@@ -752,14 +754,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.xs,
-    backgroundColor: COLORS.primary,
+    // backgroundColor applied dynamically via inline styles
     paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
   },
   clinicActionButtonSecondary: {
     backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    // borderColor applied dynamically via inline styles
   },
   clinicActionText: {
     fontSize: FONT_SIZE.sm,
@@ -767,7 +769,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   clinicActionTextSecondary: {
-    color: COLORS.primary,
+    // color applied dynamically via inline styles
   },
 });
 

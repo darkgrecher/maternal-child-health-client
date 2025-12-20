@@ -13,8 +13,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { COLORS, FONT_SIZE } from '../constants';
-import { useAuthStore } from '../stores';
+import { FONT_SIZE } from '../constants';
+import { useAuthStore, useThemeStore } from '../stores';
 
 // Screens
 import {
@@ -81,6 +81,7 @@ const ProfileStackNavigator: React.FC = () => {
  */
 const TabNavigator: React.FC = () => {
   const { t } = useTranslation();
+  const { colors } = useThemeStore();
 
   return (
     <Tab.Navigator
@@ -91,12 +92,12 @@ const TabNavigator: React.FC = () => {
           const iconName = focused ? icons.focused : icons.unfocused;
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.gray[400],
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.gray[400],
         tabBarStyle: {
-          backgroundColor: COLORS.white,
+          backgroundColor: colors.white,
           borderTopWidth: 1,
-          borderTopColor: COLORS.gray[100],
+          borderTopColor: colors.gray[100],
           paddingTop: 8,
           paddingBottom: 8,
           height: 65,
@@ -155,11 +156,15 @@ const RootNavigator: React.FC = () => {
 /**
  * Loading Screen
  */
-const LoadingScreen: React.FC = () => (
-  <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color={COLORS.primary} />
-  </View>
-);
+const LoadingScreen: React.FC = () => {
+  const { colors } = useThemeStore();
+  
+  return (
+    <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </View>
+  );
+};
 
 /**
  * App Navigation Container
@@ -187,7 +192,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
   },
 });
 

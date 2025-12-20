@@ -12,12 +12,13 @@ import {
   ViewStyle,
   TouchableOpacity,
   TouchableOpacityProps,
+  StyleProp,
 } from 'react-native';
 import { COLORS, BORDER_RADIUS, SPACING } from '../../constants';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   onPress?: () => void;
   variant?: 'default' | 'outlined' | 'elevated';
   padding?: 'none' | 'small' | 'medium' | 'large';

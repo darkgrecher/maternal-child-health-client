@@ -19,7 +19,10 @@ import './src/i18n';
 import Navigation from './src/navigation';
 
 // Stores
-import { useAppStore, useChildStore, useVaccineStore, useAppointmentStore, useAuthStore } from './src/stores';
+import { useAppStore, useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useThemeStore } from './src/stores';
+
+// Context
+import { ThemeProvider } from './src/context';
 
 // Constants
 import { COLORS } from './src/constants';
@@ -29,10 +32,12 @@ import { COLORS } from './src/constants';
  * Displayed while the app is initializing
  */
 const LoadingScreen: React.FC = () => {
+  const { colors } = useThemeStore();
+  
   return (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={COLORS.primary} />
-      <Text style={styles.loadingText}>Loading...</Text>
+    <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading...</Text>
     </View>
   );
 };
@@ -101,7 +106,9 @@ export default function App() {
       <SafeAreaProvider>
         <StatusBar style="dark" />
         <AppInitializer>
-          <Navigation />
+          <ThemeProvider>
+            <Navigation />
+          </ThemeProvider>
         </AppInitializer>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -116,11 +123,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: COLORS.textSecondary,
   },
 });

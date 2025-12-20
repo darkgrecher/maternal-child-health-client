@@ -26,7 +26,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format } from 'date-fns';
 
 import { Card, Header, ProgressBar, Badge, TabButton, Button, FloatingChatButton } from '../components/common';
-import { useVaccineStore, useChildStore } from '../stores';
+import { useVaccineStore, useChildStore, useThemeStore } from '../stores';
 import { VaccinationRecord, VaccinationStatus } from '../services/vaccineService';
 import { RootStackParamList, TabParamList } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
@@ -74,6 +74,7 @@ interface VaccineItemProps {
 }
 
 const VaccineItem: React.FC<VaccineItemProps> = ({ record, t, onAdminister }) => {
+  const { colors } = useThemeStore();
   const { vaccine, status, scheduledDate, administeredDate } = record;
   const canAdminister = status !== 'completed';
   
@@ -86,12 +87,12 @@ const VaccineItem: React.FC<VaccineItemProps> = ({ record, t, onAdminister }) =>
       <View style={styles.vaccineIconContainer}>
         <View style={[
           styles.vaccineIcon,
-          { backgroundColor: status === 'completed' ? COLORS.success + '20' : COLORS.gray[100] }
+          { backgroundColor: status === 'completed' ? colors.success + '20' : colors.gray[100] }
         ]}>
           <Ionicons 
             name={status === 'completed' ? 'checkmark-circle' : 'ellipse-outline'} 
             size={20} 
-            color={status === 'completed' ? COLORS.success : COLORS.gray[400]} 
+            color={status === 'completed' ? colors.success : colors.gray[400]} 
           />
         </View>
       </View>
@@ -117,7 +118,7 @@ const VaccineItem: React.FC<VaccineItemProps> = ({ record, t, onAdminister }) =>
           size="small"
         />
         {canAdminister && (
-          <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} style={styles.chevron} />
+          <Ionicons name="chevron-forward" size={16} color={colors.gray[400]} style={styles.chevron} />
         )}
       </View>
     </TouchableOpacity>
@@ -139,6 +140,7 @@ interface AdministerModalProps {
 const AdministerModal: React.FC<AdministerModalProps> = ({ 
   visible, record, onClose, onConfirm, isLoading, t 
 }) => {
+  const { colors } = useThemeStore();
   const [administeredBy, setAdministeredBy] = useState('');
   const [location, setLocation] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
@@ -158,16 +160,16 @@ const AdministerModal: React.FC<AdministerModalProps> = ({
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: colors.white }]}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{t('vaccines.recordVaccination', 'Record Vaccination')}</Text>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('vaccines.recordVaccination', 'Record Vaccination')}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
           
-          <Text style={styles.modalVaccineName}>{record.vaccine.name}</Text>
-          <Text style={styles.modalVaccineInfo}>
+          <Text style={[styles.modalVaccineName, { color: colors.textPrimary }]}>{record.vaccine.name}</Text>
+          <Text style={[styles.modalVaccineInfo, { color: colors.textSecondary }]}>
             {record.vaccine.shortName} - {record.vaccine.ageGroup}
           </Text>
 
@@ -214,18 +216,18 @@ const AdministerModal: React.FC<AdministerModalProps> = ({
           </View>
 
           <View style={styles.modalButtons}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.cancelButtonText}>{t('common.cancel', 'Cancel')}</Text>
+            <TouchableOpacity style={[styles.cancelButton, { borderColor: colors.gray[300] }]} onPress={onClose}>
+              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>{t('common.cancel', 'Cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.confirmButton, isLoading && styles.buttonDisabled]} 
+              style={[styles.confirmButton, { backgroundColor: colors.primary }, isLoading && styles.buttonDisabled]} 
               onPress={handleConfirm}
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
+                <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text style={styles.confirmButtonText}>{t('vaccines.markComplete', 'Mark Complete')}</Text>
+                <Text style={[styles.confirmButtonText, { color: colors.white }]}>{t('vaccines.markComplete', 'Mark Complete')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -246,6 +248,7 @@ const VaccinesScreen: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   
   const { profile } = useChildStore();
+  const { colors } = useThemeStore();
   const { 
     vaccinationData,
     isLoading,
@@ -317,16 +320,16 @@ const VaccinesScreen: React.FC = () => {
   // Show loading state
   if (isLoading && !vaccinationData) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Header 
           title={t('vaccines.title', 'Immunization')} 
           subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
           icon="shield-checkmark-outline"
-          iconColor={COLORS.success}
+          iconColor={colors.success}
         />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('common.loading', 'Loading...')}</Text>
         </View>
       </View>
     );
@@ -335,17 +338,17 @@ const VaccinesScreen: React.FC = () => {
   // Show empty state if no profile
   if (!profile) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Header 
           title={t('vaccines.title', 'Immunization')} 
           subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
           icon="shield-checkmark-outline"
-          iconColor={COLORS.success}
+          iconColor={colors.success}
         />
         <View style={styles.emptyContainer}>
-          <Ionicons name="person-add-outline" size={64} color={COLORS.gray[300]} />
-          <Text style={styles.emptyTitle}>{t('vaccines.noChild', 'No Child Profile')}</Text>
-          <Text style={styles.emptyText}>
+          <Ionicons name="person-add-outline" size={64} color={colors.gray[300]} />
+          <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('vaccines.noChild', 'No Child Profile')}</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
             {t('vaccines.addChildFirst', 'Add a child profile to view vaccination schedule')}
           </Text>
         </View>
@@ -354,12 +357,12 @@ const VaccinesScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         title={t('vaccines.title', 'Immunization')} 
         subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
         icon="shield-checkmark-outline"
-        iconColor={COLORS.success}
+        iconColor={colors.success}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
           // TODO: Navigate to notifications
@@ -380,11 +383,11 @@ const VaccinesScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Progress Circle Card */}
-        <Card style={styles.progressCard}>
+        <Card style={{ ...styles.progressCard, backgroundColor: colors.success + '10' }}>
           <View style={styles.progressCircleContainer}>
             <View style={styles.progressCircle}>
-              <View style={[styles.progressCircleInner, { borderColor: COLORS.success }]}>
-                <Ionicons name="shield-checkmark" size={32} color={COLORS.success} />
+              <View style={[styles.progressCircleInner, { borderColor: colors.success, backgroundColor: colors.white }]}>
+                <Ionicons name="shield-checkmark" size={32} color={colors.success} />
               </View>
             </View>
             <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
@@ -395,18 +398,18 @@ const VaccinesScreen: React.FC = () => {
             <ProgressBar 
               progress={completionPercentage} 
               height={8}
-              color={COLORS.success}
+              color={colors.success}
             />
             <View style={styles.progressStats}>
               <Text style={styles.progressStatsText}>
                 {completedVaccines} {t('vaccines.of', 'of')} {totalVaccines} {t('vaccines.vaccines', 'vaccines')}
               </Text>
               {overdueCount > 0 ? (
-                <Text style={styles.overdueText}>
+                <Text style={[styles.overdueText, { color: colors.error }]}>
                   {overdueCount} {t('vaccines.overdue', 'overdue')}
                 </Text>
               ) : (
-                <Text style={styles.onTrackText}>{t('vaccines.onTrack', 'On Track')}</Text>
+                <Text style={[styles.onTrackText, { color: colors.success }]}>{t('vaccines.onTrack', 'On Track')}</Text>
               )}
             </View>
           </View>
@@ -449,17 +452,17 @@ const VaccinesScreen: React.FC = () => {
 
         {/* Next Vaccination CTA */}
         {nextVaccine && activeTab === 'schedule' && (
-          <Card style={styles.nextVaccineCard}>
+          <Card style={{ ...styles.nextVaccineCard, backgroundColor: colors.primaryLight }}>
             <View style={styles.nextVaccineContent}>
-              <View style={styles.nextVaccineIcon}>
-                <Ionicons name="calendar" size={24} color={COLORS.primary} />
+              <View style={[styles.nextVaccineIcon, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="calendar" size={24} color={colors.primary} />
               </View>
               <View style={styles.nextVaccineText}>
-                <Text style={styles.nextVaccineTitle}>{t('vaccines.nextVaccination', 'Next Vaccination')}</Text>
-                <Text style={styles.nextVaccineDetails}>
+                <Text style={[styles.nextVaccineTitle, { color: colors.textPrimary }]}>{t('vaccines.nextVaccination', 'Next Vaccination')}</Text>
+                <Text style={[styles.nextVaccineDetails, { color: colors.textSecondary }]}>
                   {nextVaccine.vaccine.shortName} - {nextVaccine.vaccine.name}
                 </Text>
-                <Text style={styles.nextVaccineDate}>
+                <Text style={[styles.nextVaccineDate, { color: colors.primary }]}>
                   {t('vaccines.dueOn', 'Due on')} {format(new Date(nextVaccine.scheduledDate), 'MMMM d, yyyy')}
                 </Text>
               </View>
@@ -476,8 +479,8 @@ const VaccinesScreen: React.FC = () => {
         {/* Empty state for completed tab */}
         {activeTab === 'completed' && filteredGroups.length === 0 && (
           <View style={styles.emptyTabState}>
-            <Ionicons name="checkmark-circle-outline" size={48} color={COLORS.gray[300]} />
-            <Text style={styles.emptyTabText}>
+            <Ionicons name="checkmark-circle-outline" size={48} color={colors.gray[300]} />
+            <Text style={[styles.emptyTabText, { color: colors.textSecondary }]}>
               {t('vaccines.noCompletedVaccines', 'No vaccines have been completed yet')}
             </Text>
           </View>
@@ -749,6 +752,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
     maxHeight: '80%',
+  },
+  modalScrollView: {
+    flexGrow: 0,
+  },
+  modalScrollContent: {
+    paddingBottom: SPACING.md,
   },
   modalHeader: {
     flexDirection: 'row',

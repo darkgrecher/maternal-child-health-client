@@ -25,7 +25,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 
-import { useChildStore } from '../stores';
+import { useChildStore, useThemeStore } from '../stores';
 import { Card } from '../components/common';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, FONT_WEIGHT } from '../constants';
 import { ChildProfile, RootStackParamList } from '../types';
@@ -78,6 +78,7 @@ interface FormData {
 const EditProfileScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
+  const { colors } = useThemeStore();
   const route = useRoute<EditProfileRouteProp>();
   const insets = useSafeAreaInsets();
   
@@ -222,13 +223,13 @@ const EditProfileScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Custom Header with back button */}
       <View style={[styles.headerContainer, { paddingTop: insets.top + SPACING.sm }]}>
         <TouchableOpacity style={styles.headerButton} onPress={handleCancel}>
-          <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+          <Ionicons name="close" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>
@@ -240,9 +241,9 @@ const EditProfileScreen: React.FC = () => {
         </View>
         <TouchableOpacity style={styles.headerButton} onPress={handleSave} disabled={isSaving}>
           {isSaving ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <Ionicons name="checkmark" size={24} color={COLORS.primary} />
+            <Ionicons name="checkmark" size={24} color={colors.primary} />
           )}
         </TouchableOpacity>
       </View>
@@ -265,7 +266,7 @@ const EditProfileScreen: React.FC = () => {
                 value={formData.firstName}
                 onChangeText={(text) => updateField('firstName', text)}
                 placeholder={t('editProfile.firstNamePlaceholder', 'Enter first name')}
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
             <View style={styles.halfField}>
@@ -275,7 +276,7 @@ const EditProfileScreen: React.FC = () => {
                 value={formData.lastName}
                 onChangeText={(text) => updateField('lastName', text)}
                 placeholder={t('editProfile.lastNamePlaceholder', 'Enter last name')}
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
           </View>
@@ -286,7 +287,7 @@ const EditProfileScreen: React.FC = () => {
               style={styles.dateButton}
               onPress={() => setShowDatePicker(true)}
             >
-              <Ionicons name="calendar-outline" size={20} color={COLORS.textSecondary} />
+              <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
               <Text style={styles.dateText}>
                 {format(formData.dateOfBirth, 'MMMM d, yyyy')}
               </Text>
@@ -304,7 +305,7 @@ const EditProfileScreen: React.FC = () => {
                 <View style={styles.datePickerHeader}>
                   <Text style={styles.datePickerTitle}>{t('editProfile.selectDate', 'Select Date')}</Text>
                   <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                    <Text style={styles.datePickerDone}>{t('common.done', 'Done')}</Text>
+                    <Text style={[styles.datePickerDone, { color: colors.primary }]}>{t('common.done', 'Done')}</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.dateInputRow}>
@@ -366,7 +367,10 @@ const EditProfileScreen: React.FC = () => {
                   key={option.value}
                   style={[
                     styles.optionButton,
-                    formData.gender === option.value && styles.optionButtonSelected,
+                    formData.gender === option.value && {
+                      backgroundColor: colors.primary,
+                      borderColor: colors.primary,
+                    },
                   ]}
                   onPress={() => updateField('gender', option.value as 'male' | 'female')}
                 >
@@ -388,7 +392,7 @@ const EditProfileScreen: React.FC = () => {
               value={formData.chdrNumber}
               onChangeText={(text) => updateField('chdrNumber', text)}
               placeholder={t('editProfile.chdrPlaceholder', 'Enter CHDR number')}
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
         </Card>
@@ -405,7 +409,7 @@ const EditProfileScreen: React.FC = () => {
                 value={formData.birthWeight}
                 onChangeText={(text) => updateField('birthWeight', text)}
                 placeholder="e.g., 3.2"
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="decimal-pad"
               />
             </View>
@@ -416,7 +420,7 @@ const EditProfileScreen: React.FC = () => {
                 value={formData.birthHeight}
                 onChangeText={(text) => updateField('birthHeight', text)}
                 placeholder="e.g., 50"
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="decimal-pad"
               />
             </View>
@@ -430,7 +434,10 @@ const EditProfileScreen: React.FC = () => {
                   key={option.value}
                   style={[
                     styles.smallOptionButton,
-                    formData.bloodType === option.value && styles.optionButtonSelected,
+                    formData.bloodType === option.value && {
+                      backgroundColor: colors.primary,
+                      borderColor: colors.primary,
+                    },
                   ]}
                   onPress={() => updateField('bloodType', option.value)}
                 >
@@ -449,7 +456,10 @@ const EditProfileScreen: React.FC = () => {
                   key={option.value}
                   style={[
                     styles.smallOptionButton,
-                    formData.bloodType === option.value && styles.optionButtonSelected,
+                    formData.bloodType === option.value && {
+                      backgroundColor: colors.primary,
+                      borderColor: colors.primary,
+                    },
                   ]}
                   onPress={() => updateField('bloodType', option.value)}
                 >
@@ -471,7 +481,7 @@ const EditProfileScreen: React.FC = () => {
               value={formData.placeOfBirth}
               onChangeText={(text) => updateField('placeOfBirth', text)}
               placeholder={t('editProfile.placeOfBirthPlaceholder', 'Enter hospital/location')}
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
 
@@ -483,7 +493,10 @@ const EditProfileScreen: React.FC = () => {
                   key={option.value}
                   style={[
                     styles.optionButton,
-                    formData.deliveryType === option.value && styles.optionButtonSelected,
+                    formData.deliveryType === option.value && {
+                      backgroundColor: colors.primary,
+                      borderColor: colors.primary,
+                    },
                   ]}
                   onPress={() => updateField('deliveryType', option.value)}
                 >
@@ -510,7 +523,7 @@ const EditProfileScreen: React.FC = () => {
               value={formData.allergies}
               onChangeText={(text) => updateField('allergies', text)}
               placeholder={t('editProfile.allergiesPlaceholder', 'Enter allergies separated by commas')}
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               multiline
             />
           </View>
@@ -522,7 +535,7 @@ const EditProfileScreen: React.FC = () => {
               value={formData.specialConditions}
               onChangeText={(text) => updateField('specialConditions', text)}
               placeholder={t('editProfile.conditionsPlaceholder', 'Enter conditions separated by commas')}
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               multiline
             />
           </View>
@@ -539,7 +552,7 @@ const EditProfileScreen: React.FC = () => {
               value={formData.motherName}
               onChangeText={(text) => updateField('motherName', text)}
               placeholder={t('editProfile.motherNamePlaceholder', "Enter mother's name")}
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
 
@@ -550,7 +563,7 @@ const EditProfileScreen: React.FC = () => {
               value={formData.fatherName}
               onChangeText={(text) => updateField('fatherName', text)}
               placeholder={t('editProfile.fatherNamePlaceholder', "Enter father's name")}
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
 
@@ -561,7 +574,7 @@ const EditProfileScreen: React.FC = () => {
               value={formData.emergencyContact}
               onChangeText={(text) => updateField('emergencyContact', text)}
               placeholder={t('editProfile.emergencyPlaceholder', 'Enter phone number')}
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               keyboardType="phone-pad"
             />
           </View>
@@ -573,7 +586,7 @@ const EditProfileScreen: React.FC = () => {
               value={formData.address}
               onChangeText={(text) => updateField('address', text)}
               placeholder={t('editProfile.addressPlaceholder', 'Enter address')}
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               multiline
             />
           </View>
@@ -581,15 +594,19 @@ const EditProfileScreen: React.FC = () => {
 
         {/* Save Button */}
         <TouchableOpacity 
-          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+          style={[
+            styles.saveButton, 
+            { backgroundColor: colors.primary },
+            isSaving && styles.saveButtonDisabled
+          ]}
           onPress={handleSave}
           disabled={isSaving}
         >
           {isSaving ? (
-            <ActivityIndicator color={COLORS.white} />
+            <ActivityIndicator color={colors.white} />
           ) : (
             <>
-              <Ionicons name="checkmark-circle" size={24} color={COLORS.white} />
+              <Ionicons name="checkmark-circle" size={24} color={colors.white} />
               <Text style={styles.saveButtonText}>
                 {isNew 
                   ? t('editProfile.createButton', 'Create Profile') 
@@ -610,7 +627,7 @@ const EditProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    // backgroundColor applied dynamically via inline styles
   },
   headerContainer: {
     flexDirection: 'row',
@@ -729,8 +746,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   optionButtonSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    // Colors applied dynamically via inline styles
   },
   optionText: {
     fontSize: FONT_SIZE.sm,
@@ -744,7 +760,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primary,
+    // backgroundColor applied dynamically via inline styles
     paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     marginTop: SPACING.lg,
@@ -784,7 +800,7 @@ const styles = StyleSheet.create({
   datePickerDone: {
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.semibold,
-    color: COLORS.primary,
+    // color applied dynamically via inline styles
   },
   dateInputRow: {
     flexDirection: 'row',

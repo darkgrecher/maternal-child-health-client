@@ -20,7 +20,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, Header, SectionTitle, FloatingChatButton, Avatar } from '../components/common';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
-import { useChildStore } from '../stores';
+import { useChildStore, useThemeStore } from '../stores';
 import { RootStackParamList } from '../types';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -45,6 +45,7 @@ const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const currentLanguage = i18n.language;
   const { children, profile, selectChild, deleteChild } = useChildStore();
+  const { colors } = useThemeStore();
 
   const handleLanguageChange = async (languageCode: string) => {
     try {
@@ -97,12 +98,12 @@ const SettingsScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         title={t('settings.title', 'Settings')} 
         subtitle={t('settings.subtitle', 'App Preferences')}
         icon="settings-outline"
-        iconColor={COLORS.primary}
+        iconColor={colors.primary}
         rightIcon="notifications-outline"
         onRightPress={() => {
           // TODO: Navigate to notifications
@@ -119,7 +120,7 @@ const SettingsScreen: React.FC = () => {
           <SectionTitle 
             title={t('settings.childProfiles', 'Child Profiles')} 
             icon="people-outline"
-            iconColor={COLORS.primary}
+            iconColor={colors.primary}
           />
           
           <Text style={styles.sectionDescription}>
@@ -153,7 +154,7 @@ const SettingsScreen: React.FC = () => {
                       </Text>
                     </View>
                     {isSelected && (
-                      <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+                      <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                     )}
                   </TouchableOpacity>
                   
@@ -162,7 +163,7 @@ const SettingsScreen: React.FC = () => {
                       style={styles.deleteButton}
                       onPress={() => handleDeleteChild(child.id, child.firstName)}
                     >
-                      <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+                      <Ionicons name="trash-outline" size={20} color={colors.error} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -175,8 +176,8 @@ const SettingsScreen: React.FC = () => {
             style={styles.addChildButton}
             onPress={handleAddChild}
           >
-            <View style={styles.addChildIcon}>
-              <Ionicons name="add" size={24} color={COLORS.primary} />
+            <View style={[styles.addChildIcon, { backgroundColor: colors.primaryLight }]}>
+              <Ionicons name="add" size={24} color={colors.primary} />
             </View>
             <View style={styles.addChildTextContainer}>
               <Text style={styles.addChildTitle}>
@@ -186,7 +187,7 @@ const SettingsScreen: React.FC = () => {
                 {t('settings.addAnotherChildDescription', 'Add profile for twins, siblings, or another child')}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+            <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
           </TouchableOpacity>
         </Card>
 
@@ -195,7 +196,7 @@ const SettingsScreen: React.FC = () => {
           <SectionTitle 
             title={t('settings.language', 'Language')} 
             icon="language-outline"
-            iconColor={COLORS.info}
+            iconColor={colors.info}
           />
           
           <View style={styles.languageList}>
@@ -231,7 +232,7 @@ const SettingsScreen: React.FC = () => {
                       <Ionicons 
                         name="checkmark-circle" 
                         size={24} 
-                        color={COLORS.primary} 
+                        color={colors.primary} 
                       />
                     </View>
                   )}
@@ -246,7 +247,7 @@ const SettingsScreen: React.FC = () => {
           <SectionTitle 
             title={t('settings.about', 'About')} 
             icon="information-circle-outline"
-            iconColor={COLORS.success}
+            iconColor={colors.success}
           />
           
           <View style={styles.aboutItem}>

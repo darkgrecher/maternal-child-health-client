@@ -28,7 +28,7 @@ import { format } from 'date-fns';
 import Svg, { Line, Path, Circle, G, Text as SvgText } from 'react-native-svg';
 
 import { Card, Header, SectionTitle, Button, FloatingChatButton } from '../components/common';
-import { useChildStore, useGrowthStore } from '../stores';
+import { useChildStore, useGrowthStore, useThemeStore } from '../stores';
 import { RootStackParamList, TabParamList } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { GrowthMeasurement, ChartData } from '../services/growthService';
@@ -56,13 +56,15 @@ const StatCard: React.FC<{
   percentile: number | null;
   label: string;
 }> = ({ icon, iconColor, value, unit, percentile, label }) => {
+  const { colors } = useThemeStore();
+  
   const getPercentileColor = (p: number | null) => {
-    if (p === null) return COLORS.textSecondary;
-    if (p < 3) return COLORS.error;
-    if (p < 15) return COLORS.warning;
-    if (p > 97) return COLORS.error;
-    if (p > 85) return COLORS.warning;
-    return COLORS.success;
+    if (p === null) return colors.textSecondary;
+    if (p < 3) return colors.error;
+    if (p < 15) return colors.warning;
+    if (p > 97) return colors.error;
+    if (p > 85) return colors.warning;
+    return colors.success;
   };
 
   return (
@@ -91,11 +93,12 @@ const GrowthChart: React.FC<{
   chartType: ChartType;
 }> = ({ chartData, isLoading, chartType }) => {
   const { t } = useTranslation();
+  const { colors } = useThemeStore();
 
   if (isLoading) {
     return (
       <View style={styles.chartPlaceholder}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.chartPlaceholderText}>{t('common.loading')}</Text>
       </View>
     );
@@ -104,7 +107,7 @@ const GrowthChart: React.FC<{
   if (!chartData || chartData.dataPoints.length === 0) {
     return (
       <View style={styles.chartPlaceholder}>
-        <Ionicons name="analytics-outline" size={48} color={COLORS.gray[300]} />
+        <Ionicons name="analytics-outline" size={48} color={colors.gray[300]} />
         <Text style={styles.chartPlaceholderText}>{t('growth.noMeasurements')}</Text>
         <Text style={styles.chartPlaceholderSubtext}>{t('growth.addFirstMeasurement')}</Text>
       </View>
@@ -118,7 +121,7 @@ const GrowthChart: React.FC<{
   if (dataPoints.length === 0) {
     return (
       <View style={styles.chartPlaceholder}>
-        <Ionicons name="analytics-outline" size={48} color={COLORS.gray[300]} />
+        <Ionicons name="analytics-outline" size={48} color={colors.gray[300]} />
         <Text style={styles.chartPlaceholderText}>{t('growth.noMeasurements')}</Text>
         <Text style={styles.chartPlaceholderSubtext}>{t('growth.addFirstMeasurement')}</Text>
       </View>
@@ -203,7 +206,7 @@ const GrowthChart: React.FC<{
         <Path
           d={generatePath(chartData.referenceData.p3)}
           fill="none"
-          stroke={COLORS.error}
+          stroke={colors.error}
           strokeWidth="1"
           strokeDasharray="4,2"
           opacity={0.5}
@@ -211,7 +214,7 @@ const GrowthChart: React.FC<{
         <Path
           d={generatePath(chartData.referenceData.p15)}
           fill="none"
-          stroke={COLORS.warning}
+          stroke={colors.warning}
           strokeWidth="1"
           strokeDasharray="4,2"
           opacity={0.5}
@@ -219,14 +222,14 @@ const GrowthChart: React.FC<{
         <Path
           d={generatePath(chartData.referenceData.p50)}
           fill="none"
-          stroke={COLORS.success}
+          stroke={colors.success}
           strokeWidth="2"
           opacity={0.7}
         />
         <Path
           d={generatePath(chartData.referenceData.p85)}
           fill="none"
-          stroke={COLORS.warning}
+          stroke={colors.warning}
           strokeWidth="1"
           strokeDasharray="4,2"
           opacity={0.5}
@@ -234,7 +237,7 @@ const GrowthChart: React.FC<{
         <Path
           d={generatePath(chartData.referenceData.p97)}
           fill="none"
-          stroke={COLORS.error}
+          stroke={colors.error}
           strokeWidth="1"
           strokeDasharray="4,2"
           opacity={0.5}
@@ -245,7 +248,7 @@ const GrowthChart: React.FC<{
           <Path
             d={dataPath}
             fill="none"
-            stroke={COLORS.primary}
+            stroke={colors.primary}
             strokeWidth="2"
           />
         )}
@@ -257,8 +260,8 @@ const GrowthChart: React.FC<{
             cx={scaleX(p.ageInMonths)}
             cy={scaleY(p.value as number)}
             r="5"
-            fill={COLORS.primary}
-            stroke={COLORS.white}
+            fill={colors.primary}
+            stroke={colors.white}
             strokeWidth="2"
           />
         ))}
@@ -270,7 +273,7 @@ const GrowthChart: React.FC<{
             x={CHART_PADDING.left - 5}
             y={scaleY(value) + 4}
             fontSize="10"
-            fill={COLORS.textSecondary}
+            fill={colors.textSecondary}
             textAnchor="end"
           >
             {value.toFixed(1)}
@@ -284,7 +287,7 @@ const GrowthChart: React.FC<{
             x={scaleX(age)}
             y={CHART_HEIGHT - 10}
             fontSize="10"
-            fill={COLORS.textSecondary}
+            fill={colors.textSecondary}
             textAnchor="middle"
           >
             {age}m
@@ -295,19 +298,19 @@ const GrowthChart: React.FC<{
       {/* Legend */}
       <View style={styles.chartLegend}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
           <Text style={styles.legendText}>{t('growth.yourChild')}</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendLine, { backgroundColor: COLORS.success }]} />
+          <View style={[styles.legendLine, { backgroundColor: colors.success }]} />
           <Text style={styles.legendText}>50th</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendLine, { backgroundColor: COLORS.warning }]} />
+          <View style={[styles.legendLine, { backgroundColor: colors.warning }]} />
           <Text style={styles.legendText}>15th/85th</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendLine, { backgroundColor: COLORS.error }]} />
+          <View style={[styles.legendLine, { backgroundColor: colors.error }]} />
           <Text style={styles.legendText}>3rd/97th</Text>
         </View>
       </View>
@@ -323,6 +326,7 @@ const MeasurementItem: React.FC<{
   onDelete: (id: string) => void;
 }> = ({ measurement, onDelete }) => {
   const { t } = useTranslation();
+  const { colors } = useThemeStore();
 
   return (
     <View style={styles.measurementItem}>
@@ -352,7 +356,7 @@ const MeasurementItem: React.FC<{
         style={styles.deleteButton}
         onPress={() => onDelete(measurement.id)}
       >
-        <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+        <Ionicons name="trash-outline" size={18} color={colors.error} />
       </TouchableOpacity>
     </View>
   );
@@ -368,6 +372,7 @@ const AddMeasurementModal: React.FC<{
   isLoading: boolean;
 }> = ({ visible, onClose, onSubmit, isLoading }) => {
   const { t } = useTranslation();
+  const { colors } = useThemeStore();
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
   const [headCircumference, setHeadCircumference] = useState('');
@@ -405,11 +410,11 @@ const AddMeasurementModal: React.FC<{
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: colors.white }]}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{t('growth.addMeasurement')}</Text>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('growth.addMeasurement')}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -481,6 +486,7 @@ const ChartTypeSelector: React.FC<{
   onSelect: (type: ChartType) => void;
 }> = ({ selected, onSelect }) => {
   const { t } = useTranslation();
+  const { colors } = useThemeStore();
 
   const options: Array<{ key: ChartType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
     { key: 'weight', label: t('growth.weight'), icon: 'scale-outline' },
@@ -495,19 +501,19 @@ const ChartTypeSelector: React.FC<{
           key={option.key}
           style={[
             styles.chartTypeButton,
-            selected === option.key && styles.chartTypeButtonActive,
+            selected === option.key && [styles.chartTypeButtonActive, { backgroundColor: colors.primary }],
           ]}
           onPress={() => onSelect(option.key)}
         >
           <Ionicons
             name={option.icon}
             size={18}
-            color={selected === option.key ? COLORS.white : COLORS.textSecondary}
+            color={selected === option.key ? colors.white : colors.textSecondary}
           />
           <Text
             style={[
               styles.chartTypeLabel,
-              selected === option.key && styles.chartTypeLabelActive,
+              selected === option.key && [styles.chartTypeLabelActive, { color: colors.white }],
             ]}
           >
             {option.label}
@@ -528,6 +534,7 @@ const GrowthScreen: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   
   const { profile } = useChildStore();
+  const { colors } = useThemeStore();
   const {
     growthData,
     chartData,
@@ -610,27 +617,27 @@ const GrowthScreen: React.FC = () => {
 
   if (isLoading && !growthData) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Header 
           title={t('growth.title')} 
           subtitle={t('growth.subtitle')}
           icon="trending-up-outline"
-          iconColor={COLORS.success}
+          iconColor={colors.success}
         />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         title={t('growth.title')} 
         subtitle={t('growth.subtitle')}
         icon="trending-up-outline"
-        iconColor={COLORS.success}
+        iconColor={colors.success}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
           // TODO: Navigate to notifications
@@ -654,7 +661,7 @@ const GrowthScreen: React.FC = () => {
         <View style={styles.statsRow}>
           <StatCard 
             icon="scale-outline"
-            iconColor={COLORS.info}
+            iconColor={colors.info}
             value={latestMeasurement?.weight?.toString() || '-'}
             unit="kg"
             percentile={latestMeasurement?.weightPercentile || null}
@@ -662,7 +669,7 @@ const GrowthScreen: React.FC = () => {
           />
           <StatCard 
             icon="resize-outline"
-            iconColor={COLORS.success}
+            iconColor={colors.success}
             value={latestMeasurement?.height?.toString() || '-'}
             unit="cm"
             percentile={latestMeasurement?.heightPercentile || null}
@@ -670,7 +677,7 @@ const GrowthScreen: React.FC = () => {
           />
           <StatCard 
             icon="ellipse-outline"
-            iconColor={COLORS.warning}
+            iconColor={colors.warning}
             value={latestMeasurement?.headCircumference?.toString() || '-'}
             unit="cm"
             percentile={latestMeasurement?.headCircumferencePercentile || null}
@@ -716,7 +723,7 @@ const GrowthScreen: React.FC = () => {
             ))
           ) : (
             <View style={styles.emptyHistory}>
-              <Ionicons name="document-text-outline" size={32} color={COLORS.gray[300]} />
+              <Ionicons name="document-text-outline" size={32} color={colors.gray[300]} />
               <Text style={styles.emptyHistoryText}>{t('growth.noHistory')}</Text>
             </View>
           )}
@@ -724,10 +731,10 @@ const GrowthScreen: React.FC = () => {
 
         {/* Growth Status Card */}
         {latestMeasurement && (
-          <Card style={styles.growthStatusCard}>
+          <Card style={{ ...styles.growthStatusCard, backgroundColor: colors.success + '10' }}>
             <View style={styles.growthStatusContent}>
-              <View style={styles.growthStatusIcon}>
-                <Ionicons name="trending-up" size={24} color={COLORS.success} />
+              <View style={[styles.growthStatusIcon, { backgroundColor: colors.success + '20' }]}>
+                <Ionicons name="trending-up" size={24} color={colors.success} />
               </View>
               <View style={styles.growthStatusText}>
                 <Text style={styles.growthStatusTitle}>{t('growth.growthStatus')}</Text>

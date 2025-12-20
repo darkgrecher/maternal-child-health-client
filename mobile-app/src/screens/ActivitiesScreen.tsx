@@ -21,7 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, Header } from '../components/common';
-import { useActivityStore, useChildStore } from '../stores';
+import { useActivityStore, useChildStore, useThemeStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList } from '../types';
 import { format } from 'date-fns';
@@ -32,6 +32,7 @@ const ActivitiesScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<ActivitiesScreenNavigationProp>();
+  const { colors } = useThemeStore();
   
   const { profile } = useChildStore();
   const { activities, isLoading, fetchActivities, deleteActivity } = useActivityStore();
@@ -55,12 +56,12 @@ const ActivitiesScreen: React.FC = () => {
 
   const getActivityColor = (type: string): string => {
     switch (type) {
-      case 'vaccination': return COLORS.info;
-      case 'growth': return COLORS.success;
-      case 'milestone': return COLORS.warning;
-      case 'appointment': return COLORS.primary;
-      case 'checkup': return COLORS.primary;
-      default: return COLORS.gray[500];
+      case 'vaccination': return colors.info;
+      case 'growth': return colors.success;
+      case 'milestone': return colors.warning;
+      case 'appointment': return colors.primary;
+      case 'checkup': return colors.primary;
+      default: return colors.gray[500];
     }
   };
 
@@ -111,12 +112,12 @@ const ActivitiesScreen: React.FC = () => {
       >
         {isLoading && activities.length === 0 ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
           </View>
         ) : activities.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="document-text-outline" size={64} color={COLORS.gray[300]} />
+            <Ionicons name="document-text-outline" size={64} color={colors.gray[300]} />
             <Text style={styles.emptyTitle}>{t('activities.noActivities', 'No Activities Yet')}</Text>
             <Text style={styles.emptySubtitle}>
               {t('activities.noActivitiesMessage', 'Activities will appear here as you add them')}
@@ -150,7 +151,7 @@ const ActivitiesScreen: React.FC = () => {
                       onPress={() => handleDelete(activity.id, activity.title)}
                       style={styles.deleteButton}
                     >
-                      <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+                      <Ionicons name="trash-outline" size={20} color={colors.error} />
                     </TouchableOpacity>
                   </View>
                   {activity.description && (

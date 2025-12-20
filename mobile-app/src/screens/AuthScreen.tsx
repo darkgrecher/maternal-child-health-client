@@ -27,12 +27,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth0 } from '../services/auth0Service';
 import { useAuthStore } from '../stores/auth0Store';
+import { useThemeStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../constants';
 
 type AuthMode = 'login' | 'signup';
 
 export const AuthScreen: React.FC = () => {
   const { t } = useTranslation();
+  const { colors } = useThemeStore();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -180,11 +182,12 @@ export const AuthScreen: React.FC = () => {
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Ionicons name="heart" size={48} color={COLORS.primary} />
+              <Ionicons name="heart" size={48} color={colors.primary} />
             </View>
             <Text style={styles.title}>
               {t('app.name', 'Maternal & Child Health')}
@@ -201,11 +204,11 @@ export const AuthScreen: React.FC = () => {
             {/* Name field (signup only) */}
             {mode === 'signup' && (
               <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+                <Ionicons name="person-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder={t('auth.namePlaceholder', 'Full Name')}
-                  placeholderTextColor={COLORS.textLight}
+                  placeholderTextColor={colors.textLight}
                   value={name}
                   onChangeText={setName}
                   autoCapitalize="words"
@@ -216,11 +219,11 @@ export const AuthScreen: React.FC = () => {
 
             {/* Email field */}
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+              <Ionicons name="mail-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder={t('auth.emailPlaceholder', 'Email Address')}
-                placeholderTextColor={COLORS.textLight}
+                placeholderTextColor={colors.textLight}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -232,11 +235,11 @@ export const AuthScreen: React.FC = () => {
 
             {/* Password field */}
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder={t('auth.passwordPlaceholder', 'Password')}
-                placeholderTextColor={COLORS.textLight}
+                placeholderTextColor={colors.textLight}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -250,7 +253,7 @@ export const AuthScreen: React.FC = () => {
                 <Ionicons 
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
                   size={20} 
-                  color={COLORS.textSecondary} 
+                  color={colors.textSecondary} 
                 />
               </TouchableOpacity>
             </View>
@@ -258,11 +261,11 @@ export const AuthScreen: React.FC = () => {
             {/* Confirm Password field (signup only) */}
             {mode === 'signup' && (
               <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder={t('auth.confirmPasswordPlaceholder', 'Confirm Password')}
-                  placeholderTextColor={COLORS.textLight}
+                  placeholderTextColor={colors.textLight}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!showPassword}
@@ -285,7 +288,7 @@ export const AuthScreen: React.FC = () => {
               activeOpacity={0.8}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
+                <ActivityIndicator size="small" color={colors.white} />
               ) : (
                 <Text style={styles.primaryButtonText}>
                   {mode === 'login' 
@@ -354,7 +357,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.xl,
-    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',

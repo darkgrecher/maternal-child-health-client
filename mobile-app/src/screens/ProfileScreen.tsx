@@ -22,7 +22,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format } from 'date-fns';
 
 import { Card, Header, Avatar, SectionTitle, InfoRow, Badge, FloatingChatButton } from '../components/common';
-import { useChildStore, useAuthStore } from '../stores';
+import { useChildStore, useAuthStore, useThemeStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList } from '../types';
 
@@ -36,6 +36,7 @@ const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { profile, children, isLoading, fetchChildren, getChildAgeDisplay } = useChildStore();
   const { user, logout } = useAuthStore();
+  const { colors } = useThemeStore();
   const ageDisplay = getChildAgeDisplay();
 
   // Fetch children data on mount
@@ -70,15 +71,15 @@ const ProfileScreen: React.FC = () => {
 
   if (isLoading && !profile) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Header 
           title={t('profile.title')} 
           subtitle={t('profile.subtitle')}
           icon="person-circle-outline"
-          iconColor={COLORS.primary}
+          iconColor={colors.primary}
         />
         <View style={styles.loadingState}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
         </View>
       </View>
@@ -87,19 +88,19 @@ const ProfileScreen: React.FC = () => {
 
   if (!profile) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Header 
           title={t('profile.title')} 
           subtitle={t('profile.subtitle')}
           icon="person-circle-outline"
-          iconColor={COLORS.primary}
+          iconColor={colors.primary}
         />
         <View style={styles.emptyState}>
-          <Ionicons name="person-add-outline" size={64} color={COLORS.gray[300]} />
+          <Ionicons name="person-add-outline" size={64} color={colors.gray[300]} />
           <Text style={styles.emptyTitle}>{t('profile.noChildTitle', 'No Child Profile')}</Text>
           <Text style={styles.emptyText}>{t('profile.noChildMessage', 'Add your child\'s information to get started')}</Text>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddChild}>
-            <Ionicons name="add-circle-outline" size={24} color={COLORS.white} />
+          <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary }]} onPress={handleAddChild}>
+            <Ionicons name="add-circle-outline" size={24} color={colors.white} />
             <Text style={styles.addButtonText}>{t('profile.addChild', 'Add Child')}</Text>
           </TouchableOpacity>
         </View>
@@ -108,12 +109,12 @@ const ProfileScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         title={t('profile.title')} 
         subtitle={t('profile.subtitle')}
         icon="person-circle-outline"
-        iconColor={COLORS.primary}
+        iconColor={colors.primary}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
           // TODO: Navigate to notifications
@@ -149,7 +150,7 @@ const ProfileScreen: React.FC = () => {
             <View style={styles.genderBadgeContainer}>
               <View style={[
                 styles.genderBadge,
-                { backgroundColor: profile.gender === 'female' ? COLORS.primary : COLORS.info }
+                { backgroundColor: colors.primary }
               ]}>
                 <Text style={styles.genderBadgeText}>
                   {profile.gender === 'female' ? t('profile.female') : t('profile.male')}
@@ -157,11 +158,11 @@ const ProfileScreen: React.FC = () => {
               </View>
             </View>
             <TouchableOpacity 
-              style={styles.editButton}
+              style={[styles.editButton, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}
               onPress={handleEditProfile}
             >
-              <Ionicons name="create-outline" size={20} color={COLORS.primary} />
-              <Text style={styles.editButtonText}>{t('profile.editProfile', 'Edit Profile')}</Text>
+              <Ionicons name="create-outline" size={20} color={colors.primary} />
+              <Text style={[styles.editButtonText, { color: colors.primary }]}>{t('profile.editProfile', 'Edit Profile')}</Text>
             </TouchableOpacity>
           </View>
         </Card>
@@ -171,7 +172,7 @@ const ProfileScreen: React.FC = () => {
           <SectionTitle 
             title={t('profile.birthInfo')} 
             icon="gift-outline"
-            iconColor={COLORS.primary}
+            iconColor={colors.primary}
           />
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
@@ -194,7 +195,7 @@ const ProfileScreen: React.FC = () => {
           <SectionTitle 
             title={t('profile.medicalInfo')} 
             icon="heart-outline"
-            iconColor={COLORS.error}
+            iconColor={colors.error}
           />
           <View style={styles.singleInfo}>
             <Text style={styles.infoLabel}>{t('profile.allergies')}</Text>
@@ -221,7 +222,7 @@ const ProfileScreen: React.FC = () => {
           <SectionTitle 
             title={t('profile.familyInfo')} 
             icon="people-outline"
-            iconColor={COLORS.info}
+            iconColor={colors.info}
           />
           <View style={styles.singleInfo}>
             <Text style={styles.infoLabel}>{t('profile.motherName')}</Text>
@@ -242,7 +243,7 @@ const ProfileScreen: React.FC = () => {
           <SectionTitle 
             title={t('profile.healthcareProviders')} 
             icon="medical-outline"
-            iconColor={COLORS.warning}
+            iconColor={colors.warning}
           />
           {profile.assignedMidwife && (
             <View style={styles.providerItem}>
@@ -263,7 +264,7 @@ const ProfileScreen: React.FC = () => {
           <SectionTitle 
             title={t('profile.account', 'Account')} 
             icon="person-outline"
-            iconColor={COLORS.info}
+            iconColor={colors.info}
           />
           {user && (
             <View style={styles.singleInfo}>
@@ -278,8 +279,8 @@ const ProfileScreen: React.FC = () => {
             style={styles.logoutButton}
             onPress={handleLogout}
           >
-            <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
-            <Text style={styles.logoutText}>{t('auth.logout', 'Sign Out')}</Text>
+            <Ionicons name="log-out-outline" size={20} color={colors.error} />
+            <Text style={[styles.logoutText, { color: colors.error }]}>{t('auth.logout', 'Sign Out')}</Text>
           </TouchableOpacity>
         </Card>
 
