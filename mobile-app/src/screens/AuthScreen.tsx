@@ -356,11 +356,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.xl,
+    paddingTop: SPACING.xl * 3,
+    paddingBottom: SPACING.xl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   logoContainer: {
     width: 80,

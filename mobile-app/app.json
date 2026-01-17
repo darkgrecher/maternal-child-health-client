@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.maternalchildapp"
+      "bundleIdentifier": "com.yourcompany.maternalchildapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -35,7 +38,13 @@
     },
     "owner": "darkgrechers-organization",
     "plugins": [
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-auth0",
+        {
+          "domain": "dev-e5znz5x47bkxbit3.us.auth0.com"
+        }
+      ]
     ]
   }
 }
