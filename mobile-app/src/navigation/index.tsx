@@ -100,11 +100,12 @@ const TabNavigator: React.FC = () => {
           borderTopColor: colors.gray[100],
           paddingTop: 8,
           paddingBottom: 8,
-          height: 65,
+          height: 90,
         },
         tabBarLabelStyle: {
           fontSize: FONT_SIZE.xs,
           marginTop: 4,
+          marginBottom: 8,
         },
       })}
     >
