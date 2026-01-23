@@ -24,6 +24,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
+import * as Contacts from 'expo-contacts';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,8 +35,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton } from '../components/common';
 import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
-import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore } from '../stores';
-import { mockActivities, mockEmergencyContacts, mockHealthTip } from '../data/mockData';
+import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore, useEmergencyContactStore } from '../stores';
+import { mockActivities, mockHealthTip } from '../data/mockData';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList, TabParamList, Activity } from '../types';
 import { format } from 'date-fns';
@@ -74,6 +75,7 @@ const HomeScreen: React.FC = () => {
   const { getLatestMeasurement: getLatestGrowthMeasurement, fetchGrowthData } = useGrowthStore();
   const { activities, fetchActivities, createActivity, deleteActivity: deleteActivityFromStore, getRecentActivities } = useActivityStore();
   const { colors } = useThemeStore();
+  const { contacts: emergencyContacts, fetchContacts: fetchEmergencyContacts, createContact: createEmergencyContact, deleteContact: deleteEmergencyContact } = useEmergencyContactStore();
 
   // Dynamic activity color function using theme colors
   const getActivityColorDynamic = (type: string): string => {
@@ -151,6 +153,7 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     if (accessToken) {
       fetchChildren();
+      fetchEmergencyContacts();
     }
   }, [accessToken]);
 
@@ -196,6 +199,129 @@ const HomeScreen: React.FC = () => {
    */
   const handleCall = (phone: string) => {
     Linking.openURL(`tel:${phone}`);
+  };
+
+  /**
+   * Handle adding contact from phonebook
+   */
+  const handleAddContactFromPhonebook = async () => {
+    try {
+      // Request permission to access contacts
+      const { status } = await Contacts.requestPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          t('home.permissionDenied', 'Permission Denied'),
+          t('home.contactsPermissionMessage', 'Please allow access to contacts to add emergency contacts from your phonebook.')
+        );
+        return;
+      }
+
+      // Open contact picker
+      const contact = await Contacts.presentContactPickerAsync();
+      
+      if (contact) {
+        // Get the first phone number
+        const phoneNumber = contact.phoneNumbers?.[0]?.number;
+        
+        if (!phoneNumber) {
+          Alert.alert(
+            t('common.error', 'Error'),
+            t('home.noPhoneNumber', 'This contact has no phone number.')
+          );
+          return;
+        }
+
+        // Show dialog to confirm and select role
+        Alert.alert(
+          t('home.addEmergencyContact', 'Add Emergency Contact'),
+          t('home.confirmAddContact', `Add ${contact.name} as an emergency contact?`),
+          [
+            {
+              text: t('common.cancel', 'Cancel'),
+              style: 'cancel',
+            },
+            {
+              text: t('home.addAsDoctor', 'Doctor'),
+              onPress: () => saveEmergencyContact(contact.name || 'Unknown', 'Doctor', phoneNumber),
+            },
+            {
+              text: t('home.addAsMidwife', 'Midwife'),
+              onPress: () => saveEmergencyContact(contact.name || 'Unknown', 'Midwife', phoneNumber),
+            },
+            {
+              text: t('home.addAsFamily', 'Family'),
+              onPress: () => saveEmergencyContact(contact.name || 'Unknown', 'Family Member', phoneNumber),
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error accessing contacts:', error);
+      Alert.alert(
+        t('common.error', 'Error'),
+        t('home.contactsError', 'Failed to access contacts. Please try again.')
+      );
+    }
+  };
+
+  /**
+   * Save emergency contact to backend
+   */
+  const saveEmergencyContact = async (name: string, role: string, phone: string) => {
+    try {
+      await createEmergencyContact({
+        name,
+        role,
+        phone,
+        isPrimary: false,
+      });
+      Alert.alert(
+        t('common.success', 'Success'),
+        t('home.contactAdded', `${name} has been added to your emergency contacts.`)
+      );
+    } catch (error) {
+      console.error('Error saving emergency contact:', error);
+      Alert.alert(
+        t('common.error', 'Error'),
+        t('home.saveContactError', 'Failed to save emergency contact. Please try again.')
+      );
+    }
+  };
+
+  /**
+   * Handle long press on emergency contact to delete
+   */
+  const handleLongPressEmergencyContact = (contactId: string, contactName: string, isDefault: boolean) => {
+    if (isDefault) {
+      Alert.alert(
+        t('home.cannotDelete', 'Cannot Delete'),
+        t('home.defaultContactMessage', 'Default emergency contacts cannot be deleted.')
+      );
+      return;
+    }
+
+    Alert.alert(
+      t('home.deleteContact', 'Delete Contact'),
+      t('home.deleteContactConfirm', `Are you sure you want to remove "${contactName}" from your emergency contacts?`),
+      [
+        {
+          text: t('common.cancel', 'Cancel'),
+          style: 'cancel'
+        },
+        {
+          text: t('common.delete', 'Delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteEmergencyContact(contactId);
+            } catch (error) {
+              Alert.alert(t('common.error'), t('home.failedToDeleteContact', 'Failed to delete contact'));
+            }
+          }
+        }
+      ]
+    );
   };
 
   /**
@@ -527,22 +653,63 @@ const HomeScreen: React.FC = () => {
           title={t('home.emergencyContacts')} 
           icon="call-outline" 
           iconColor={colors.error}
+          actionText={t('home.addContact', 'Add Contact (+)')}
+          onActionPress={handleAddContactFromPhonebook}
         />
-        {mockEmergencyContacts.map((contact) => (
-          <View key={contact.id} style={styles.contactRow}>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactName}>{contact.name}</Text>
-              <Text style={styles.contactRole}>{contact.role}</Text>
-            </View>
+        {emergencyContacts.length === 0 ? (
+          <View style={styles.emptyContactsContainer}>
+            <Ionicons name="call-outline" size={32} color={colors.gray[300]} />
+            <Text style={[styles.emptyContactsText, { color: colors.gray[400] }]}>
+              {t('home.noEmergencyContacts', 'No emergency contacts yet')}
+            </Text>
             <TouchableOpacity 
-              style={[styles.callButton, { backgroundColor: colors.error }]}
-              onPress={() => handleCall(contact.phone)}
+              style={[styles.addContactButton, { backgroundColor: colors.primary }]}
+              onPress={handleAddContactFromPhonebook}
             >
-              <Ionicons name="call" size={16} color={colors.white} />
-              <Text style={styles.callButtonText}>{t('common.call')}</Text>
+              <Ionicons name="add" size={16} color={colors.white} />
+              <Text style={[styles.addContactButtonText, { color: colors.white }]}>
+                {t('home.addFromPhonebook', 'Add from Phonebook')}
+              </Text>
             </TouchableOpacity>
           </View>
-        ))}
+        ) : (
+          emergencyContacts.map((contact) => (
+            <TouchableOpacity 
+              key={contact.id} 
+              style={styles.contactRow}
+              onLongPress={() => handleLongPressEmergencyContact(contact.id, contact.name, contact.isDefault)}
+              delayLongPress={500}
+            >
+              <View style={styles.contactInfo}>
+                <View style={styles.contactNameRow}>
+                  <Text style={styles.contactName}>{contact.name}</Text>
+                  {contact.isPrimary && (
+                    <View style={[styles.primaryBadge, { backgroundColor: colors.primary + '20' }]}>
+                      <Text style={[styles.primaryBadgeText, { color: colors.primary }]}>
+                        {t('home.primary', 'Primary')}
+                      </Text>
+                    </View>
+                  )}
+                  {contact.isDefault && (
+                    <View style={[styles.defaultBadge, { backgroundColor: colors.gray[200] }]}>
+                      <Text style={[styles.defaultBadgeText, { color: colors.gray[600] }]}>
+                        {t('home.default', 'Default')}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.contactRole}>{contact.role}</Text>
+              </View>
+              <TouchableOpacity 
+                style={[styles.callButton, { backgroundColor: colors.error }]}
+                onPress={() => handleCall(contact.phone)}
+              >
+                <Ionicons name="call" size={16} color={colors.white} />
+                <Text style={styles.callButtonText}>{t('common.call')}</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))
+        )}
       </Card>
 
       {/* Recent Activities */}
@@ -993,6 +1160,12 @@ const styles = StyleSheet.create({
   contactInfo: {
     flex: 1,
   },
+  contactNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    flexWrap: 'wrap',
+  },
   contactName: {
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.medium,
@@ -1001,6 +1174,24 @@ const styles = StyleSheet.create({
   contactRole: {
     fontSize: FONT_SIZE.xs,
     color: COLORS.textSecondary,
+  },
+  primaryBadge: {
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  primaryBadgeText: {
+    fontSize: 10,
+    fontWeight: FONT_WEIGHT.medium,
+  },
+  defaultBadge: {
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  defaultBadgeText: {
+    fontSize: 10,
+    fontWeight: FONT_WEIGHT.medium,
   },
   callButton: {
     flexDirection: 'row',
@@ -1015,6 +1206,28 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.sm,
     fontWeight: FONT_WEIGHT.medium,
     color: COLORS.white,
+  },
+  emptyContactsContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  emptyContactsText: {
+    fontSize: FONT_SIZE.sm,
+    textAlign: 'center',
+  },
+  addContactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.xs,
+    marginTop: SPACING.xs,
+  },
+  addContactButtonText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
   },
 
   // Activities

@@ -612,22 +612,10 @@ export const mockActivities: Activity[] = [
 export const mockEmergencyContacts: EmergencyContact[] = [
   {
     id: 'emergency-001',
-    name: 'Dr. Nimal Silva',
-    role: 'Pediatrician',
-    phone: '+94 77 123 4567',
-    isPrimary: true,
-  },
-  {
-    id: 'emergency-002',
-    name: 'Midwife Kamala',
-    role: 'Community Midwife',
-    phone: '+94 71 987 6543',
-  },
-  {
-    id: 'emergency-003',
     name: 'Emergency Services',
     role: 'Ambulance',
     phone: '1990',
+    isPrimary: false,
   },
 ];
 

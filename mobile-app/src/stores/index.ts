@@ -10,6 +10,7 @@ export { useAppointmentStore } from './appointmentStore';
 export { useAppStore } from './appStore';
 export { useActivityStore } from './activityStore';
 export { useGrowthStore } from './growthStore';
+export { useEmergencyContactStore } from './emergencyContactStore';
 export { useThemeStore, PINK_THEME, BLUE_THEME, getThemeByGender } from './themeStore';
 export type { ThemeColors, ThemeType } from './themeStore';
 // Using Auth0 store for authentication
