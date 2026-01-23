@@ -20,6 +20,11 @@ export const AUTH0_CONFIG = {
   // API identifier (audience) - must match what you created in Auth0 APIs
   audience: 'https://maternal-child-api',
   
+  // Database connection name for email/password authentication
+  // Default is 'Username-Password-Authentication'
+  // Check Auth0 Dashboard → Authentication → Database to verify your connection name
+  databaseConnection: 'Username-Password-Authentication',
+  
   // Scopes requested during login
   scopes: ['openid', 'profile', 'email', 'offline_access'],
 };

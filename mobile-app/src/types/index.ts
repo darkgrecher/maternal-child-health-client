@@ -25,6 +25,153 @@ export type BloodType = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' 
 export type ProfileType = 'pregnancy' | 'child';
 
 /**
+ * Pregnancy status
+ */
+export type PregnancyStatus = 'active' | 'delivered' | 'terminated' | 'converted';
+
+/**
+ * Pregnancy profile for tracking mother during pregnancy
+ * After delivery, this can be converted to a ChildProfile
+ */
+export interface PregnancyProfile {
+  id: string;
+  userId: string;
+  
+  // Mother's Information
+  motherFirstName: string;
+  motherLastName: string;
+  motherFullName: string;
+  motherDateOfBirth: string;
+  motherBloodType: BloodType;
+  motherPhotoUri?: string;
+  
+  // Pregnancy Information
+  expectedDeliveryDate: string; // EDD
+  lastMenstrualPeriod?: string; // LMP
+  conceptionDate?: string;
+  
+  // Current Status
+  status: PregnancyStatus;
+  currentWeek: number;
+  trimester: 1 | 2 | 3;
+  
+  // Medical Information
+  gravida?: number; // Number of pregnancies
+  para?: number; // Number of deliveries
+  bloodPressure?: string;
+  prePregnancyWeight?: number; // in kg
+  currentWeight?: number; // in kg
+  height?: number; // in cm
+  
+  // Risk Factors
+  isHighRisk: boolean;
+  riskFactors: string[];
+  medicalConditions: string[];
+  allergies: string[];
+  medications: string[];
+  
+  // Healthcare
+  hospitalName?: string;
+  obgynName?: string;
+  obgynContact?: string;
+  midwifeName?: string;
+  midwifeContact?: string;
+  
+  // Baby Information
+  expectedGender?: Gender;
+  babyNickname?: string;
+  numberOfBabies: number;
+  
+  // Conversion to Child (after delivery)
+  convertedToChildId?: string;
+  deliveryDate?: string;
+  deliveryType?: 'normal' | 'cesarean' | 'assisted';
+  deliveryNotes?: string;
+  
+  // Emergency Contact
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
+  
+  // Related records
+  checkups?: PregnancyCheckup[];
+  measurements?: PregnancyMeasurement[];
+  
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+  syncStatus?: SyncStatus;
+}
+
+/**
+ * Pregnancy checkup record (prenatal visits)
+ */
+export interface PregnancyCheckup {
+  id: string;
+  pregnancyId: string;
+  
+  // Checkup details
+  checkupDate: string;
+  weekOfPregnancy: number;
+  
+  // Mother's measurements
+  weight?: number;
+  bloodPressure?: string;
+  bloodPressureSystolic?: number;
+  bloodPressureDiastolic?: number;
+  fundalHeight?: number;
+  
+  // Baby's measurements
+  fetalHeartRate?: number;
+  fetalWeight?: number;
+  fetalLength?: number;
+  amnioticFluid?: string;
+  placentaPosition?: string;
+  
+  // Test results
+  urineProtein?: string;
+  urineGlucose?: string;
+  hemoglobin?: number;
+  
+  // Notes
+  notes?: string;
+  recommendations?: string[];
+  nextCheckupDate?: string;
+  
+  // Provider
+  providerName?: string;
+  location?: string;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Mother's weight/measurement record during pregnancy
+ */
+export interface PregnancyMeasurement {
+  id: string;
+  pregnancyId: string;
+  
+  measurementDate: string;
+  weekOfPregnancy: number;
+  
+  weight: number;
+  bellyCircumference?: number;
+  bloodPressure?: string;
+  bloodPressureSystolic?: number;
+  bloodPressureDiastolic?: number;
+  
+  symptoms?: string[];
+  mood?: string;
+  notes?: string;
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * Child profile containing all personal and medical information
  * This is the core entity of the application
  */

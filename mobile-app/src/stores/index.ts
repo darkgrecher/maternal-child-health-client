@@ -5,6 +5,7 @@
  */
 
 export { useChildStore } from './childStore';
+export { usePregnancyStore } from './pregnancyStore';
 export { useVaccineStore } from './vaccineStore';
 export { useAppointmentStore } from './appointmentStore';
 export { useAppStore } from './appStore';

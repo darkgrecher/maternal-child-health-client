@@ -230,29 +230,61 @@ export function useAuth0() {
     setError(null);
     
     try {
+      const signupPayload = {
+        client_id: AUTH0_CONFIG.clientId,
+        email,
+        password,
+        connection: AUTH0_CONFIG.databaseConnection,
+        name,
+      };
+      
+      console.log('Signup request to:', endpoints.dbSignup);
+      console.log('Signup payload:', { ...signupPayload, password: '***' });
+      
       const signupResponse = await fetch(endpoints.dbSignup, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          client_id: AUTH0_CONFIG.clientId,
-          email,
-          password,
-          connection: 'Username-Password-Authentication',
-          name,
-        }),
+        body: JSON.stringify(signupPayload),
       });
       
+      const responseText = await signupResponse.text();
+      console.log('Signup response status:', signupResponse.status);
+      console.log('Signup response:', responseText);
+      
       if (!signupResponse.ok) {
-        const errorData = await signupResponse.json();
-        throw new Error(errorData.description || errorData.message || 'Signup failed');
+        let errorMessage = 'Signup failed';
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.description || errorData.message || errorData.error || 'Signup failed';
+          
+          // Provide more specific error messages
+          if (errorMessage.toLowerCase().includes('invalid sign up')) {
+            errorMessage = [
+              'Unable to create account. Please verify:',
+              '',
+              '• Password is at least 8 characters with letters and numbers',
+              '• Email address is valid and not already registered',
+              '• Auth0 database connection is properly configured',
+              '',
+              'If the issue persists, check the console logs for details.'
+            ].join('\n');
+          } else if (errorMessage.toLowerCase().includes('user already exists')) {
+            errorMessage = 'An account with this email already exists. Please log in instead.';
+          }
+        } catch {
+          errorMessage = `Signup failed: ${responseText}`;
+        }
+        throw new Error(errorMessage);
       }
       
       // Signup successful - user should now login
+      console.log('Signup successful');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Signup failed';
       setError(message);
+      console.error('Signup error:', err);
       throw err;
     } finally {
       setIsLoading(false);
