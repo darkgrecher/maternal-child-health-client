@@ -2,6 +2,7 @@
  * Auth Screen
  * 
  * Combined Login and Sign Up screen with Auth0 integration.
+ * Features animated baby video as the main visual focus.
  * Supports:
  * - Email/Password login
  * - Email/Password signup
@@ -22,13 +23,17 @@ import {
   Platform,
   ScrollView,
   Image,
+  Dimensions,
 } from 'react-native';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth0 } from '../services/auth0Service';
 import { useAuthStore } from '../stores/auth0Store';
 import { useThemeStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../constants';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type AuthMode = 'login' | 'signup';
 
@@ -42,6 +47,14 @@ export const AuthScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localLoading, setLocalLoading] = useState(false);
+  
+  // Video player for animated baby
+  const videoSource = require('../../assets/Seamless_Video_Loop_Creation.mp4');
+  const player = useVideoPlayer(videoSource, player => {
+    player.loop = true;
+    player.play();
+    player.muted = true;
+  });
   
   const {
     isLoading: auth0Loading,
@@ -186,9 +199,6 @@ export const AuthScreen: React.FC = () => {
         >
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="heart" size={48} color={colors.primary} />
-            </View>
             <Text style={styles.title}>
               {t('app.name', 'Maternal & Child Health')}
             </Text>
@@ -197,6 +207,18 @@ export const AuthScreen: React.FC = () => {
                 ? t('auth.loginSubtitle', 'Welcome back!')
                 : t('auth.signupSubtitle', 'Create your account')}
             </Text>
+          </View>
+
+          {/* Animated Baby Video */}
+          <View style={styles.videoContainer}>
+            <View style={styles.videoWrapper}>
+              <VideoView
+                style={styles.video}
+                player={player}
+                contentFit="cover"
+                nativeControls={false}
+              />
+            </View>
           </View>
 
           {/* Form */}
@@ -348,7 +370,7 @@ export const AuthScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFFFF',
   },
   keyboardView: {
     flex: 1,
@@ -356,21 +378,29 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.xl * 3,
+    paddingTop: SPACING.xl,
     paddingBottom: SPACING.xl,
   },
   header: {
     alignItems: 'center',
+    marginBottom: SPACING.md,
+    marginTop: SPACING.lg,
+  },
+  videoContainer: {
+    alignItems: 'center',
     marginBottom: SPACING.lg,
   },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
+  videoWrapper: {
+    width: SCREEN_WIDTH * 0.6,
+    height: SCREEN_WIDTH * 0.6,
+    overflow: 'hidden',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
+  },
+  videoGlow: {
+    display: 'none',
   },
   title: {
     fontSize: FONT_SIZE.xl,
@@ -385,7 +415,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   form: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.sm,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -439,7 +469,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: SPACING.lg,
+    marginVertical: SPACING.sm,
   },
   dividerLine: {
     flex: 1,
@@ -452,7 +482,7 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.md,
   },
   socialContainer: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   socialButton: {
     flexDirection: 'row',

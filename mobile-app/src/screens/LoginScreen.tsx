@@ -1,7 +1,7 @@
 /**
  * Login Screen
  * 
- * Google Sign-In authentication screen.
+ * Google Sign-In authentication screen with animated baby video.
  */
 
 import React, { useEffect, useCallback } from 'react';
@@ -14,12 +14,16 @@ import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
+  Dimensions,
 } from 'react-native';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useGoogleAuth } from '../services/authService';
 import { useAuthStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../constants';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const LoginScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -28,6 +32,14 @@ export const LoginScreen: React.FC = () => {
   const { status, error } = authStore;
 
   const isLoading = status === 'loading';
+  
+  // Video player for animated baby
+  const videoSource = require('../../assets/Seamless_Video_Loop_Creation.mp4');
+  const player = useVideoPlayer(videoSource, player => {
+    player.loop = true;
+    player.play();
+    player.muted = true;
+  });
 
   // Handle authentication with backend
   const handleGoogleSignIn = useCallback(async (params: { idToken?: string; code?: string; redirectUri?: string }) => {
@@ -75,15 +87,24 @@ export const LoginScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Logo and Title */}
+        {/* Title */}
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="heart" size={64} color={COLORS.primary} />
-          </View>
           <Text style={styles.title}>{t('app.name', 'Maternal & Child Health')}</Text>
           <Text style={styles.subtitle}>
-            {t('auth.subtitle', 'Track your child\'s health journey')}
+            {t('auth.subtitle', 'Welcome back!')}
           </Text>
+        </View>
+
+        {/* Animated Baby Video */}
+        <View style={styles.videoContainer}>
+          <View style={styles.videoWrapper}>
+            <VideoView
+              style={styles.video}
+              player={player}
+              contentFit="cover"
+              nativeControls={false}
+            />
+          </View>
         </View>
 
         {/* Features */}
@@ -161,25 +182,33 @@ const FeatureItem: React.FC<FeatureItemProps> = ({ icon, text }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFFFF',
   },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.lg,
     justifyContent: 'center',
   },
+  videoContainer: {
+    alignItems: 'center',
+    marginBottom: SPACING.xl,
+  },
+  videoWrapper: {
+    width: SCREEN_WIDTH * 0.7,
+    height: SCREEN_WIDTH * 0.7,
+    overflow: 'hidden',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
+  },
+  videoGlow: {
+    display: 'none',
+  },
   header: {
     alignItems: 'center',
-    marginBottom: SPACING.xxl,
-  },
-  logoContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: SPACING.lg,
+    marginTop: SPACING.xl,
   },
   title: {
     fontSize: FONT_SIZE.xxl,
@@ -194,7 +223,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   features: {
-    marginBottom: SPACING.xxl,
+    marginBottom: SPACING.lg,
   },
   featureItem: {
     flexDirection: 'row',
@@ -208,7 +237,7 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.md,
   },
   buttonContainer: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   googleButton: {
     flexDirection: 'row',

@@ -62,9 +62,10 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
           // Try to fetch user profile
           try {
             await fetchProfile();
-          } catch {
+          } catch (error) {
             // Profile fetch failed, but we still have tokens
-            console.log('Profile fetch failed, continuing with cached data');
+            // This is expected if backend server is not running
+            console.log('Profile fetch failed (backend may be offline), continuing with cached data');
           }
         } else if (!accessToken && status === 'idle') {
           setStatus('unauthenticated');

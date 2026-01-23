@@ -44,7 +44,8 @@
         {
           "domain": "dev-e5znz5x47bkxbit3.us.auth0.com"
         }
-      ]
+      ],
+      "expo-video"
     ]
   }
 }
