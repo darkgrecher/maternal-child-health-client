@@ -23,6 +23,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -371,26 +372,20 @@ const HomeScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         >
 
-      {/* Welcome Banner */}
-      <Card style={styles.welcomeBanner} padding="none">
-        <Image
-          source={{ uri: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=400&h=150&fit=crop' }}
-          style={styles.bannerImage}
-        />
-        <View style={styles.bannerOverlay}>
-          <Text style={styles.bannerTitle}>{t('home.welcomeBanner')}</Text>
-          <Text style={styles.bannerSubtitle}>{t('home.welcomeSubtitle')}</Text>
-        </View>
-        <View style={styles.bannerDecoration}>
-          <Ionicons name="sparkles" size={24} color={colors.warning} />
-        </View>
-      </Card>
-
       {/* Child Summary Card */}
       {profile && (
         <Card style={styles.childSummaryCard}>
           <View style={styles.childInfo}>
-            <Avatar name={`${profile.firstName} ${profile.lastName}`} size="large" />
+            <View style={styles.avatarVideoContainer}>
+              <Video
+                source={require('../../assets/Baby_Animation_For_Home_Screen.mp4')}
+                style={styles.avatarVideo}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay
+                isLooping
+                isMuted
+              />
+            </View>
             <View style={styles.childDetails}>
               <Text style={styles.childName}>{profile.firstName} {profile.lastName}</Text>
               <Text style={styles.childAge}>
@@ -874,37 +869,17 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
 
-  // Welcome Banner
-  welcomeBanner: {
-    overflow: 'hidden',
+  // Baby Animation
+  avatarVideoContainer: {
+    width: 100,
     height: 100,
-    marginBottom: SPACING.sm,
+    borderRadius: 50,
+    overflow: 'hidden',
+    backgroundColor: COLORS.gray[100],
   },
-  bannerImage: {
+  avatarVideo: {
     width: '100%',
     height: '100%',
-    position: 'absolute',
-  },
-  bannerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    padding: SPACING.md,
-    justifyContent: 'center',
-  },
-  bannerTitle: {
-    fontSize: FONT_SIZE.lg,
-    fontWeight: FONT_WEIGHT.bold,
-    color: COLORS.white,
-  },
-  bannerSubtitle: {
-    fontSize: FONT_SIZE.xs,
-    color: COLORS.white,
-    opacity: 0.9,
-  },
-  bannerDecoration: {
-    position: 'absolute',
-    right: SPACING.md,
-    top: SPACING.md,
   },
 
   // Child Summary
