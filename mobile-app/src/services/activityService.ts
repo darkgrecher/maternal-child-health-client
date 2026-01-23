@@ -4,7 +4,7 @@
  * API service for managing child activity records.
  */
 
-import { apiClient } from '../config/api';
+import { apiClient } from './apiClient';
 
 export interface Activity {
   id: string;

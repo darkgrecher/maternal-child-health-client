@@ -168,6 +168,20 @@ const HomeScreen: React.FC = () => {
     }
   }, [profile?.id]);
 
+  // Refetch activities when component comes into focus to catch new growth/vaccine records
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (profile?.id) {
+        const isValidUuid = profile.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+        if (isValidUuid) {
+          fetchActivities(profile.id);
+        }
+      }
+    }, 5000); // Refresh activities every 5 seconds
+
+    return () => clearInterval(intervalId);
+  }, [profile?.id, fetchActivities]);
+
   const ageDisplay = getChildAgeDisplay();
   const latestMeasurement = getLatestGrowthMeasurement();
   const vaccineProgress = getCompletionPercentage();
@@ -538,14 +552,14 @@ const HomeScreen: React.FC = () => {
           actionText={t('common.viewAll')}
           onActionPress={() => navigation.navigate('Activities')}
         />
-        {getRecentActivities(4).length === 0 ? (
+        {(!activities || activities.length === 0) ? (
           <View style={styles.emptyActivitiesContainer}>
             <Ionicons name="document-text-outline" size={48} color={colors.gray[300]} />
             <Text style={styles.emptyActivitiesText}>{t('activities.noActivities', 'No Activities Yet')}</Text>
             <Text style={styles.emptyActivitiesSubtext}>{t('activities.noActivitiesMessage', 'Activities will appear here as you add them')}</Text>
           </View>
         ) : (
-          getRecentActivities(4).map((activity) => (
+          activities.slice(0, 4).map((activity) => (
             <TouchableOpacity 
               key={activity.id} 
               style={styles.activityRow}
@@ -565,27 +579,12 @@ const HomeScreen: React.FC = () => {
               <View style={styles.activityContent}>
                 <Text style={styles.activityTitle}>{activity.title}</Text>
                 <Text style={styles.activityDate}>
-                  {formatActivityDate(activity.date)}
+                  {activity.createdAt ? formatActivityDate(activity.createdAt) : 'Recently'}
                 </Text>
               </View>
             </TouchableOpacity>
           ))
         )}
-      </Card>
-
-      {/* Daily Health Tip */}
-      <Card style={[styles.healthTipCard, { backgroundColor: colors.info + '10' }]}>
-        <View style={styles.healthTipHeader}>
-          <View style={[styles.healthTipIcon, { backgroundColor: colors.info + '20' }]}>
-            <Ionicons name="bulb" size={20} color={colors.info} />
-          </View>
-          <Text style={[styles.healthTipTitle, { color: colors.info }]}>{t('home.dailyHealthTip')}</Text>
-        </View>
-        <Text style={styles.healthTipContent}>{mockHealthTip.content}</Text>
-        <View style={styles.healthTipSource}>
-          <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-          <Text style={styles.healthTipSourceText}>{mockHealthTip.source}</Text>
-        </View>
       </Card>
 
       {/* Bottom spacing */}
@@ -1062,46 +1061,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.sm,
     color: COLORS.gray[400],
     textAlign: 'center',
-  },
-
-  // Health Tip
-  healthTipCard: {
-    backgroundColor: COLORS.info + '10',
-    marginBottom: SPACING.sm,
-  },
-  healthTipHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.sm,
-  },
-  healthTipIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.info + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  healthTipTitle: {
-    fontSize: FONT_SIZE.md,
-    fontWeight: FONT_WEIGHT.semibold,
-    color: COLORS.info,
-  },
-  healthTipContent: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.textPrimary,
-    lineHeight: 20,
-  },
-  healthTipSource: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    marginTop: SPACING.sm,
-  },
-  healthTipSourceText: {
-    fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
   },
 
   // Modal Styles
