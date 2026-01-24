@@ -6,6 +6,28 @@
  */
 
 export default {
+  // App
+  app: {
+    name: 'Maternal & Child Health',
+  },
+
+  // Authentication
+  auth: {
+    loginSubtitle: 'Welcome back!',
+    signupSubtitle: 'Create your account',
+    namePlaceholder: 'Full Name',
+    emailPlaceholder: 'Email Address',
+    passwordPlaceholder: 'Password',
+    confirmPasswordPlaceholder: 'Confirm Password',
+    login: 'Log In',
+    signup: 'Sign Up',
+    hasAccount: 'Already have an account? Log In',
+    noAccount: "Don't have an account? Sign Up",
+    or: 'or',
+    continueWithGoogle: 'Continue with Google',
+    terms: 'By continuing, you agree to our Terms of Service and Privacy Policy',
+  },
+
   // Common
   common: {
     save: 'Save',
@@ -76,6 +98,8 @@ export default {
     recentActivities: 'Recent Activities',
     dailyHealthTip: 'Daily Health Tip',
     chdrNumber: 'CHDR No:',
+    default: 'Default',
+    addContact: 'Add Contact',
     monthsOld: '{{months}} months {{weeks}} weeks',
     weight: 'Weight:',
     height: 'Height:',
