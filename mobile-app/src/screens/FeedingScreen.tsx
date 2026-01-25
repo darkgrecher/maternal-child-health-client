@@ -22,7 +22,7 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { Card, Header, SectionTitle, Badge, Button, FloatingChatButton } from '../components/common';
+import { Card, Header, SectionTitle, FloatingChatButton } from '../components/common';
 import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
 import { useChildStore, useThemeStore } from '../stores';
 import { RootStackParamList, TabParamList } from '../types';
@@ -107,6 +107,7 @@ const FeedingScreen: React.FC = () => {
   
   // Determine default age range based on child's age
   const getDefaultAgeRange = () => {
+    if (childAge < 6) return '0-5 months';
     if (childAge < 9) return '6-8 months';
     if (childAge < 12) return '9-11 months';
     return '12-23 months';
@@ -114,11 +115,12 @@ const FeedingScreen: React.FC = () => {
 
   const [selectedAge, setSelectedAge] = useState(getDefaultAgeRange());
 
-  const ageOptions = ['6-8 months', '9-11 months', '12-23 months'];
+  const ageOptions = ['0-5 months', '6-8 months', '9-11 months', '12-23 months'];
 
   // Get feeding guideline for selected age
   const getFeedingGuideline = () => {
     const guidelineMap: { [key: string]: string } = {
+      '0-5 months': 'feeding_0_5',
       '6-8 months': 'feeding_6_8',
       '9-11 months': 'feeding_9_11',
       '12-23 months': 'feeding_12_23',
@@ -275,40 +277,6 @@ const FeedingScreen: React.FC = () => {
           {guideline.illnessFeeding.map((item, index) => (
             <IllnessItem key={index} text={item} />
           ))}
-        </Card>
-
-        {/* Thriposha Supplementation Card */}
-        <Card style={[styles.supplementCard, { backgroundColor: colors.primary + '10' }]}>
-          <View style={styles.supplementHeader}>
-            <View style={[styles.supplementIcon, { backgroundColor: colors.primary + '20' }]}>
-              <Ionicons name="nutrition-outline" size={20} color={colors.primary} />
-            </View>
-            <View style={styles.supplementTitleContainer}>
-              <Text style={styles.supplementTitle}>{t('feeding.supplementTitle')}</Text>
-              <View style={styles.supplementStatus}>
-                <Text style={styles.supplementStatusLabel}>
-                  {t('feeding.eligibilityStatus')}
-                </Text>
-                <Badge 
-                  text={t('feeding.eligible')}
-                  variant="success"
-                  size="small"
-                />
-              </View>
-            </View>
-          </View>
-          
-          <Text style={styles.supplementDescription}>
-            {t('feeding.supplementDescription')}
-          </Text>
-          
-          <Button
-            title={t('feeding.viewDistributionSchedule')}
-            variant="primary"
-            onPress={() => {
-              // TODO: Navigate to distribution schedule
-            }}
-          />
         </Card>
 
         {/* Bottom spacing */}
@@ -525,49 +493,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.sm,
     color: COLORS.textPrimary,
     lineHeight: 20,
-  },
-
-  // Supplement Card
-  supplementCard: {
-    marginTop: SPACING.sm,
-    // backgroundColor applied dynamically via inline styles
-  },
-  supplementHeader: {
-    flexDirection: 'row',
-    marginBottom: SPACING.md,
-  },
-  supplementIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    // backgroundColor applied dynamically via inline styles
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.sm,
-  },
-  supplementTitleContainer: {
-    flex: 1,
-  },
-  supplementTitle: {
-    fontSize: FONT_SIZE.md,
-    fontWeight: FONT_WEIGHT.semibold,
-    color: COLORS.textPrimary,
-  },
-  supplementStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginTop: SPACING.xs,
-  },
-  supplementStatusLabel: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
-  },
-  supplementDescription: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: SPACING.md,
   },
 });
 

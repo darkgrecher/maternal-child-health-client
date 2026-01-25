@@ -176,6 +176,29 @@ export const DEVELOPMENT_MILESTONES = [
 
 export const FEEDING_GUIDELINES = [
   {
+    id: 'feeding_0_5',
+    ageRange: { minMonths: 0, maxMonths: 5, label: '0-5 months' },
+    texture: 'Exclusive breastfeeding only. No water, other liquids or foods are needed.',
+    frequency: 'Breastfeed on demand, at least 8-12 times in 24 hours including night feeds. Let baby finish one breast before switching.',
+    amountPerMeal: 'Allow baby to feed until satisfied. Newborns feed 8-12 times daily, gradually reducing to 6-8 times by 4-5 months.',
+    tips: [
+      'Initiate breastfeeding within 1 hour of birth (early initiation)',
+      'Feed colostrum (first yellowish milk) - it is rich in antibodies and nutrients',
+      'Practice skin-to-skin contact to promote bonding and milk production',
+      'No water, honey, gripe water or any other liquids needed - breast milk provides complete nutrition',
+      'Look for hunger cues: rooting, sucking fingers, fussiness. Crying is a late hunger sign',
+      'Ensure proper latch: baby\'s mouth covers most of the areola, not just the nipple',
+    ],
+    illnessFeeding: [
+      'Continue breastfeeding more frequently during illness',
+      'Breast milk provides antibodies to help fight infection',
+      'If baby has difficulty feeding, express milk and feed with a clean cup or spoon',
+      'Keep baby hydrated with frequent breastfeeds',
+      'Seek medical attention if baby refuses to feed or shows signs of dehydration',
+    ],
+    examples: ['Breast milk only', 'No supplementary foods or water'],
+  },
+  {
     id: 'feeding_6_8',
     ageRange: { minMonths: 6, maxMonths: 8, label: '6-8 months' },
     texture: 'Well mashed foods. Start with mashed rice. Continue introducing mashed foods.',
