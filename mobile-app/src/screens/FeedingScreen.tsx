@@ -12,8 +12,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
+  Dimensions,
 } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -172,14 +173,26 @@ const FeedingScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner Image */}
-        <Card style={styles.bannerCard} padding="none">
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=400&h=150&fit=crop' }}
-            style={styles.bannerImage}
-          />
-          <View style={styles.bannerOverlay}>
-            <Text style={styles.bannerTitle}>Healthy Family Nutrition</Text>
+        {/* Video with Text Section */}
+        <Card style={styles.videoTextCard}>
+          <View style={styles.videoTextSection}>
+            <View style={styles.videoWrapper}>
+              <Video
+                source={require('../../assets/eatingVideo.mp4')}
+                style={styles.smallVideo}
+                useNativeControls
+                resizeMode={ResizeMode.COVER}
+                isLooping
+                shouldPlay={true}
+                isMuted={false}
+              />
+            </View>
+            <View style={styles.videoTextContent}>
+              <Text style={styles.videoTitle}>{t('feeding.title')}</Text>
+              <Text style={styles.videoDescription}>
+                {t('feeding.subtitle')}
+              </Text>
+            </View>
           </View>
         </Card>
 
@@ -330,28 +343,43 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
 
-  // Banner
-  bannerCard: {
-    height: 100,
-    overflow: 'hidden',
+  // Video with Text Section
+  videoTextCard: {
     marginTop: SPACING.sm,
+    backgroundColor: '#ffffffff',
   },
-  bannerImage: {
-    width: '100%',
-    height: '100%',
+  videoTextSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
   },
-  bannerOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: SPACING.md,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+  videoWrapper: {
+    borderRadius: BORDER_RADIUS.lg,
+    overflow: 'hidden',
+    marginLeft: SPACING.sm,
   },
-  bannerTitle: {
+  smallVideo: {
+    width: 90,
+    height: 115,
+    borderRadius: BORDER_RADIUS.lg,
+  },
+  videoTextContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoTitle: {
     fontSize: FONT_SIZE.lg,
     fontWeight: FONT_WEIGHT.bold,
-    color: COLORS.white,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+    textAlign: 'center',
+  },
+  videoDescription: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+    textAlign: 'center',
   },
 
   // Age Selector
