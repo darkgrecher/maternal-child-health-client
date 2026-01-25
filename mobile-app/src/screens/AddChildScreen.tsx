@@ -15,6 +15,7 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +28,9 @@ import { Card, Header, Button } from '../components/common';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { useChildStore, useThemeStore } from '../stores';
 import { Gender, BloodType } from '../types';
+
+// Custom app icon
+const APP_ICON = require('../../assets/ChatGPT Image Jan 25, 2026, 05_05_58 PM.png');
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'male', label: 'Male' },
@@ -213,7 +217,7 @@ const AddChildScreen: React.FC = () => {
         {/* Birth Information */}
         <Card style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="heart-outline" size={20} color={colors.success} />
+            <Image source={APP_ICON} style={{ width: 20, height: 20 }} resizeMode="contain" />
             <Text style={styles.sectionTitle}>{t('profile.birthInfo', 'Birth Information')}</Text>
           </View>
 

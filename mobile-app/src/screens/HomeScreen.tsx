@@ -28,6 +28,9 @@ import * as Contacts from 'expo-contacts';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// Custom app icon
+const APP_ICON = require('../../assets/ChatGPT Image Jan 25, 2026, 05_05_58 PM.png');
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -469,7 +472,7 @@ const HomeScreen: React.FC = () => {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={[styles.logoContainer, { backgroundColor: colors.primaryLight }]}>
-              <Ionicons name="heart" size={24} color={colors.primary} />
+              <Image source={APP_ICON} style={{ width: 24, height: 24 }} resizeMode="contain" />
             </View>
             <View>
               <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('home.title')}</Text>

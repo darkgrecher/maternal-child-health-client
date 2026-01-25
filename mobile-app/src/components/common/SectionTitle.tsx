@@ -5,16 +5,20 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, Image, ImageSourcePropType } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT } from '../../constants';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
+// Custom app icon image
+const APP_ICON = require('../../../assets/ChatGPT Image Jan 25, 2026, 05_05_58 PM.png');
+
 interface SectionTitleProps {
   title: string;
   icon?: IconName;
   iconColor?: string;
+  useAppIcon?: boolean; // Use custom app icon instead of Ionicons
   actionText?: string;
   onActionPress?: () => void;
   style?: ViewStyle;
@@ -27,16 +31,31 @@ export const SectionTitle: React.FC<SectionTitleProps> = ({
   title,
   icon,
   iconColor = COLORS.primary,
+  useAppIcon = false,
   actionText,
   onActionPress,
   style,
 }) => {
+  const renderIcon = () => {
+    if (useAppIcon || icon === 'heart-outline' || icon === 'heart') {
+      return (
+        <Image 
+          source={APP_ICON} 
+          style={[styles.appIcon, styles.icon]} 
+          resizeMode="contain"
+        />
+      );
+    }
+    if (icon) {
+      return <Ionicons name={icon} size={20} color={iconColor} style={styles.icon} />;
+    }
+    return null;
+  };
+
   return (
     <View style={[styles.container, style]}>
       <View style={styles.titleRow}>
-        {icon && (
-          <Ionicons name={icon} size={20} color={iconColor} style={styles.icon} />
-        )}
+        {renderIcon()}
         <Text style={styles.title}>{title}</Text>
       </View>
       
@@ -62,6 +81,10 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: SPACING.xs,
+  },
+  appIcon: {
+    width: 20,
+    height: 20,
   },
   title: {
     fontSize: FONT_SIZE.md,
