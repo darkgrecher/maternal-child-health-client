@@ -5,7 +5,7 @@
  * vaccine progress, and individual vaccine status grouped by age.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,8 +16,10 @@ import {
   Alert,
   Modal,
   TextInput,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Video, ResizeMode } from 'expo-av';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -31,6 +33,9 @@ import { useVaccineStore, useChildStore, useThemeStore } from '../stores';
 import { VaccinationRecord, VaccinationStatus } from '../services/vaccineService';
 import { RootStackParamList, TabParamList } from '../types';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
+
+// Video asset
+const vaccineVideo = require('../../assets/AIVideo_260125_08f3c452-1d7f-4b17-b9e4-9bac6afc45e2_0_MiriCanvas.mp4');
 
 type VaccinesScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Vaccines'>,
@@ -388,16 +393,24 @@ const VaccinesScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Progress Circle Card */}
-        <Card style={{ ...styles.progressCard, backgroundColor: colors.success + '10' }}>
-          <View style={styles.progressCircleContainer}>
-            <View style={styles.progressCircle}>
-              <View style={[styles.progressCircleInner, { borderColor: colors.success, backgroundColor: colors.white }]}>
-                <Ionicons name="shield-checkmark" size={32} color={colors.success} />
-              </View>
+        {/* Video Card */}
+        <Card style={{ ...styles.videoCard, backgroundColor: '#FFFFFF' }}>
+          <View style={styles.videoContentRow}>
+            <View style={styles.videoContainer}>
+              <Video
+                source={vaccineVideo}
+                style={styles.video}
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay
+                isLooping
+                isMuted
+              />
             </View>
-            <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
-            <Text style={styles.progressLabel}>{t('vaccines.immunizationComplete', 'Immunization Complete')}</Text>
+            
+            <View style={styles.progressOverlay}>
+              <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
+              <Text style={styles.progressLabel}>{t('vaccines.immunizationComplete', 'Immunization Complete')}</Text>
+            </View>
           </View>
           
           <View style={styles.progressDetails}>
@@ -566,45 +579,45 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
 
-  // Progress Card
-  progressCard: {
-    alignItems: 'center',
+  // Video Card
+  videoCard: {
     marginTop: SPACING.sm,
+    padding: SPACING.md,
+    backgroundColor: '#FFFFFF',
   },
-  progressCircleContainer: {
+  videoContentRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.md,
+    gap: SPACING.md,
   },
-  progressCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.success + '10',
-    alignItems: 'center',
+  videoContainer: {
+    width: 120,
+    height: 120,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  progressOverlay: {
+    flex: 1,
     justifyContent: 'center',
-  },
-  progressCircleInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.white,
   },
   progressPercentage: {
     fontSize: FONT_SIZE.xxl,
     fontWeight: FONT_WEIGHT.bold,
     color: COLORS.textPrimary,
-    marginTop: SPACING.sm,
   },
   progressLabel: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
   },
   progressDetails: {
     width: '100%',
-    marginTop: SPACING.sm,
+    padding: SPACING.md,
   },
   progressStats: {
     flexDirection: 'row',
