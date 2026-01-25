@@ -5,7 +5,7 @@
  * growth charts, and WHO percentile comparisons.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -661,6 +662,20 @@ const GrowthScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Video Section */}
+        <View style={styles.videoContainer}>
+          <Video
+            source={require('../../assets/Untitled design.mp4')}
+            style={styles.video}
+            useNativeControls
+            resizeMode={ResizeMode.COVER}
+            isLooping
+            shouldPlay={true}
+            isMuted={false}
+            onError={(error) => console.log('Video Error:', error)}
+          />
+        </View>
+
         {/* Summary Stats */}
         <View style={styles.statsRow}>
           <StatCard 
@@ -789,6 +804,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  // Video Section
+  videoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.xs,
+    borderRadius: BORDER_RADIUS.lg,
+    overflow: 'hidden',
+  },
+  video: {
+    width: SCREEN_WIDTH - SPACING.md * 2,
+    height: 160,
+    borderRadius: BORDER_RADIUS.lg,
   },
 
   // Stats Row
