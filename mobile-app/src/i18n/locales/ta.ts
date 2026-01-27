@@ -38,8 +38,8 @@ export default {
     vaccines: 'தடுப்பூசிகள்',
     growth: 'வளர்ச்சி',
     feeding: 'உணவு',
-    schedule: 'அட்டவணை',
-  },
+    schedule: 'அட்டவணை',    profileRequired: 'சுயவிவரம் தேவை',
+    profileRequiredMessage: 'இந்த அம்சத்தைப் பயன்படுத்த கர்ப்ப சுயவிவரம் உருவாக்கவும் அல்லது குழந்தை சுயவிவரத்தை சேர்க்கவும்.',  },
 
   // Home Screen
   home: {
@@ -80,8 +80,16 @@ export default {
     failedToDelete: 'செயல்பாட்டை நீக்க முடியவில்லை',
     swipeToSwitch: '← சுயவிவரங்களை மாற்ற ஸ்வைப் செய்யவும் →',
     welcomeTitle: 'வரவேற்கிறோம்!',
-    noChildMessage: 'உங்கள் குழந்தையின் சுகாதார பயணத்தை கண்காணிக்க சுயவிவரத்தை சேர்க்கவும்',
+    getStartedMessage: 'சுயவிவரத்தை உருவாக்குவதன் மூலம் தொடங்கவும்',
+    noChildMessage: 'உங்கள் குழந்தையின் சுகாதார பயணத்தை கண்காணிக்க அவர்களின் சுயவிவரத்தை சேர்க்கவும்',
     addChild: 'குழந்தை சுயவிவரம் சேர்க்கவும்',
+    pregnancyProfile: 'கர்ப்ப சுயவிவரம்',
+    pregnancyDescription: 'உங்கள் கர்ப்ப பயணத்தை கண்காணிக்கவும்',
+    childProfile: 'குழந்தை சுயவிவரம்',
+    childDescription: 'உங்கள் குழந்தையின் சுகாதாரம் மற்றும் வளர்ச்சியை கண்காணிக்கவும்',
+    createProfile: 'சுயவிவரம் உருவாக்கவும்',
+    pregnancyProfileComingSoon: 'விரைவில் வருகிறது',
+    pregnancyProfileMessage: 'கர்ப்ப சுயவிவர அம்சம் விரைவில் கிடைக்கும். உங்கள் குழந்தை பிறந்தவுடன் அவர்களின் சுயவிவரத்தை சேர்க்கலாம்.',
   },
 
   // Add Child Screen

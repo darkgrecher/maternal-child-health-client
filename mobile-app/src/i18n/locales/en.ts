@@ -65,6 +65,8 @@ export default {
     growth: 'Growth',
     feeding: 'Feeding',
     schedule: 'Schedule',
+    profileRequired: 'Profile Required',
+    profileRequiredMessage: 'Please create a pregnancy profile or add a child profile to access this feature.',
   },
 
   // Home Screen
@@ -108,8 +110,16 @@ export default {
     failedToDelete: 'Failed to delete activity',
     swipeToSwitch: '← Swipe to switch profiles →',
     welcomeTitle: 'Welcome!',
+    getStartedMessage: 'Get started by creating a profile',
     noChildMessage: "Add your child's profile to start tracking their health journey",
     addChild: 'Add Child Profile',
+    pregnancyProfile: 'Pregnancy Profile',
+    pregnancyDescription: 'Track your pregnancy journey',
+    childProfile: 'Child Profile',
+    childDescription: "Track your child's health and growth",
+    createProfile: 'Create Profile',
+    pregnancyProfileComingSoon: 'Coming Soon',
+    pregnancyProfileMessage: "Pregnancy profile feature will be available soon. You can add your child's profile once they are born.",
   },
 
   // Add Child Screen

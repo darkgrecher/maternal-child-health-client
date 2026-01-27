@@ -334,6 +334,18 @@ const HomeScreen: React.FC = () => {
   };
 
   /**
+   * Navigate to create pregnancy profile
+   */
+  const handleCreatePregnancy = () => {
+    Alert.alert(
+      t('home.pregnancyProfileComingSoon', 'Coming Soon'),
+      t('home.pregnancyProfileMessage', 'Pregnancy profile feature will be available soon. You can add your child\'s profile once they are born.'),
+      [{ text: t('common.ok', 'OK') }]
+    );
+    // TODO: navigation.navigate('CreatePregnancy');
+  };
+
+  /**
    * Handle add record button - show options for different record types
    */
   const handleAddRecord = () => {
@@ -451,12 +463,55 @@ const HomeScreen: React.FC = () => {
             </View>
             <Text style={styles.emptyTitle}>{t('home.welcomeTitle', 'Welcome!')}</Text>
             <Text style={styles.emptySubtitle}>
-              {t('home.noChildMessage', 'Add your child\'s profile to start tracking their health journey')}
+              {t('home.getStartedMessage', 'Get started by creating a profile')}
             </Text>
-            <TouchableOpacity style={[styles.addChildButton, { backgroundColor: colors.primary }]} onPress={handleAddChild}>
-              <Ionicons name="add-circle-outline" size={24} color={colors.white} />
-              <Text style={styles.addChildButtonText}>{t('home.addChild', 'Add Child Profile')}</Text>
-            </TouchableOpacity>
+            
+            {/* Option Cards */}
+            <View style={styles.optionCardsContainer}>
+              {/* Pregnancy Profile Option */}
+              <TouchableOpacity 
+                style={[styles.optionCard, { backgroundColor: colors.white, borderColor: colors.gray[200] }]} 
+                onPress={handleCreatePregnancy}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: colors.secondaryLight }]}>
+                  <Ionicons name="heart-outline" size={32} color={colors.secondary} />
+                </View>
+                <Text style={[styles.optionTitle, { color: colors.textPrimary }]}>
+                  {t('home.pregnancyProfile', 'Pregnancy Profile')}
+                </Text>
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+                  {t('home.pregnancyDescription', 'Track your pregnancy journey')}
+                </Text>
+                <View style={[styles.optionButton, { backgroundColor: colors.secondaryLight }]}>
+                  <Text style={[styles.optionButtonText, { color: colors.secondary }]}>
+                    {t('home.createProfile', 'Create Profile')}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.secondary} />
+                </View>
+              </TouchableOpacity>
+
+              {/* Child Profile Option */}
+              <TouchableOpacity 
+                style={[styles.optionCard, { backgroundColor: colors.white, borderColor: colors.gray[200] }]} 
+                onPress={handleAddChild}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: colors.primaryLight }]}>
+                  <Ionicons name="happy-outline" size={32} color={colors.primary} />
+                </View>
+                <Text style={[styles.optionTitle, { color: colors.textPrimary }]}>
+                  {t('home.childProfile', 'Child Profile')}
+                </Text>
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+                  {t('home.childDescription', 'Track your child\'s health and growth')}
+                </Text>
+                <View style={[styles.optionButton, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[styles.optionButtonText, { color: colors.primary }]}>
+                    {t('home.addChild', 'Add Child Profile')}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.primary} />
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </SwipeableTabNavigator>
@@ -961,21 +1016,57 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
-  addChildButton: {
+  optionCardsContainer: {
+    width: '100%',
+    gap: SPACING.md,
+  },
+  optionCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+    padding: SPACING.lg,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  optionIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  optionTitle: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: FONT_WEIGHT.bold,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+    textAlign: 'center',
+  },
+  optionDescription: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: SPACING.md,
+  },
+  optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
-    gap: SPACING.sm,
+    gap: SPACING.xs,
   },
-  addChildButtonText: {
-    fontSize: FONT_SIZE.md,
+  optionButtonText: {
+    fontSize: FONT_SIZE.sm,
     fontWeight: FONT_WEIGHT.semibold,
-    color: COLORS.white,
   },
   
   // Header

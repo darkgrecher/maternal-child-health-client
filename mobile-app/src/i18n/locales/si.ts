@@ -39,6 +39,8 @@ export default {
     growth: 'වර්ධනය',
     feeding: 'ආහාර',
     schedule: 'කාලසටහන',
+    profileRequired: 'පැතිකඩක් අවශ්‍යයි',
+    profileRequiredMessage: 'මේ විශේෂාංගයට ප්‍රවේශ වීමට කරුණාකර ගැබ් ගැනීමේ පැතිකඩක් නිර්මාණය කරන්න හෝ දරුවාගේ පැතිකඩ එක් කරන්න.',
   },
 
   // Home Screen
@@ -80,8 +82,16 @@ export default {
     failedToDelete: 'ක්‍රියාකාරකම් මකා දැමීම අසමත් විය',
     swipeToSwitch: '← පැතිකඩ මාරු කිරීමට ස්වයිප් කරන්න →',
     welcomeTitle: 'සාදරයෙන් පිළිගනිමු!',
+    getStartedMessage: 'පැතිකඩක් නිර්මාණය කිරීමෙන් ආරම්භ කරන්න',
     noChildMessage: 'සෞඛ්‍ය ගමන නිරීක්ෂණය ආරම්භ කිරීමට ඔබේ දරුවාගේ පැතිකඩ එක් කරන්න',
     addChild: 'ළමා පැතිකඩ එක් කරන්න',
+    pregnancyProfile: 'ගැබ් ගැනීමේ පැතිකඩ',
+    pregnancyDescription: 'ඔබේ ගැබ් ගැනීමේ ගමන නිරීක්ෂණය කරන්න',
+    childProfile: 'ළමා පැතිකඩ',
+    childDescription: 'ඔබේ දරුවාගේ සෞඛ්‍ය සහ වර්ධනය නිරීක්ෂණය කරන්න',
+    createProfile: 'පැතිකඩ නිර්මාණය කරන්න',
+    pregnancyProfileComingSoon: 'ඉක්මනින් පැමිණේ',
+    pregnancyProfileMessage: 'ගැබ් ගැනීමේ පැතිකඩ විශේෂාංගය ඉක්මනින් ලබා ගත හැකිය. ඔබේ දරුවා ඉපදුණු පසු ඔවුන්ගේ පැතිකඩ එක් කළ හැකිය.',
   },
 
   // Add Child Screen

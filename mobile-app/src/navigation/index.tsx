@@ -7,14 +7,14 @@
  */
 
 import React from 'react';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { FONT_SIZE } from '../constants';
-import { useAuthStore, useThemeStore } from '../stores';
+import { useAuthStore, useThemeStore, useChildStore } from '../stores';
 
 // Screens
 import {
@@ -82,6 +82,19 @@ const ProfileStackNavigator: React.FC = () => {
 const TabNavigator: React.FC = () => {
   const { t } = useTranslation();
   const { colors } = useThemeStore();
+  const { profile, children } = useChildStore();
+  
+  // Check if user has any profile (child or pregnancy)
+  const hasProfile = profile !== null || children.length > 0;
+
+  // Show alert when trying to access tabs without profile
+  const showCreateProfileAlert = () => {
+    Alert.alert(
+      t('navigation.profileRequired', 'Profile Required'),
+      t('navigation.profileRequiredMessage', 'Please create a pregnancy profile or add a child profile to access this feature.'),
+      [{ text: t('common.ok', 'OK') }]
+    );
+  };
 
   return (
     <Tab.Navigator
@@ -106,6 +119,22 @@ const TabNavigator: React.FC = () => {
           fontSize: FONT_SIZE.xs,
           marginTop: 4,
           marginBottom: 8,
+        },
+        // Disable non-Home tabs when no profile exists
+        tabBarButton: (props) => {
+          const isHomeTTab = route.name === 'Home';
+          if (!isHomeTTab && !hasProfile) {
+            return (
+              <TouchableOpacity
+                {...props}
+                onPress={(e) => {
+                  e.preventDefault();
+                  showCreateProfileAlert();
+                }}
+              />
+            );
+          }
+          return <TouchableOpacity {...props} />;
         },
       })}
     >
