@@ -608,12 +608,6 @@ const HomeScreen: React.FC = () => {
             >
               <Ionicons name="settings-outline" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.headerIconButton}
-              onPress={() => navigation.navigate('ProfileMain')}
-            >
-              <Ionicons name="person-circle-outline" size={24} color={colors.textPrimary} />
-            </TouchableOpacity>
           </View>
         </View>
       </View>

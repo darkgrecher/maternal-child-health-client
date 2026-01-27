@@ -26,7 +26,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format, differenceInWeeks, differenceInDays, addWeeks } from 'date-fns';
 
-import { Card, ProgressBar, SectionTitle, Button } from '../components/common';
+import { Card, ProgressBar, SectionTitle, Button, FloatingChatButton } from '../components/common';
 import { usePregnancyStore, useAuthStore, useThemeStore, useChildStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList } from '../types';
@@ -184,7 +184,7 @@ const PregnancyDashboardScreen: React.FC = () => {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main')}>
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
@@ -401,6 +401,8 @@ const PregnancyDashboardScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <FloatingChatButton />
     </View>
   );
 };

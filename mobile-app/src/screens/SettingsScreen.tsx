@@ -15,10 +15,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { Card, Header, SectionTitle, FloatingChatButton, Avatar } from '../components/common';
+import { Card, Header, SectionTitle, Avatar } from '../components/common';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { useChildStore, useThemeStore, usePregnancyStore, useAuthStore } from '../stores';
 import { RootStackParamList } from '../types';
@@ -47,7 +47,7 @@ const SettingsScreen: React.FC = () => {
   const { children, profile, selectChild, deleteChild } = useChildStore();
   const { colors } = useThemeStore();
   const { currentPregnancy, pregnancies, deletePregnancy } = usePregnancyStore();
-  const { logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
     Alert.alert(
@@ -79,7 +79,7 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleEditChildProfile = (childId: string) => {
-    navigation.navigate('EditChild', { childId });
+    navigation.navigate('EditProfile', { childId });
   };
 
   const handleEditPregnancyProfile = () => {
@@ -126,6 +126,27 @@ const SettingsScreen: React.FC = () => {
     );
   };
 
+  // Check if user has both profiles
+  const hasBothProfiles = (children.length > 0 || profile !== null) && (currentPregnancy !== null || pregnancies.length > 0);
+
+  const handleSwitchToPregnancy = () => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'PregnancyMain' }],
+      })
+    );
+  };
+
+  const handleSwitchToChild = () => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      })
+    );
+  };
+
   const handleDeletePregnancy = () => {
     if (!currentPregnancy) return;
 
@@ -167,6 +188,59 @@ const SettingsScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Switch Profile Section - Only show if user has both profiles */}
+        {hasBothProfiles && (
+          <Card style={styles.sectionCard}>
+            <SectionTitle 
+              title={t('settings.switchSection', 'Switch Section')} 
+              icon="swap-horizontal-outline"
+              iconColor={colors.warning}
+            />
+            
+            <Text style={styles.sectionDescription}>
+              {t('settings.switchSectionDescription', 'You have both pregnancy and child profiles. Switch between sections to manage each.')}
+            </Text>
+
+            <View style={styles.switchButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.switchButton, { backgroundColor: colors.secondaryLight, borderColor: colors.secondary }]}
+                onPress={handleSwitchToPregnancy}
+              >
+                <View style={[styles.switchButtonIcon, { backgroundColor: colors.secondary }]}>
+                  <Ionicons name="heart" size={20} color={colors.white} />
+                </View>
+                <View style={styles.switchButtonContent}>
+                  <Text style={[styles.switchButtonTitle, { color: colors.secondary }]}>
+                    {t('settings.pregnancySection', 'Pregnancy Section')}
+                  </Text>
+                  <Text style={[styles.switchButtonDescription, { color: colors.textSecondary }]}>
+                    {t('settings.trackPregnancy', 'Track your pregnancy journey')}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.secondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.switchButton, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}
+                onPress={handleSwitchToChild}
+              >
+                <View style={[styles.switchButtonIcon, { backgroundColor: colors.primary }]}>
+                  <Ionicons name="people" size={20} color={colors.white} />
+                </View>
+                <View style={styles.switchButtonContent}>
+                  <Text style={[styles.switchButtonTitle, { color: colors.primary }]}>
+                    {t('settings.childSection', 'Child Section')}
+                  </Text>
+                  <Text style={[styles.switchButtonDescription, { color: colors.textSecondary }]}>
+                    {t('settings.trackChildren', 'Track your children\'s growth')}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+          </Card>
+        )}
+
         {/* Pregnancy Profile Section */}
         {currentPregnancy && (
           <Card style={styles.sectionCard}>
@@ -365,22 +439,32 @@ const SettingsScreen: React.FC = () => {
           </View>
         </Card>
 
-        {/* Logout Button */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
-          <Ionicons name="log-out-outline" size={20} color={colors.error} />
-          <Text style={[styles.logoutText, { color: colors.error }]}>
-            {t('settings.logout', 'Logout')}
-          </Text>
-        </TouchableOpacity>
+        {/* Account Info & Logout */}
+        {user && (
+          <View style={styles.accountSection}>
+            <View style={styles.accountHeaderRow}>
+              <Text style={[styles.signedInLabel, { color: colors.textSecondary }]}>
+                {t('settings.signedInAs', 'Signed in as')}
+              </Text>
+              <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={handleLogout}
+              >
+                <Ionicons name="log-out-outline" size={20} color={colors.error} />
+                <Text style={[styles.logoutText, { color: colors.error }]}>
+                  {t('settings.logout', 'Logout')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.emailText, { color: colors.textPrimary }]}>
+              {user.email}
+            </Text>
+          </View>
+        )}
 
         {/* Bottom spacing */}
         <View style={{ height: SPACING.xl }} />
       </ScrollView>
-      
-      <FloatingChatButton />
     </View>
   );
 };
@@ -585,17 +669,61 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHT.medium,
     color: COLORS.textPrimary,
   },
+  accountSection: {
+    marginTop: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  accountHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  signedInLabel: {
+    fontSize: FONT_SIZE.sm,
+  },
+  emailText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.medium,
+  },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-    padding: SPACING.md,
-    marginTop: SPACING.lg,
+    gap: SPACING.xs,
   },
   logoutText: {
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.medium,
+  },
+  switchButtonsContainer: {
+    gap: SPACING.sm,
+  },
+  switchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    gap: SPACING.sm,
+  },
+  switchButtonIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  switchButtonContent: {
+    flex: 1,
+  },
+  switchButtonTitle: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+  },
+  switchButtonDescription: {
+    fontSize: FONT_SIZE.xs,
+    marginTop: 2,
   },
 });
 
