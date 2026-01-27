@@ -20,7 +20,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, Header, SectionTitle, FloatingChatButton, Avatar } from '../components/common';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
-import { useChildStore, useThemeStore, usePregnancyStore } from '../stores';
+import { useChildStore, useThemeStore, usePregnancyStore, useAuthStore } from '../stores';
 import { RootStackParamList } from '../types';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -46,7 +46,25 @@ const SettingsScreen: React.FC = () => {
   const currentLanguage = i18n.language;
   const { children, profile, selectChild, deleteChild } = useChildStore();
   const { colors } = useThemeStore();
-  const { currentPregnancy, pregnancies } = usePregnancyStore();
+  const { currentPregnancy, pregnancies, deletePregnancy } = usePregnancyStore();
+  const { logout } = useAuthStore();
+
+  const handleLogout = () => {
+    Alert.alert(
+      t('settings.logout', 'Logout'),
+      t('settings.logoutConfirm', 'Are you sure you want to logout?'),
+      [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: t('settings.logout', 'Logout'),
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          },
+        },
+      ]
+    );
+  };
 
   const handleLanguageChange = async (languageCode: string) => {
     try {
@@ -108,6 +126,33 @@ const SettingsScreen: React.FC = () => {
     );
   };
 
+  const handleDeletePregnancy = () => {
+    if (!currentPregnancy) return;
+
+    Alert.alert(
+      t('pregnancy.deleteProfile', 'Delete Pregnancy Profile'),
+      t('pregnancy.deleteConfirm', 'Are you sure you want to delete this pregnancy profile? This action cannot be undone.'),
+      [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: t('common.delete', 'Delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePregnancy(currentPregnancy.id);
+              Alert.alert(
+                t('common.success', 'Success'),
+                t('pregnancy.profileDeleted', 'Pregnancy profile deleted successfully.')
+              );
+            } catch (error) {
+              Alert.alert(t('common.error', 'Error'), t('pregnancy.deleteFailed', 'Failed to delete pregnancy profile.'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
@@ -115,10 +160,6 @@ const SettingsScreen: React.FC = () => {
         subtitle={t('settings.subtitle', 'App Preferences')}
         icon="settings-outline"
         iconColor={colors.primary}
-        rightIcon="notifications-outline"
-        onRightPress={() => {
-          // TODO: Navigate to notifications
-        }}
       />
       
       <ScrollView 
@@ -135,30 +176,39 @@ const SettingsScreen: React.FC = () => {
               iconColor={colors.secondary}
             />
             
-            <TouchableOpacity
-              style={[styles.pregnancyProfileItem, { backgroundColor: colors.secondaryLight }]}
-              onPress={handleEditPregnancyProfile}
-            >
-              <View style={[styles.pregnancyIcon, { backgroundColor: colors.secondary }]}>
-                <Ionicons name="heart" size={24} color={colors.white} />
-              </View>
-              <View style={styles.pregnancyInfo}>
-                <Text style={[styles.pregnancyName, { color: colors.textPrimary }]}>
-                  {currentPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom-to-be')}
-                </Text>
-                <Text style={[styles.pregnancyMeta, { color: colors.secondary }]}>
-                  {t('pregnancy.dueDate', 'Due')}: {currentPregnancy.expectedDeliveryDate 
-                    ? new Date(currentPregnancy.expectedDeliveryDate).toLocaleDateString() 
-                    : '--'}
-                </Text>
-              </View>
-              <View style={styles.pregnancyActions}>
-                <Ionicons name="pencil" size={20} color={colors.secondary} />
-                <Text style={[styles.editText, { color: colors.secondary }]}>
-                  {t('common.edit', 'Edit')}
-                </Text>
-              </View>
-            </TouchableOpacity>
+            <View style={styles.pregnancyItemContainer}>
+              <TouchableOpacity
+                style={[styles.pregnancyProfileItem, { backgroundColor: colors.secondaryLight }]}
+                onPress={handleEditPregnancyProfile}
+              >
+                <View style={[styles.pregnancyIcon, { backgroundColor: colors.secondary }]}>
+                  <Ionicons name="heart" size={24} color={colors.white} />
+                </View>
+                <View style={styles.pregnancyInfo}>
+                  <Text style={[styles.pregnancyName, { color: colors.textPrimary }]}>
+                    {currentPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom-to-be')}
+                  </Text>
+                  <Text style={[styles.pregnancyMeta, { color: colors.secondary }]}>
+                    {t('pregnancy.dueDate', 'Due')}: {currentPregnancy.expectedDeliveryDate 
+                      ? new Date(currentPregnancy.expectedDeliveryDate).toLocaleDateString() 
+                      : '--'}
+                  </Text>
+                </View>
+                <View style={styles.pregnancyActions}>
+                  <Ionicons name="pencil" size={20} color={colors.secondary} />
+                  <Text style={[styles.editText, { color: colors.secondary }]}>
+                    {t('common.edit', 'Edit')}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={handleDeletePregnancy}
+              >
+                <Ionicons name="trash-outline" size={20} color={colors.error} />
+              </TouchableOpacity>
+            </View>
           </Card>
         )}
 
@@ -315,6 +365,17 @@ const SettingsScreen: React.FC = () => {
           </View>
         </Card>
 
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={20} color={colors.error} />
+          <Text style={[styles.logoutText, { color: colors.error }]}>
+            {t('settings.logout', 'Logout')}
+          </Text>
+        </TouchableOpacity>
+
         {/* Bottom spacing */}
         <View style={{ height: SPACING.xl }} />
       </ScrollView>
@@ -393,12 +454,17 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     marginLeft: SPACING.xs,
   },
+  pregnancyItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+  },
   pregnancyProfileItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
-    marginTop: SPACING.sm,
   },
   pregnancyIcon: {
     width: 48,
@@ -518,6 +584,18 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.medium,
     color: COLORS.textPrimary,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    marginTop: SPACING.lg,
+  },
+  logoutText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.medium,
   },
 });
 

@@ -33,8 +33,8 @@ import { RootStackParamList } from '../types';
 
 // Custom app icon
 const APP_ICON = require('../../assets/ChatGPT Image Jan 25, 2026, 05_05_58 PM.png');
-// Pregnancy hero image
-const PREGNANCY_HERO_IMAGE = require('../../assets/ChatGPT Image Jan 27, 2026, 11_47_25 PM.png');
+// Pregnancy hero video
+const PREGNANCY_HERO_VIDEO = require('../../assets/mom (online-video-cutter.com).mp4');
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -129,7 +129,7 @@ const PregnancyDashboardScreen: React.FC = () => {
   // Store hooks
   const { currentPregnancy, pregnancies, isLoading, fetchActivePregnancies, deletePregnancy } = usePregnancyStore();
   const { children, fetchChildren } = useChildStore();
-  const { accessToken, logout } = useAuthStore();
+  const { accessToken } = useAuthStore();
 
   // Fetch data on mount
   useEffect(() => {
@@ -167,70 +167,6 @@ const PregnancyDashboardScreen: React.FC = () => {
     if (weeks <= 12) return t('pregnancy.firstTrimester', '1st Trimester');
     if (weeks <= 27) return t('pregnancy.secondTrimester', '2nd Trimester');
     return t('pregnancy.thirdTrimester', '3rd Trimester');
-  };
-
-  /**
-   * Handle logout
-   */
-  const handleLogout = () => {
-    Alert.alert(
-      t('settings.logout', 'Logout'),
-      t('settings.logoutConfirm', 'Are you sure you want to logout?'),
-      [
-        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
-        {
-          text: t('settings.logout', 'Logout'),
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-          },
-        },
-      ]
-    );
-  };
-
-  /**
-   * Navigate to child profiles
-   */
-  const handleSwitchToChildView = () => {
-    navigation.navigate('Main');
-  };
-
-  /**
-   * Navigate to add child (for after delivery)
-   */
-  const handleAddChildProfile = () => {
-    navigation.navigate('AddChild');
-  };
-
-  /**
-   * Handle delete pregnancy profile
-   */
-  const handleDeletePregnancy = () => {
-    if (!currentPregnancy) return;
-
-    Alert.alert(
-      t('pregnancy.deleteProfile', 'Delete Pregnancy Profile'),
-      t('pregnancy.deleteConfirm', 'Are you sure you want to delete this pregnancy profile? This action cannot be undone.'),
-      [
-        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
-        {
-          text: t('common.delete', 'Delete'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deletePregnancy(currentPregnancy.id);
-              Alert.alert(
-                t('common.success', 'Success'),
-                t('pregnancy.profileDeleted', 'Pregnancy profile deleted successfully.')
-              );
-            } catch (error) {
-              Alert.alert(t('common.error', 'Error'), t('pregnancy.deleteFailed', 'Failed to delete pregnancy profile.'));
-            }
-          },
-        },
-      ]
-    );
   };
 
   // Loading state
@@ -301,9 +237,11 @@ const PregnancyDashboardScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerIconButton}
-              onPress={handleLogout}
+              onPress={() => {
+                // TODO: Navigate to notifications
+              }}
             >
-              <Ionicons name="log-out-outline" size={24} color={colors.textPrimary} />
+              <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -314,24 +252,27 @@ const PregnancyDashboardScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Section with Pregnancy Image */}
-        <View style={styles.heroSection}>
-          <View style={[styles.heroGradient, { backgroundColor: '#FFF5F5' }]}>
-            <Image 
-              source={PREGNANCY_HERO_IMAGE} 
-              style={styles.heroImage}
-              resizeMode="cover"
+        {/* Hero Section with Pregnancy Video */}
+        <Card style={styles.heroCard}>
+          <View style={styles.heroContentRow}>
+            <Video
+              source={PREGNANCY_HERO_VIDEO}
+              style={styles.heroVideo}
+              resizeMode={ResizeMode.CONTAIN}
+              shouldPlay
+              isLooping
+              isMuted
             />
-            <View style={styles.heroOverlay}>
+            <View style={styles.heroTextContainer}>
               <Text style={[styles.heroGreeting, { color: '#8B4A6B' }]}>
-                {t('pregnancy.hello', 'Hello')}, {currentPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom')}! 💕
+                {t('pregnancy.hello', 'Hello')}, {currentPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom')}! 
               </Text>
               <Text style={[styles.heroWeekText, { color: '#6B3A5B' }]}>
                 {t('pregnancy.youAreInWeek', 'You are in week')} {pregnancyProgress.weeks}
               </Text>
             </View>
           </View>
-        </View>
+        </Card>
 
         {/* Pregnancy Progress Card */}
         <Card style={[styles.progressCard, { borderLeftColor: colors.secondary, borderLeftWidth: 4 }]}>
@@ -455,55 +396,7 @@ const PregnancyDashboardScreen: React.FC = () => {
           </Card>
         )}
 
-        {/* Quick Actions */}
-        <View style={styles.actionsContainer}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            {t('common.quickActions', 'Quick Actions')}
-          </Text>
-          <View style={styles.actionsRow}>
-            <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: colors.primaryLight }]}
-              onPress={handleAddChildProfile}
-            >
-              <Ionicons name="happy-outline" size={24} color={colors.primary} />
-              <Text style={[styles.actionButtonText, { color: colors.primary }]}>
-                {t('pregnancy.addChildProfile', 'Add Child')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: colors.secondaryLight }]}
-              onPress={() => navigation.navigate('CreatePregnancy')}
-            >
-              <Ionicons name="create-outline" size={24} color={colors.secondary} />
-              <Text style={[styles.actionButtonText, { color: colors.secondary }]}>
-                {t('pregnancy.editProfile', 'Edit Profile')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          {children.length > 0 && (
-            <TouchableOpacity 
-              style={[styles.switchViewButton, { borderColor: colors.primary }]}
-              onPress={handleSwitchToChildView}
-            >
-              <Ionicons name="swap-horizontal-outline" size={20} color={colors.primary} />
-              <Text style={[styles.switchViewText, { color: colors.primary }]}>
-                {t('pregnancy.switchToChildView', 'Switch to Child View')}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
 
-        {/* Delete Profile Option */}
-        <TouchableOpacity 
-          style={styles.deleteButton}
-          onPress={handleDeletePregnancy}
-        >
-          <Ionicons name="trash-outline" size={20} color={colors.error} />
-          <Text style={[styles.deleteButtonText, { color: colors.error }]}>
-            {t('pregnancy.deleteProfile', 'Delete Pregnancy Profile')}
-          </Text>
-        </TouchableOpacity>
 
         {/* Bottom spacing */}
         <View style={{ height: 100 }} />
@@ -580,34 +473,30 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     paddingTop: 0,
   },
-  heroSection: {
+  heroCard: {
     marginBottom: SPACING.lg,
-    marginHorizontal: -SPACING.lg,
-    marginTop: -SPACING.lg,
-  },
-  heroGradient: {
-    width: '100%',
-    borderBottomLeftRadius: BORDER_RADIUS.xl,
-    borderBottomRightRadius: BORDER_RADIUS.xl,
-    overflow: 'hidden',
-  },
-  heroImage: {
-    width: '100%',
-    height: 220,
-  },
-  heroOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: SPACING.lg,
-    paddingBottom: SPACING.xl,
-    backgroundColor: 'rgba(255,245,245,0.85)',
+    backgroundColor: '#FFFFFF',
+  },
+  heroContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  heroVideo: {
+    width: 160,
+    height: 160,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  heroTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
   },
   heroGreeting: {
-    fontSize: FONT_SIZE.xl,
+    fontSize: FONT_SIZE.lg,
     fontWeight: FONT_WEIGHT.bold,
     marginBottom: SPACING.xs,
+    lineHeight: 24,
   },
   heroWeekText: {
     fontSize: FONT_SIZE.md,
@@ -758,57 +647,6 @@ const styles = StyleSheet.create({
   },
   providerName: {
     fontSize: FONT_SIZE.md,
-    fontWeight: FONT_WEIGHT.medium,
-  },
-  actionsContainer: {
-    marginTop: SPACING.md,
-  },
-  sectionTitle: {
-    fontSize: FONT_SIZE.lg,
-    fontWeight: FONT_WEIGHT.bold,
-    marginBottom: SPACING.md,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    gap: SPACING.sm,
-  },
-  actionButtonText: {
-    fontSize: FONT_SIZE.sm,
-    fontWeight: FONT_WEIGHT.medium,
-  },
-  switchViewButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    marginTop: SPACING.md,
-    gap: SPACING.sm,
-  },
-  switchViewText: {
-    fontSize: FONT_SIZE.sm,
-    fontWeight: FONT_WEIGHT.medium,
-  },
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: SPACING.xl,
-    padding: SPACING.md,
-    gap: SPACING.sm,
-  },
-  deleteButtonText: {
-    fontSize: FONT_SIZE.sm,
     fontWeight: FONT_WEIGHT.medium,
   },
 });

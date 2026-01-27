@@ -369,7 +369,7 @@ export default {
     appName: 'App Name',
     childProfiles: 'Child Profiles',
     childProfilesDescription: "Manage your children's profiles. Swipe left/right on the home screen to switch between profiles.",
-    addAnotherChild: 'Add Another Child Profile',
+    addAnotherChild: 'Add Child Profile',
     addAnotherChildDescription: 'Add profile for twins, siblings, or another child',
     profileSwitched: 'Switched to child profile',
     deleteChild: 'Delete Child Profile',

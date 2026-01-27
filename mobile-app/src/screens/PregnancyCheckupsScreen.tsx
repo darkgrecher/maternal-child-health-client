@@ -13,16 +13,23 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format, parseISO, addWeeks } from 'date-fns';
 
 import { Card, SectionTitle, Button } from '../components/common';
 import { usePregnancyStore, useThemeStore, useAuthStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
+import { RootStackParamList } from '../types';
+
+const APP_ICON = require('../../assets/ChatGPT Image Jan 25, 2026, 05_05_58 PM.png');
+
+type PregnancyCheckupsNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 /**
  * Standard prenatal checkup schedule
@@ -48,7 +55,7 @@ const PRENATAL_SCHEDULE = [
 const PregnancyCheckupsScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation = useNavigation<PregnancyCheckupsNavigationProp>();
   const { colors } = useThemeStore();
   const { currentPregnancy, isLoading, fetchActivePregnancies } = usePregnancyStore();
   const { accessToken } = useAuthStore();
@@ -110,17 +117,42 @@ const PregnancyCheckupsScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + SPACING.sm, backgroundColor: colors.background }]}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-          {t('pregnancy.checkups', 'Prenatal Checkups')}
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          {t('pregnancy.week', 'Week')} {currentWeek} - {t('pregnancy.trackYourVisits', 'Track your visits')}
-        </Text>
+      <View style={[styles.fixedHeader, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.logoContainer, { backgroundColor: colors.secondaryLight }]}>
+              <Image source={APP_ICON} style={{ width: 24, height: 24 }} resizeMode="contain" />
+            </View>
+            <View>
+              <Text style={[styles.headerTitleText, { color: colors.textPrimary }]}>
+                {t('pregnancy.checkups', 'Prenatal Checkups')}
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+                {t('pregnancy.week', 'Week')} {currentWeek} - {t('pregnancy.trackYourVisits', 'Track your visits')}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.headerIconButton}
+              onPress={() => navigation.navigate('Settings')}
+            >
+              <Ionicons name="settings-outline" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerIconButton}
+              onPress={() => {
+                // TODO: Navigate to notifications
+              }}
+            >
+              <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
       <ScrollView 
-        style={styles.scrollView}
+        style={styles.scrollViewWithHeader}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -240,25 +272,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: SPACING.lg,
   },
-  header: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.md,
+  fixedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
-  headerTitle: {
-    fontSize: FONT_SIZE.xl,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  logoContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleText: {
+    fontSize: FONT_SIZE.lg,
     fontWeight: FONT_WEIGHT.bold,
   },
   headerSubtitle: {
     fontSize: FONT_SIZE.sm,
-    marginTop: 4,
   },
-  scrollView: {
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  headerIconButton: {
+    padding: SPACING.xs,
+  },
+  scrollViewWithHeader: {
     flex: 1,
+    marginTop: 100,
   },
   content: {
     padding: SPACING.lg,
+    paddingTop: 0,
   },
   loadingText: {
     marginTop: SPACING.md,
