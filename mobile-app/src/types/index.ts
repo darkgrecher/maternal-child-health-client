@@ -517,6 +517,8 @@ export type RootStackParamList = {
   PregnancyMain: undefined;
   ProfileMain: undefined;
   EditProfile: { childId?: string; isNew?: boolean };
+  EditChild: { childId: string };
+  EditPregnancy: { pregnancyId: string };
   AddMeasurement: { childId: string };
   VaccineDetails: { vaccineId: string };
   AppointmentDetails: { appointmentId: string };

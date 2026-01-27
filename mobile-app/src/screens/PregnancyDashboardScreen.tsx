@@ -33,6 +33,8 @@ import { RootStackParamList } from '../types';
 
 // Custom app icon
 const APP_ICON = require('../../assets/ChatGPT Image Jan 25, 2026, 05_05_58 PM.png');
+// Pregnancy hero image
+const PREGNANCY_HERO_IMAGE = require('../../assets/ChatGPT Image Jan 27, 2026, 11_47_25 PM.png');
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -312,6 +314,25 @@ const PregnancyDashboardScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Hero Section with Pregnancy Image */}
+        <View style={styles.heroSection}>
+          <View style={[styles.heroGradient, { backgroundColor: '#FFF5F5' }]}>
+            <Image 
+              source={PREGNANCY_HERO_IMAGE} 
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+            <View style={styles.heroOverlay}>
+              <Text style={[styles.heroGreeting, { color: '#8B4A6B' }]}>
+                {t('pregnancy.hello', 'Hello')}, {currentPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom')}! 💕
+              </Text>
+              <Text style={[styles.heroWeekText, { color: '#6B3A5B' }]}>
+                {t('pregnancy.youAreInWeek', 'You are in week')} {pregnancyProgress.weeks}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* Pregnancy Progress Card */}
         <Card style={[styles.progressCard, { borderLeftColor: colors.secondary, borderLeftWidth: 4 }]}>
           <View style={styles.progressHeader}>
@@ -557,6 +578,40 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.lg,
+    paddingTop: 0,
+  },
+  heroSection: {
+    marginBottom: SPACING.lg,
+    marginHorizontal: -SPACING.lg,
+    marginTop: -SPACING.lg,
+  },
+  heroGradient: {
+    width: '100%',
+    borderBottomLeftRadius: BORDER_RADIUS.xl,
+    borderBottomRightRadius: BORDER_RADIUS.xl,
+    overflow: 'hidden',
+  },
+  heroImage: {
+    width: '100%',
+    height: 220,
+  },
+  heroOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xl,
+    backgroundColor: 'rgba(255,245,245,0.85)',
+  },
+  heroGreeting: {
+    fontSize: FONT_SIZE.xl,
+    fontWeight: FONT_WEIGHT.bold,
+    marginBottom: SPACING.xs,
+  },
+  heroWeekText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.medium,
   },
   loadingText: {
     marginTop: SPACING.md,

@@ -16,6 +16,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -71,19 +72,56 @@ const PregnancyHealthScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors } = useThemeStore();
-  const { currentPregnancy, isLoading, fetchActivePregnancies } = usePregnancyStore();
+  const { 
+    currentPregnancy, 
+    isLoading, 
+    fetchActivePregnancies, 
+    updateCurrentWeight,
+    saveSymptoms,
+    getSymptomsHistory,
+    getTodaySymptoms,
+    updateMedicalConditions,
+    updateAllergies,
+  } = usePregnancyStore();
   const { accessToken } = useAuthStore();
 
   // Local state
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [showWeightModal, setShowWeightModal] = useState(false);
+  const [showSymptomsHistoryModal, setShowSymptomsHistoryModal] = useState(false);
+  const [showMedicalEditModal, setShowMedicalEditModal] = useState(false);
+  const [medicalEditType, setMedicalEditType] = useState<'conditions' | 'allergies'>('conditions');
   const [newWeight, setNewWeight] = useState('');
+  const [symptomsHistory, setSymptomsHistory] = useState<any[]>([]);
+  const [medicalItems, setMedicalItems] = useState<string[]>([]);
+  const [newMedicalItem, setNewMedicalItem] = useState('');
+  const [isSavingSymptoms, setIsSavingSymptoms] = useState(false);
+  const [isSavingWeight, setIsSavingWeight] = useState(false);
 
   useEffect(() => {
     if (accessToken) {
       fetchActivePregnancies();
     }
   }, [accessToken]);
+
+  // Load today's symptoms on mount
+  useEffect(() => {
+    if (currentPregnancy?.id) {
+      loadTodaySymptoms();
+    }
+  }, [currentPregnancy?.id]);
+
+  const loadTodaySymptoms = async () => {
+    if (!currentPregnancy?.id) return;
+    try {
+      const todayData = await getTodaySymptoms(currentPregnancy.id);
+      if (todayData && todayData.symptoms) {
+        setSelectedSymptoms(todayData.symptoms);
+      }
+    } catch (error) {
+      // Silently fail - symptoms might not exist for today yet
+    }
+  };
 
   // Calculate current week and trimester
   const calculateProgress = () => {
@@ -110,13 +148,113 @@ const PregnancyHealthScreen: React.FC = () => {
   const { week, trimester, progress } = calculateProgress();
   const tips = WELLNESS_TIPS[trimester] || WELLNESS_TIPS[1];
 
-  // Toggle symptom selection
-  const toggleSymptom = (symptomId: string) => {
-    setSelectedSymptoms(prev => 
-      prev.includes(symptomId) 
-        ? prev.filter(s => s !== symptomId)
-        : [...prev, symptomId]
-    );
+  // Toggle symptom selection and save
+  const toggleSymptom = async (symptomId: string) => {
+    const newSymptoms = selectedSymptoms.includes(symptomId)
+      ? selectedSymptoms.filter(s => s !== symptomId)
+      : [...selectedSymptoms, symptomId];
+    
+    setSelectedSymptoms(newSymptoms);
+    
+    // Auto-save symptoms
+    if (currentPregnancy?.id) {
+      setIsSavingSymptoms(true);
+      try {
+        await saveSymptoms(currentPregnancy.id, {
+          weekOfPregnancy: week,
+          symptoms: newSymptoms,
+        });
+      } catch (error) {
+        Alert.alert(t('common.error', 'Error'), t('pregnancy.failedToSaveSymptoms', 'Failed to save symptoms'));
+      } finally {
+        setIsSavingSymptoms(false);
+      }
+    }
+  };
+
+  // Load symptoms history
+  const handleShowSymptomsHistory = async () => {
+    if (!currentPregnancy?.id) return;
+    
+    try {
+      const history = await getSymptomsHistory(currentPregnancy.id);
+      setSymptomsHistory(history);
+      setShowSymptomsHistoryModal(true);
+    } catch (error) {
+      Alert.alert(t('common.error', 'Error'), t('pregnancy.failedToLoadHistory', 'Failed to load symptoms history'));
+    }
+  };
+
+  // Open medical edit modal
+  const handleEditMedicalInfo = (type: 'conditions' | 'allergies') => {
+    setMedicalEditType(type);
+    const items = type === 'conditions' 
+      ? currentPregnancy?.medicalConditions || []
+      : currentPregnancy?.allergies || [];
+    setMedicalItems([...items]);
+    setNewMedicalItem('');
+    setShowMedicalEditModal(true);
+  };
+
+  // Add medical item
+  const handleAddMedicalItem = () => {
+    if (!newMedicalItem.trim()) return;
+    if (medicalItems.includes(newMedicalItem.trim())) {
+      Alert.alert(t('common.error', 'Error'), t('pregnancy.itemExists', 'This item already exists'));
+      return;
+    }
+    setMedicalItems([...medicalItems, newMedicalItem.trim()]);
+    setNewMedicalItem('');
+  };
+
+  // Remove medical item
+  const handleRemoveMedicalItem = (index: number) => {
+    setMedicalItems(medicalItems.filter((_, i) => i !== index));
+  };
+
+  // Save medical info
+  const handleSaveMedicalInfo = async () => {
+    if (!currentPregnancy?.id) return;
+
+    try {
+      if (medicalEditType === 'conditions') {
+        await updateMedicalConditions(currentPregnancy.id, medicalItems);
+      } else {
+        await updateAllergies(currentPregnancy.id, medicalItems);
+      }
+      Alert.alert(t('common.success', 'Success'), t('pregnancy.medicalInfoUpdated', 'Medical information updated'));
+      setShowMedicalEditModal(false);
+    } catch (error) {
+      Alert.alert(t('common.error', 'Error'), t('pregnancy.failedToUpdateMedicalInfo', 'Failed to update medical information'));
+    }
+  };
+
+  // Save weight to database
+  const handleSaveWeight = async () => {
+    const weightValue = parseFloat(newWeight);
+    if (isNaN(weightValue) || weightValue <= 0 || weightValue > 300) {
+      Alert.alert(t('common.error', 'Error'), t('pregnancy.invalidWeight', 'Please enter a valid weight'));
+      return;
+    }
+
+    if (!currentPregnancy?.id) return;
+
+    setIsSavingWeight(true);
+    try {
+      await updateCurrentWeight(currentPregnancy.id, weightValue);
+      Alert.alert(t('common.success', 'Success'), t('pregnancy.weightUpdated', 'Weight updated successfully'));
+      setShowWeightModal(false);
+      setNewWeight('');
+    } catch (error) {
+      Alert.alert(t('common.error', 'Error'), t('pregnancy.failedToUpdateWeight', 'Failed to update weight'));
+    } finally {
+      setIsSavingWeight(false);
+    }
+  };
+
+  // Get symptom name from ID
+  const getSymptomName = (id: string) => {
+    return COMMON_SYMPTOMS.find(s => s.id === id)?.name || id;
   };
 
   // Calculate recommended weight gain
@@ -227,11 +365,22 @@ const PregnancyHealthScreen: React.FC = () => {
 
         {/* Symptoms Tracker */}
         <Card style={styles.symptomsCard}>
-          <SectionTitle 
-            title={t('pregnancy.symptomsToday', "Today's Symptoms")} 
-            icon="clipboard-outline" 
-            iconColor={colors.warning}
-          />
+          <View style={styles.sectionHeaderWithAction}>
+            <SectionTitle 
+              title={t('pregnancy.symptomsToday', "Today's Symptoms")} 
+              icon="clipboard-outline" 
+              iconColor={colors.warning}
+            />
+            <TouchableOpacity 
+              style={[styles.historyButton, { borderColor: colors.warning }]}
+              onPress={handleShowSymptomsHistory}
+            >
+              <Ionicons name="time-outline" size={16} color={colors.warning} />
+              <Text style={[styles.historyButtonText, { color: colors.warning }]}>
+                {t('pregnancy.history', 'History')}
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.symptomsGrid}>
             {COMMON_SYMPTOMS.map(symptom => {
               const isSelected = selectedSymptoms.includes(symptom.id);
@@ -246,6 +395,7 @@ const PregnancyHealthScreen: React.FC = () => {
                     }
                   ]}
                   onPress={() => toggleSymptom(symptom.id)}
+                  disabled={isSavingSymptoms}
                 >
                   <Ionicons 
                     name={symptom.icon as any} 
@@ -262,11 +412,17 @@ const PregnancyHealthScreen: React.FC = () => {
               );
             })}
           </View>
-          {selectedSymptoms.length > 0 && (
-            <Text style={[styles.symptomsNote, { color: colors.textSecondary }]}>
-              {t('pregnancy.symptomsNote', 'Tap to log your symptoms. Discuss persistent symptoms with your doctor.')}
-            </Text>
+          {isSavingSymptoms && (
+            <View style={styles.savingIndicator}>
+              <ActivityIndicator size="small" color={colors.warning} />
+              <Text style={[styles.savingText, { color: colors.textSecondary }]}>
+                {t('common.saving', 'Saving...')}
+              </Text>
+            </View>
           )}
+          <Text style={[styles.symptomsNote, { color: colors.textSecondary }]}>
+            {t('pregnancy.symptomsNote', 'Tap to log your symptoms. They are saved automatically.')}
+          </Text>
         </Card>
 
         {/* Wellness Tips */}
@@ -300,43 +456,75 @@ const PregnancyHealthScreen: React.FC = () => {
         </Card>
 
         {/* Medical Info Summary */}
-        {(currentPregnancy.medicalConditions?.length > 0 || currentPregnancy.allergies?.length > 0) && (
-          <Card style={styles.medicalCard}>
-            <SectionTitle 
-              title={t('pregnancy.medicalInfo', 'Medical Information')} 
-              icon="medical-outline" 
-              iconColor={colors.error}
-            />
-            {currentPregnancy.medicalConditions?.length > 0 && (
-              <View style={styles.medicalSection}>
-                <Text style={[styles.medicalLabel, { color: colors.textSecondary }]}>
-                  {t('pregnancy.conditions', 'Conditions')}
+        <Card style={styles.medicalCard}>
+          <SectionTitle 
+            title={t('pregnancy.medicalInfo', 'Medical Information')} 
+            icon="medical-outline" 
+            iconColor={colors.error}
+          />
+          
+          {/* Conditions */}
+          <View style={styles.medicalSection}>
+            <View style={styles.medicalLabelRow}>
+              <Text style={[styles.medicalLabel, { color: colors.textSecondary }]}>
+                {t('pregnancy.conditions', 'Conditions')}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => handleEditMedicalInfo('conditions')}
+                style={styles.editButton}
+              >
+                <Ionicons name="pencil" size={16} color={colors.primary} />
+                <Text style={[styles.editButtonText, { color: colors.primary }]}>
+                  {t('common.edit', 'Edit')}
                 </Text>
-                <View style={styles.tagContainer}>
-                  {currentPregnancy.medicalConditions.map((condition, i) => (
-                    <View key={i} style={[styles.tag, { backgroundColor: colors.gray[100] }]}>
-                      <Text style={[styles.tagText, { color: colors.error }]}>{condition}</Text>
-                    </View>
-                  ))}
-                </View>
+              </TouchableOpacity>
+            </View>
+            {currentPregnancy.medicalConditions?.length > 0 ? (
+              <View style={styles.tagContainer}>
+                {currentPregnancy.medicalConditions.map((condition, i) => (
+                  <View key={i} style={[styles.tag, { backgroundColor: colors.gray[100] }]}>
+                    <Text style={[styles.tagText, { color: colors.error }]}>{condition}</Text>
+                  </View>
+                ))}
               </View>
+            ) : (
+              <Text style={[styles.noDataText, { color: colors.gray[400] }]}>
+                {t('pregnancy.noConditions', 'No conditions recorded')}
+              </Text>
             )}
-            {currentPregnancy.allergies?.length > 0 && (
-              <View style={styles.medicalSection}>
-                <Text style={[styles.medicalLabel, { color: colors.textSecondary }]}>
-                  {t('pregnancy.allergies', 'Allergies')}
+          </View>
+          
+          {/* Allergies */}
+          <View style={styles.medicalSection}>
+            <View style={styles.medicalLabelRow}>
+              <Text style={[styles.medicalLabel, { color: colors.textSecondary }]}>
+                {t('pregnancy.allergies', 'Allergies')}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => handleEditMedicalInfo('allergies')}
+                style={styles.editButton}
+              >
+                <Ionicons name="pencil" size={16} color={colors.primary} />
+                <Text style={[styles.editButtonText, { color: colors.primary }]}>
+                  {t('common.edit', 'Edit')}
                 </Text>
-                <View style={styles.tagContainer}>
-                  {currentPregnancy.allergies.map((allergy, i) => (
-                    <View key={i} style={[styles.tag, { backgroundColor: colors.gray[100] }]}>
-                      <Text style={[styles.tagText, { color: colors.warning }]}>{allergy}</Text>
-                    </View>
-                  ))}
-                </View>
+              </TouchableOpacity>
+            </View>
+            {currentPregnancy.allergies?.length > 0 ? (
+              <View style={styles.tagContainer}>
+                {currentPregnancy.allergies.map((allergy, i) => (
+                  <View key={i} style={[styles.tag, { backgroundColor: colors.gray[100] }]}>
+                    <Text style={[styles.tagText, { color: colors.warning }]}>{allergy}</Text>
+                  </View>
+                ))}
               </View>
+            ) : (
+              <Text style={[styles.noDataText, { color: colors.gray[400] }]}>
+                {t('pregnancy.noAllergies', 'No allergies recorded')}
+              </Text>
             )}
-          </Card>
-        )}
+          </View>
+        </Card>
 
         {/* Bottom spacing */}
         <View style={{ height: 100 }} />
@@ -382,18 +570,162 @@ const PregnancyHealthScreen: React.FC = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalButton, { backgroundColor: colors.secondary }]}
-                  onPress={() => {
-                    // TODO: Save weight to backend
-                    Alert.alert(t('common.success', 'Success'), t('pregnancy.weightUpdated', 'Weight updated successfully'));
-                    setShowWeightModal(false);
-                    setNewWeight('');
-                  }}
+                  onPress={handleSaveWeight}
+                  disabled={isSavingWeight}
                 >
-                  <Text style={[styles.modalButtonText, { color: colors.white }]}>
-                    {t('common.save', 'Save')}
-                  </Text>
+                  {isSavingWeight ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <Text style={[styles.modalButtonText, { color: colors.white }]}>
+                      {t('common.save', 'Save')}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Symptoms History Modal */}
+      <Modal
+        visible={showSymptomsHistoryModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowSymptomsHistoryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.historyModal, { backgroundColor: colors.white }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                {t('pregnancy.symptomsHistory', 'Symptoms History')}
+              </Text>
+              <TouchableOpacity onPress={() => setShowSymptomsHistoryModal(false)}>
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={symptomsHistory}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <View style={[styles.historyItem, { borderBottomColor: colors.gray[100] }]}>
+                  <View style={styles.historyDateRow}>
+                    <Text style={[styles.historyDate, { color: colors.textPrimary }]}>
+                      {format(new Date(item.date), 'MMM d, yyyy')}
+                    </Text>
+                    <Text style={[styles.historyWeek, { color: colors.textSecondary }]}>
+                      Week {item.weekOfPregnancy}
+                    </Text>
+                  </View>
+                  <View style={styles.historySymptoms}>
+                    {item.symptoms.map((s: string, i: number) => (
+                      <View key={i} style={[styles.historyTag, { backgroundColor: colors.warning + '20' }]}>
+                        <Text style={[styles.historyTagText, { color: colors.warning }]}>
+                          {getSymptomName(s)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyHistory}>
+                  <Ionicons name="document-text-outline" size={48} color={colors.gray[300]} />
+                  <Text style={[styles.emptyHistoryText, { color: colors.gray[400] }]}>
+                    {t('pregnancy.noSymptomsHistory', 'No symptoms history yet')}
+                  </Text>
+                </View>
+              }
+              contentContainerStyle={styles.historyList}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Medical Info Edit Modal */}
+      <Modal
+        visible={showMedicalEditModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMedicalEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.medicalModal, { backgroundColor: colors.white }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                {medicalEditType === 'conditions' 
+                  ? t('pregnancy.editConditions', 'Edit Conditions')
+                  : t('pregnancy.editAllergies', 'Edit Allergies')
+                }
+              </Text>
+              <TouchableOpacity onPress={() => setShowMedicalEditModal(false)}>
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              {/* Add new item */}
+              <View style={styles.addItemRow}>
+                <TextInput
+                  style={[styles.addItemInput, { borderColor: colors.gray[200], color: colors.textPrimary }]}
+                  value={newMedicalItem}
+                  onChangeText={setNewMedicalItem}
+                  placeholder={medicalEditType === 'conditions' 
+                    ? t('pregnancy.enterCondition', 'Enter condition')
+                    : t('pregnancy.enterAllergy', 'Enter allergy')
+                  }
+                  placeholderTextColor={colors.gray[400]}
+                />
+                <TouchableOpacity
+                  style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+                  onPress={handleAddMedicalItem}
+                >
+                  <Ionicons name="add" size={24} color={colors.white} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* List of items */}
+              <View style={styles.itemsList}>
+                {medicalItems.map((item, index) => (
+                  <View key={index} style={[styles.medicalItem, { borderColor: colors.gray[200] }]}>
+                    <Text style={[styles.medicalItemText, { color: colors.textPrimary }]}>
+                      {item}
+                    </Text>
+                    <TouchableOpacity 
+                      onPress={() => handleRemoveMedicalItem(index)}
+                      style={styles.removeButton}
+                    >
+                      <Ionicons name="close-circle" size={24} color={colors.error} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+              
+              {medicalItems.length === 0 && (
+                <Text style={[styles.noItemsText, { color: colors.gray[400] }]}>
+                  {medicalEditType === 'conditions'
+                    ? t('pregnancy.noConditionsYet', 'No conditions added yet')
+                    : t('pregnancy.noAllergiesYet', 'No allergies added yet')
+                  }
+                </Text>
+              )}
+            </ScrollView>
+            <View style={styles.modalActionsBottom}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.gray[100] }]}
+                onPress={() => setShowMedicalEditModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.textSecondary }]}>
+                  {t('common.cancel', 'Cancel')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={handleSaveMedicalInfo}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>
+                  {t('common.save', 'Save')}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -621,6 +953,149 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.semibold,
+  },
+  sectionHeaderWithAction: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    gap: 4,
+  },
+  historyButtonText: {
+    fontSize: FONT_SIZE.xs,
+    fontWeight: FONT_WEIGHT.medium,
+  },
+  savingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  savingText: {
+    fontSize: FONT_SIZE.xs,
+  },
+  medicalLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  editButtonText: {
+    fontSize: FONT_SIZE.xs,
+    fontWeight: FONT_WEIGHT.medium,
+  },
+  noDataText: {
+    fontSize: FONT_SIZE.sm,
+    fontStyle: 'italic',
+  },
+  historyModal: {
+    maxHeight: '70%',
+  },
+  medicalModal: {
+    maxHeight: '70%',
+  },
+  historyList: {
+    padding: SPACING.lg,
+  },
+  historyItem: {
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+  },
+  historyDateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  historyDate: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+  },
+  historyWeek: {
+    fontSize: FONT_SIZE.sm,
+  },
+  historySymptoms: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+  },
+  historyTag: {
+    paddingVertical: 2,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  historyTagText: {
+    fontSize: FONT_SIZE.xs,
+    fontWeight: FONT_WEIGHT.medium,
+  },
+  emptyHistory: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+  },
+  emptyHistoryText: {
+    marginTop: SPACING.sm,
+    fontSize: FONT_SIZE.sm,
+  },
+  addItemRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  addItemInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    fontSize: FONT_SIZE.md,
+  },
+  addItemButton: {
+    width: 48,
+    height: 48,
+    borderRadius: BORDER_RADIUS.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  itemsList: {
+    gap: SPACING.sm,
+  },
+  medicalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  medicalItemText: {
+    fontSize: FONT_SIZE.md,
+    flex: 1,
+  },
+  removeButton: {
+    marginLeft: SPACING.sm,
+  },
+  noItemsText: {
+    textAlign: 'center',
+    fontSize: FONT_SIZE.sm,
+    marginTop: SPACING.md,
+    fontStyle: 'italic',
+  },
+  modalActionsBottom: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    padding: SPACING.lg,
   },
 });
 

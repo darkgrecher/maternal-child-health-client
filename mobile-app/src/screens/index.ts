@@ -13,6 +13,7 @@ export { default as SettingsScreen } from './SettingsScreen';
 export { default as ActivitiesScreen } from './ActivitiesScreen';
 export { default as AddChildScreen } from './AddChildScreen';
 export { default as CreatePregnancyScreen } from './CreatePregnancyScreen';
+export { default as EditPregnancyScreen } from './EditPregnancyScreen';
 export { default as PregnancyDashboardScreen } from './PregnancyDashboardScreen';
 export { default as PregnancyCheckupsScreen } from './PregnancyCheckupsScreen';
 export { default as PregnancyHealthScreen } from './PregnancyHealthScreen';

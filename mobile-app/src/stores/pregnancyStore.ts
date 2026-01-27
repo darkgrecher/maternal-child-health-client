@@ -47,6 +47,21 @@ interface PregnancyState {
   addMeasurement: (pregnancyId: string, data: CreateMeasurementRequest) => Promise<PregnancyMeasurement>;
   fetchMeasurements: (pregnancyId: string) => Promise<PregnancyMeasurement[]>;
   
+  // Symptoms
+  saveSymptoms: (pregnancyId: string, data: { weekOfPregnancy: number; symptoms: string[]; notes?: string }) => Promise<any>;
+  getSymptomsHistory: (pregnancyId: string) => Promise<any[]>;
+  getTodaySymptoms: (pregnancyId: string) => Promise<any | null>;
+  
+  // Journal
+  createJournalEntry: (pregnancyId: string, data: { weekOfPregnancy: number; title: string; content: string; mood?: string }) => Promise<any>;
+  getJournalEntries: (pregnancyId: string) => Promise<any[]>;
+  deleteJournalEntry: (pregnancyId: string, journalId: string) => Promise<void>;
+  
+  // Medical info
+  updateMedicalConditions: (pregnancyId: string, conditions: string[]) => Promise<PregnancyProfile>;
+  updateAllergies: (pregnancyId: string, allergies: string[]) => Promise<PregnancyProfile>;
+  updateCurrentWeight: (pregnancyId: string, weight: number) => Promise<PregnancyProfile>;
+  
   // Utility
   clearData: () => void;
   setLoading: (loading: boolean) => void;
@@ -380,6 +395,146 @@ export const usePregnancyStore = create<PregnancyState>()(
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Failed to fetch measurements';
           set({ error: message });
+          throw error;
+        }
+      },
+
+      // ============================================================================
+      // SYMPTOMS
+      // ============================================================================
+
+      // Save symptoms for today
+      saveSymptoms: async (pregnancyId: string, data: { weekOfPregnancy: number; symptoms: string[]; notes?: string }) => {
+        set({ isLoading: true, error: null });
+        try {
+          const result = await pregnancyService.saveSymptoms(pregnancyId, data);
+          set({ isLoading: false });
+          return result;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to save symptoms';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Get symptoms history
+      getSymptomsHistory: async (pregnancyId: string) => {
+        try {
+          return await pregnancyService.getSymptomsHistory(pregnancyId);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to fetch symptoms history';
+          set({ error: message });
+          throw error;
+        }
+      },
+
+      // Get today's symptoms
+      getTodaySymptoms: async (pregnancyId: string) => {
+        try {
+          return await pregnancyService.getTodaySymptoms(pregnancyId);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to fetch today symptoms';
+          set({ error: message });
+          throw error;
+        }
+      },
+
+      // ============================================================================
+      // JOURNAL
+      // ============================================================================
+
+      // Create journal entry
+      createJournalEntry: async (pregnancyId: string, data: { weekOfPregnancy: number; title: string; content: string; mood?: string }) => {
+        set({ isLoading: true, error: null });
+        try {
+          const result = await pregnancyService.createJournalEntry(pregnancyId, data);
+          set({ isLoading: false });
+          return result;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to create journal entry';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Get journal entries
+      getJournalEntries: async (pregnancyId: string) => {
+        try {
+          return await pregnancyService.getJournalEntries(pregnancyId);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to fetch journal entries';
+          set({ error: message });
+          throw error;
+        }
+      },
+
+      // Delete journal entry
+      deleteJournalEntry: async (pregnancyId: string, journalId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          await pregnancyService.deleteJournalEntry(pregnancyId, journalId);
+          set({ isLoading: false });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to delete journal entry';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // ============================================================================
+      // MEDICAL INFO
+      // ============================================================================
+
+      // Update medical conditions
+      updateMedicalConditions: async (pregnancyId: string, conditions: string[]) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updated = await pregnancyService.updateMedicalConditions(pregnancyId, conditions);
+          set((state) => ({
+            pregnancies: state.pregnancies.map(p => p.id === pregnancyId ? updated : p),
+            currentPregnancy: state.currentPregnancy?.id === pregnancyId ? updated : state.currentPregnancy,
+            isLoading: false,
+          }));
+          return updated;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to update medical conditions';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Update allergies
+      updateAllergies: async (pregnancyId: string, allergies: string[]) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updated = await pregnancyService.updateAllergies(pregnancyId, allergies);
+          set((state) => ({
+            pregnancies: state.pregnancies.map(p => p.id === pregnancyId ? updated : p),
+            currentPregnancy: state.currentPregnancy?.id === pregnancyId ? updated : state.currentPregnancy,
+            isLoading: false,
+          }));
+          return updated;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to update allergies';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Update weight
+      updateCurrentWeight: async (pregnancyId: string, weight: number) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updated = await pregnancyService.updateWeight(pregnancyId, weight);
+          set((state) => ({
+            pregnancies: state.pregnancies.map(p => p.id === pregnancyId ? updated : p),
+            currentPregnancy: state.currentPregnancy?.id === pregnancyId ? updated : state.currentPregnancy,
+            isLoading: false,
+          }));
+          return updated;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to update weight';
+          set({ error: message, isLoading: false });
           throw error;
         }
       },

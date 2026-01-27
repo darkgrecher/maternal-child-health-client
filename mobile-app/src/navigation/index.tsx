@@ -30,6 +30,7 @@ import {
   ActivitiesScreen,
   AddChildScreen,
   CreatePregnancyScreen,
+  EditPregnancyScreen,
   PregnancyDashboardScreen,
   PregnancyCheckupsScreen,
   PregnancyHealthScreen,
@@ -258,6 +259,7 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen name="Activities" component={ActivitiesScreen} />
       <Stack.Screen name="AddChild" component={AddChildScreen} />
       <Stack.Screen name="CreatePregnancy" component={CreatePregnancyScreen} />
+      <Stack.Screen name="EditPregnancy" component={EditPregnancyScreen} />
       <Stack.Screen name="PregnancyDashboard" component={PregnancyDashboardScreen} />
     </Stack.Navigator>
   );

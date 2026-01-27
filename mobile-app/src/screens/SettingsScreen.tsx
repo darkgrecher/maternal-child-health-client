@@ -20,7 +20,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, Header, SectionTitle, FloatingChatButton, Avatar } from '../components/common';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
-import { useChildStore, useThemeStore } from '../stores';
+import { useChildStore, useThemeStore, usePregnancyStore } from '../stores';
 import { RootStackParamList } from '../types';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -46,6 +46,7 @@ const SettingsScreen: React.FC = () => {
   const currentLanguage = i18n.language;
   const { children, profile, selectChild, deleteChild } = useChildStore();
   const { colors } = useThemeStore();
+  const { currentPregnancy, pregnancies } = usePregnancyStore();
 
   const handleLanguageChange = async (languageCode: string) => {
     try {
@@ -57,6 +58,16 @@ const SettingsScreen: React.FC = () => {
 
   const handleAddChild = () => {
     navigation.navigate('AddChild');
+  };
+
+  const handleEditChildProfile = (childId: string) => {
+    navigation.navigate('EditChild', { childId });
+  };
+
+  const handleEditPregnancyProfile = () => {
+    if (currentPregnancy) {
+      navigation.navigate('EditPregnancy', { pregnancyId: currentPregnancy.id });
+    }
   };
 
   const handleSelectChild = (childId: string) => {
@@ -115,6 +126,42 @@ const SettingsScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Pregnancy Profile Section */}
+        {currentPregnancy && (
+          <Card style={styles.sectionCard}>
+            <SectionTitle 
+              title={t('settings.pregnancyProfile', 'Pregnancy Profile')} 
+              icon="heart-outline"
+              iconColor={colors.secondary}
+            />
+            
+            <TouchableOpacity
+              style={[styles.pregnancyProfileItem, { backgroundColor: colors.secondaryLight }]}
+              onPress={handleEditPregnancyProfile}
+            >
+              <View style={[styles.pregnancyIcon, { backgroundColor: colors.secondary }]}>
+                <Ionicons name="heart" size={24} color={colors.white} />
+              </View>
+              <View style={styles.pregnancyInfo}>
+                <Text style={[styles.pregnancyName, { color: colors.textPrimary }]}>
+                  {currentPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom-to-be')}
+                </Text>
+                <Text style={[styles.pregnancyMeta, { color: colors.secondary }]}>
+                  {t('pregnancy.dueDate', 'Due')}: {currentPregnancy.expectedDeliveryDate 
+                    ? new Date(currentPregnancy.expectedDeliveryDate).toLocaleDateString() 
+                    : '--'}
+                </Text>
+              </View>
+              <View style={styles.pregnancyActions}>
+                <Ionicons name="pencil" size={20} color={colors.secondary} />
+                <Text style={[styles.editText, { color: colors.secondary }]}>
+                  {t('common.edit', 'Edit')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </Card>
+        )}
+
         {/* Child Profiles Section */}
         <Card style={styles.sectionCard}>
           <SectionTitle 
@@ -156,6 +203,13 @@ const SettingsScreen: React.FC = () => {
                     {isSelected && (
                       <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                     )}
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => handleEditChildProfile(child.id)}
+                  >
+                    <Ionicons name="pencil-outline" size={20} color={colors.info} />
                   </TouchableOpacity>
                   
                   {children.length > 1 && (
@@ -334,6 +388,45 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: SPACING.sm,
     marginLeft: SPACING.xs,
+  },
+  editButton: {
+    padding: SPACING.sm,
+    marginLeft: SPACING.xs,
+  },
+  pregnancyProfileItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.sm,
+  },
+  pregnancyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+  pregnancyInfo: {
+    flex: 1,
+  },
+  pregnancyName: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+  },
+  pregnancyMeta: {
+    fontSize: FONT_SIZE.sm,
+    marginTop: 2,
+  },
+  pregnancyActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  editText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
   },
   addChildButton: {
     flexDirection: 'row',

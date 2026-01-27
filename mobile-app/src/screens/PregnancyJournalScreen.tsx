@@ -56,21 +56,58 @@ const PregnancyJournalScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors } = useThemeStore();
-  const { currentPregnancy, isLoading, fetchActivePregnancies } = usePregnancyStore();
+  const { 
+    currentPregnancy, 
+    isLoading, 
+    fetchActivePregnancies,
+    createJournalEntry,
+    getJournalEntries,
+    deleteJournalEntry,
+  } = usePregnancyStore();
   const { accessToken } = useAuthStore();
 
-  // Local state for journal entries (would be stored in backend in production)
+  // Local state for journal entries
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [entryTitle, setEntryTitle] = useState('');
   const [entryContent, setEntryContent] = useState('');
   const [selectedMood, setSelectedMood] = useState<JournalEntry['mood']>('happy');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingEntries, setIsLoadingEntries] = useState(false);
 
   useEffect(() => {
     if (accessToken) {
       fetchActivePregnancies();
     }
   }, [accessToken]);
+
+  // Load journal entries when pregnancy is available
+  useEffect(() => {
+    if (currentPregnancy?.id) {
+      loadJournalEntries();
+    }
+  }, [currentPregnancy?.id]);
+
+  const loadJournalEntries = async () => {
+    if (!currentPregnancy?.id) return;
+    
+    setIsLoadingEntries(true);
+    try {
+      const entries = await getJournalEntries(currentPregnancy.id);
+      setJournalEntries(entries.map((e: any) => ({
+        id: e.id,
+        date: e.date,
+        week: e.weekOfPregnancy,
+        title: e.title,
+        content: e.content,
+        mood: e.mood,
+      })));
+    } catch (error) {
+      // Silently fail - entries might not exist yet
+    } finally {
+      setIsLoadingEntries(false);
+    }
+  };
 
   // Calculate current week
   const calculateCurrentWeek = (): number => {
@@ -103,26 +140,68 @@ const PregnancyJournalScreen: React.FC = () => {
   };
 
   // Save journal entry
-  const handleSaveEntry = () => {
+  const handleSaveEntry = async () => {
     if (!entryTitle.trim() || !entryContent.trim()) {
       Alert.alert(t('common.error', 'Error'), t('pregnancy.fillAllFields', 'Please fill in all fields'));
       return;
     }
 
-    const newEntry: JournalEntry = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      week: currentWeek,
-      title: entryTitle,
-      content: entryContent,
-      mood: selectedMood,
-    };
+    if (!currentPregnancy?.id) return;
 
-    setJournalEntries(prev => [newEntry, ...prev]);
-    setShowEntryModal(false);
-    setEntryTitle('');
-    setEntryContent('');
-    setSelectedMood('happy');
+    setIsSaving(true);
+    try {
+      const savedEntry = await createJournalEntry(currentPregnancy.id, {
+        weekOfPregnancy: currentWeek,
+        title: entryTitle,
+        content: entryContent,
+        mood: selectedMood,
+      });
+
+      const newEntry: JournalEntry = {
+        id: savedEntry.id,
+        date: savedEntry.date,
+        week: savedEntry.weekOfPregnancy,
+        title: savedEntry.title,
+        content: savedEntry.content,
+        mood: savedEntry.mood,
+      };
+
+      setJournalEntries(prev => [newEntry, ...prev]);
+      setShowEntryModal(false);
+      setEntryTitle('');
+      setEntryContent('');
+      setSelectedMood('happy');
+      Alert.alert(t('common.success', 'Success'), t('pregnancy.entrySaved', 'Journal entry saved'));
+    } catch (error) {
+      Alert.alert(t('common.error', 'Error'), t('pregnancy.failedToSaveEntry', 'Failed to save journal entry'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Delete journal entry
+  const handleDeleteEntry = async (entryId: string) => {
+    if (!currentPregnancy?.id) return;
+
+    Alert.alert(
+      t('common.confirm', 'Confirm'),
+      t('pregnancy.deleteEntryConfirm', 'Are you sure you want to delete this entry?'),
+      [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        { 
+          text: t('common.delete', 'Delete'), 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteJournalEntry(currentPregnancy.id, entryId);
+              setJournalEntries(prev => prev.filter(e => e.id !== entryId));
+            } catch (error) {
+              Alert.alert(t('common.error', 'Error'), t('pregnancy.failedToDeleteEntry', 'Failed to delete entry'));
+            }
+          }
+        },
+      ]
+    );
   };
 
   // Loading state
@@ -283,9 +362,14 @@ const PregnancyJournalScreen: React.FC = () => {
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.entryMood}>
-                    {moods.find(m => m.id === entry.mood)?.emoji}
-                  </Text>
+                  <View style={styles.entryActions}>
+                    <Text style={styles.entryMood}>
+                      {moods.find(m => m.id === entry.mood)?.emoji}
+                    </Text>
+                    <TouchableOpacity onPress={() => handleDeleteEntry(entry.id)}>
+                      <Ionicons name="trash-outline" size={20} color={colors.error} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <Text style={[styles.entryTitle, { color: colors.textPrimary }]}>
                   {entry.title}
@@ -378,6 +462,7 @@ const PregnancyJournalScreen: React.FC = () => {
                 <TouchableOpacity
                   style={[styles.modalButton, { backgroundColor: colors.gray[100] }]}
                   onPress={() => setShowEntryModal(false)}
+                  disabled={isSaving}
                 >
                   <Text style={[styles.modalButtonText, { color: colors.textSecondary }]}>
                     {t('common.cancel', 'Cancel')}
@@ -386,10 +471,15 @@ const PregnancyJournalScreen: React.FC = () => {
                 <TouchableOpacity
                   style={[styles.modalButton, { backgroundColor: colors.secondary }]}
                   onPress={handleSaveEntry}
+                  disabled={isSaving}
                 >
-                  <Text style={[styles.modalButtonText, { color: colors.white }]}>
-                    {t('common.save', 'Save Entry')}
-                  </Text>
+                  {isSaving ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <Text style={[styles.modalButtonText, { color: colors.white }]}>
+                      {t('common.save', 'Save Entry')}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -543,6 +633,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
+  },
+  entryActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
   },
   entryDate: {
     fontSize: FONT_SIZE.xs,
