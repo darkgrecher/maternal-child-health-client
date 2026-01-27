@@ -38,7 +38,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton } from '../components/common';
 import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
-import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore, useEmergencyContactStore } from '../stores';
+import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore, useEmergencyContactStore, usePregnancyStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList, TabParamList, Activity } from '../types';
 import { format } from 'date-fns';
@@ -71,6 +71,7 @@ const HomeScreen: React.FC = () => {
   
   // Store hooks
   const { profile, children, selectedChildId, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay, selectChild } = useChildStore();
+  const { pregnancies, currentPregnancy, fetchActivePregnancies } = usePregnancyStore();
   const { fetchChildVaccinationRecords, getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine } = useVaccineStore();
   const { getNextAppointment, fetchAppointments } = useAppointmentStore();
   const { accessToken } = useAuthStore();
@@ -155,6 +156,7 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     if (accessToken) {
       fetchChildren();
+      fetchActivePregnancies();
       fetchEmergencyContacts();
     }
   }, [accessToken]);
@@ -186,6 +188,16 @@ const HomeScreen: React.FC = () => {
 
     return () => clearInterval(intervalId);
   }, [profile?.id, fetchActivities]);
+
+  // Auto-navigate to pregnancy dashboard if user has only pregnancy profile (no children)
+  useEffect(() => {
+    if (!isLoadingChild && !profile && currentPregnancy && children.length === 0) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'PregnancyMain' as never }],
+      });
+    }
+  }, [isLoadingChild, profile, currentPregnancy, children.length, navigation]);
 
   const ageDisplay = getChildAgeDisplay();
   const latestMeasurement = getLatestGrowthMeasurement();
@@ -337,12 +349,28 @@ const HomeScreen: React.FC = () => {
    * Navigate to create pregnancy profile
    */
   const handleCreatePregnancy = () => {
+    navigation.navigate('CreatePregnancy');
+  };
+
+  /**
+   * Handle logout - go back to auth screen
+   */
+  const handleLogout = () => {
     Alert.alert(
-      t('home.pregnancyProfileComingSoon', 'Coming Soon'),
-      t('home.pregnancyProfileMessage', 'Pregnancy profile feature will be available soon. You can add your child\'s profile once they are born.'),
-      [{ text: t('common.ok', 'OK') }]
+      t('settings.logout', 'Logout'),
+      t('settings.logoutConfirm', 'Are you sure you want to logout?'),
+      [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: t('settings.logout', 'Logout'),
+          style: 'destructive',
+          onPress: async () => {
+            const { logout } = useAuthStore.getState();
+            await logout();
+          },
+        },
+      ]
     );
-    // TODO: navigation.navigate('CreatePregnancy');
   };
 
   /**
@@ -441,7 +469,7 @@ const HomeScreen: React.FC = () => {
   };
 
   // Show loading state
-  if (isLoadingChild && !profile) {
+  if (isLoadingChild && !profile && !currentPregnancy) {
     return (
       <SwipeableTabNavigator>
         <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
@@ -452,11 +480,37 @@ const HomeScreen: React.FC = () => {
     );
   }
 
-  // Show empty state if no child profile
-  if (!profile) {
+  // If user has only pregnancy profile (no children), show loading while auto-navigating
+  if (!profile && currentPregnancy && children.length === 0) {
     return (
       <SwipeableTabNavigator>
         <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+          <ActivityIndicator size="large" color={colors.secondary} />
+          <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
+        </View>
+      </SwipeableTabNavigator>
+    );
+  }
+
+  // Show empty state if no child profile and no pregnancy profile
+  if (!profile && !currentPregnancy) {
+    return (
+      <SwipeableTabNavigator>
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+          {/* Header with logout button */}
+          <View style={styles.welcomeHeader}>
+            <TouchableOpacity 
+              style={styles.logoutButton}
+              onPress={handleLogout}
+            >
+              <Ionicons name="log-out-outline" size={24} color={colors.textPrimary} />
+              <Text style={[styles.logoutText, { color: colors.textPrimary }]}>
+                {t('settings.logout', 'Logout')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={[styles.centerContent, { flex: 1 }]}>
           <View style={styles.emptyStateContainer}>
             <View style={styles.welcomeVideoContainer}>
               <Video
@@ -520,6 +574,7 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
+          </View>
         </View>
       </SwipeableTabNavigator>
     );
@@ -575,6 +630,22 @@ const HomeScreen: React.FC = () => {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+
+      {/* Pregnancy Profile Banner - Show when user has both pregnancy and child profiles */}
+      {currentPregnancy && profile && (
+        <TouchableOpacity 
+          style={[styles.pregnancySwitchBanner, { backgroundColor: colors.secondaryLight }]}
+          onPress={() => navigation.navigate('PregnancyMain' as never)}
+        >
+          <View style={styles.pregnancySwitchContent}>
+            <Ionicons name="heart" size={20} color={colors.secondary} />
+            <Text style={[styles.pregnancySwitchText, { color: colors.secondary }]}>
+              {t('home.viewPregnancyDashboard', 'View Pregnancy Dashboard')}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.secondary} />
+        </TouchableOpacity>
+      )}
 
       {/* Child Summary Card */}
       {profile && (
@@ -934,6 +1005,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  welcomeHeader: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    alignItems: 'flex-end',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+  },
+  logoutText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
   },
   fixedHeader: {
     backgroundColor: COLORS.background,
@@ -1458,6 +1545,66 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.semibold,
     color: COLORS.white,
+  },
+  
+  // Pregnancy tracking state styles
+  pregnancyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  quickActionsContainer: {
+    width: '100%',
+    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.xl,
+    gap: SPACING.md,
+  },
+  primaryActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    gap: SPACING.sm,
+  },
+  primaryActionText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+  },
+  secondaryActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    gap: SPACING.sm,
+  },
+  secondaryActionText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.medium,
+  },
+  
+  // Pregnancy switch banner styles
+  pregnancySwitchBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+  },
+  pregnancySwitchContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  pregnancySwitchText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
   },
 });
 

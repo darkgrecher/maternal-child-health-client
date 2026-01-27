@@ -26,4 +26,10 @@ export const API_ENDPOINTS = {
     BASE: '/children',
     BY_ID: (id: string) => `/children/${id}`,
   },
+  PREGNANCIES: {
+    BASE: '/pregnancies',
+    BY_ID: (id: string) => `/pregnancies/${id}`,
+    ACTIVE: '/pregnancies/active',
+    CONVERT: (id: string) => `/pregnancies/${id}/convert-to-child`,
+  },
 } as const;
