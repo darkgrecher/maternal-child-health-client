@@ -39,7 +39,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton } from '../components/common';
 import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
 import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore, useEmergencyContactStore } from '../stores';
-import { mockActivities, mockHealthTip } from '../data/mockData';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList, TabParamList, Activity } from '../types';
 import { format } from 'date-fns';
