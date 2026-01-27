@@ -107,13 +107,15 @@ const TabNavigator: React.FC = () => {
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.gray[400],
-        tabBarStyle: {
+        tabBarStyle: hasProfile ? {
           backgroundColor: colors.white,
           borderTopWidth: 1,
           borderTopColor: colors.gray[100],
           paddingTop: 8,
           paddingBottom: 8,
           height: 90,
+        } : {
+          display: 'none',
         },
         tabBarLabelStyle: {
           fontSize: FONT_SIZE.xs,

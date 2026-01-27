@@ -458,8 +458,15 @@ const HomeScreen: React.FC = () => {
       <SwipeableTabNavigator>
         <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
           <View style={styles.emptyStateContainer}>
-            <View style={[styles.emptyIconContainer, { backgroundColor: colors.gray[100] }]}>
-              <Ionicons name="happy-outline" size={64} color={colors.gray[300]} />
+            <View style={styles.welcomeVideoContainer}>
+              <Video
+                source={require('../../assets/Seamless_Video_Loop_Creation.mp4')}
+                style={styles.welcomeVideo}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay
+                isLooping
+                isMuted
+              />
             </View>
             <Text style={styles.emptyTitle}>{t('home.welcomeTitle', 'Welcome!')}</Text>
             <Text style={styles.emptySubtitle}>
@@ -997,14 +1004,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
   },
-  emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.gray[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.lg,
+  welcomeVideoContainer: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    overflow: 'hidden',
+    marginBottom: SPACING.md,
+    marginTop: -SPACING.xl * 2,
+  },
+  welcomeVideo: {
+    width: '100%',
+    height: '100%',
   },
   emptyTitle: {
     fontSize: FONT_SIZE.xl,
