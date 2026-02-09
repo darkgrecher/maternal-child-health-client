@@ -525,7 +525,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Activities: undefined;
   AddChild: undefined;
-  CreatePregnancy: undefined;
+  CreatePregnancy: { previousPregnancyId?: string } | undefined;
   PregnancyDashboard: undefined;
 };
 

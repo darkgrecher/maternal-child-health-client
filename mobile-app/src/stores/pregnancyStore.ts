@@ -22,6 +22,8 @@ interface PregnancyState {
   pregnancies: PregnancyProfile[];
   selectedPregnancyId: string | null;
   currentPregnancy: PregnancyProfile | null;
+  viewedPregnancy: PregnancyProfile | null;  // The pregnancy being viewed (may be historical)
+  viewedPregnancyId: string | null;
   
   // Loading states
   isLoading: boolean;
@@ -35,6 +37,12 @@ interface PregnancyState {
   updatePregnancy: (pregnancyId: string, data: UpdatePregnancyRequest) => Promise<PregnancyProfile>;
   deletePregnancy: (pregnancyId: string) => Promise<void>;
   selectPregnancy: (pregnancyId: string) => void;
+  
+  // View pregnancy (for viewing historical profiles)
+  viewPregnancy: (pregnancyId: string) => void;
+  viewActivePregnancy: () => void;
+  isViewingCompleted: () => boolean;
+  getActivePregnancy: () => PregnancyProfile | null;
   
   // Convert to child
   convertToChild: (pregnancyId: string, data: ConvertToChildRequest) => Promise<{ pregnancy: PregnancyProfile; child: ChildProfile }>;
@@ -115,6 +123,8 @@ export const usePregnancyStore = create<PregnancyState>()(
       pregnancies: [],
       selectedPregnancyId: null,
       currentPregnancy: null,
+      viewedPregnancy: null,
+      viewedPregnancyId: null,
       isLoading: false,
       error: null,
 
@@ -135,6 +145,8 @@ export const usePregnancyStore = create<PregnancyState>()(
             pregnancies, 
             currentPregnancy: selectedPregnancy || null,
             selectedPregnancyId: selectedPregnancy?.id || null,
+            viewedPregnancy: selectedPregnancy || null,
+            viewedPregnancyId: selectedPregnancy?.id || null,
             isLoading: false 
           });
         } catch (error) {
@@ -254,8 +266,50 @@ export const usePregnancyStore = create<PregnancyState>()(
       selectPregnancy: (pregnancyId: string) => {
         const pregnancy = get().pregnancies.find(p => p.id === pregnancyId);
         if (pregnancy) {
-          set({ currentPregnancy: pregnancy, selectedPregnancyId: pregnancyId });
+          set({ 
+            currentPregnancy: pregnancy, 
+            selectedPregnancyId: pregnancyId,
+            viewedPregnancy: pregnancy,
+            viewedPregnancyId: pregnancyId,
+          });
         }
+      },
+
+      // View a specific pregnancy (for viewing historical profiles without changing current)
+      viewPregnancy: (pregnancyId: string) => {
+        const pregnancy = get().pregnancies.find(p => p.id === pregnancyId);
+        if (pregnancy) {
+          set({ viewedPregnancy: pregnancy, viewedPregnancyId: pregnancyId });
+        }
+      },
+
+      // Switch back to viewing the active pregnancy
+      viewActivePregnancy: () => {
+        const { currentPregnancy, selectedPregnancyId } = get();
+        set({ 
+          viewedPregnancy: currentPregnancy, 
+          viewedPregnancyId: selectedPregnancyId 
+        });
+      },
+
+      // Check if currently viewing a completed pregnancy
+      isViewingCompleted: () => {
+        const { viewedPregnancy, currentPregnancy } = get();
+        if (!viewedPregnancy) return false;
+        // Viewing completed if viewing different from current active, or current is completed
+        const isCompleted = viewedPregnancy.expectedDeliveryDate 
+          ? new Date() >= new Date(viewedPregnancy.expectedDeliveryDate)
+          : false;
+        return isCompleted || viewedPregnancy.id !== currentPregnancy?.id;
+      },
+
+      // Get the active (non-completed) pregnancy
+      getActivePregnancy: () => {
+        const { pregnancies } = get();
+        return pregnancies.find(p => {
+          if (!p.expectedDeliveryDate) return true;
+          return new Date() < new Date(p.expectedDeliveryDate);
+        }) || null;
       },
 
       // Convert pregnancy to child profile

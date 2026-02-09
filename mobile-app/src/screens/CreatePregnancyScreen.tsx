@@ -4,7 +4,7 @@
  * Screen for creating a pregnancy profile.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
@@ -26,9 +26,11 @@ import { format } from 'date-fns';
 import { Card, Header, Button } from '../components/common';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { useThemeStore, usePregnancyStore } from '../stores';
-import { BloodType } from '../types';
+import { BloodType, RootStackParamList } from '../types';
 
 const BLOOD_TYPE_OPTIONS: BloodType[] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'unknown'];
+
+type CreatePregnancyRouteProp = RouteProp<RootStackParamList, 'CreatePregnancy'>;
 
 /**
  * Create Pregnancy Profile Screen Component
@@ -36,9 +38,18 @@ const BLOOD_TYPE_OPTIONS: BloodType[] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', '
 const CreatePregnancyScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
+  const route = useRoute<CreatePregnancyRouteProp>();
   const insets = useSafeAreaInsets();
   const { colors } = useThemeStore();
-  const { createPregnancy } = usePregnancyStore();
+  const { createPregnancy, pregnancies } = usePregnancyStore();
+  
+  // Get previousPregnancyId from route params
+  const previousPregnancyId = route.params?.previousPregnancyId;
+  
+  // Find the previous pregnancy from pregnancies array
+  const previousPregnancy = previousPregnancyId 
+    ? pregnancies.find(p => p.id === previousPregnancyId) 
+    : null;
 
   // Form state - Mother's Information
   const [motherFirstName, setMotherFirstName] = useState('');
@@ -77,6 +88,58 @@ const CreatePregnancyScreen: React.FC = () => {
   
   // UI state
   const [isLoading, setIsLoading] = useState(false);
+
+  // Pre-fill form data from previous pregnancy
+  useEffect(() => {
+    if (previousPregnancyId && previousPregnancy) {
+      // Pre-fill mother's information (persistent data)
+      if (previousPregnancy.motherFirstName) setMotherFirstName(previousPregnancy.motherFirstName);
+      if (previousPregnancy.motherLastName) setMotherLastName(previousPregnancy.motherLastName);
+      if (previousPregnancy.motherDateOfBirth) {
+        setMotherDateOfBirth(new Date(previousPregnancy.motherDateOfBirth));
+      }
+      if (previousPregnancy.motherBloodType) {
+        setBloodType(previousPregnancy.motherBloodType as BloodType);
+      }
+      
+      // Pre-fill medical information (may persist between pregnancies)
+      if (previousPregnancy.motherHeight) setHeight(previousPregnancy.motherHeight.toString());
+      if (previousPregnancy.medicalConditions && previousPregnancy.medicalConditions.length > 0) {
+        setMedicalConditions(previousPregnancy.medicalConditions.join(', '));
+      }
+      if (previousPregnancy.allergies && previousPregnancy.allergies.length > 0) {
+        setAllergies(previousPregnancy.allergies.join(', '));
+      }
+      if (previousPregnancy.medications && previousPregnancy.medications.length > 0) {
+        setMedications(previousPregnancy.medications.join(', '));
+      }
+      
+      // Pre-fill healthcare providers
+      if (previousPregnancy.hospitalName) setHospitalName(previousPregnancy.hospitalName);
+      if (previousPregnancy.obgynName) setObgynName(previousPregnancy.obgynName);
+      if (previousPregnancy.obgynContact) setObgynContact(previousPregnancy.obgynContact);
+      if (previousPregnancy.midwifeName) setMidwifeName(previousPregnancy.midwifeName);
+      if (previousPregnancy.midwifeContact) setMidwifeContact(previousPregnancy.midwifeContact);
+      
+      // Pre-fill emergency contact
+      if (previousPregnancy.emergencyContactName) setEmergencyContactName(previousPregnancy.emergencyContactName);
+      if (previousPregnancy.emergencyContactPhone) setEmergencyContactPhone(previousPregnancy.emergencyContactPhone);
+      if (previousPregnancy.emergencyContactRelation) setEmergencyContactRelation(previousPregnancy.emergencyContactRelation);
+      
+      // Pre-fill gravida (increment by 1 for new pregnancy)
+      if (previousPregnancy.gravida) {
+        setGravida((previousPregnancy.gravida + 1).toString());
+      }
+      
+      // Pre-fill para (increment by 1 if previous pregnancy completed)
+      if (previousPregnancy.para !== undefined && previousPregnancy.para !== null) {
+        setPara((previousPregnancy.para + 1).toString());
+      }
+      
+      // Note: expectedDeliveryDate and lastMenstrualPeriod are NOT pre-filled
+      // as they are specific to the new pregnancy
+    }
+  }, [previousPregnancyId, previousPregnancy]);
 
   const handleMotherDOBChange = (event: any, selectedDate?: Date) => {
     setShowMotherDOBPicker(Platform.OS === 'ios');

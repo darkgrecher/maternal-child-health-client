@@ -46,7 +46,8 @@ const SettingsScreen: React.FC = () => {
   const currentLanguage = i18n.language;
   const { children, profile, selectChild, deleteChild } = useChildStore();
   const { colors } = useThemeStore();
-  const { currentPregnancy, pregnancies, deletePregnancy } = usePregnancyStore();
+  const { currentPregnancy, pregnancies, deletePregnancy, viewPregnancy, getActivePregnancy } = usePregnancyStore();
+  const activePregnancy = getActivePregnancy();
   const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
@@ -87,6 +88,83 @@ const SettingsScreen: React.FC = () => {
       navigation.navigate('EditPregnancy', { pregnancyId: currentPregnancy.id });
     }
   };
+
+  const handleViewPregnancy = (pregnancyId: string) => {
+    // View the selected pregnancy and navigate to the pregnancy dashboard
+    viewPregnancy(pregnancyId);
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'PregnancyMain' }],
+      })
+    );
+  };
+
+  const handleEditSpecificPregnancy = (pregnancyId: string) => {
+    navigation.navigate('EditPregnancy', { pregnancyId });
+  };
+
+  const handleDeleteSpecificPregnancy = (pregnancyId: string, pregnancyName: string) => {
+    Alert.alert(
+      t('pregnancy.deleteProfile', 'Delete Pregnancy Profile'),
+      t('pregnancy.deleteConfirmNamed', `Are you sure you want to delete ${pregnancyName}'s pregnancy profile? This action cannot be undone.`),
+      [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: t('common.delete', 'Delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePregnancy(pregnancyId);
+              Alert.alert(
+                t('common.success', 'Success'),
+                t('pregnancy.deleteSuccess', 'Pregnancy profile deleted successfully')
+              );
+            } catch (error) {
+              Alert.alert(
+                t('common.error', 'Error'),
+                t('pregnancy.deleteFailed', 'Failed to delete pregnancy profile')
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Helper to check if a pregnancy is completed
+  const isPregnancyCompletedCheck = (pregnancy: typeof currentPregnancy) => {
+    if (!pregnancy?.expectedDeliveryDate) return false;
+    return new Date() >= new Date(pregnancy.expectedDeliveryDate);
+  };
+
+  const handleCreatePregnancy = () => {
+    navigation.navigate('CreatePregnancy');
+  };
+
+  const handleCreateNewPregnancyWithPrevious = () => {
+    // Find the most recently completed pregnancy to use for pre-filling form
+    const completedPregnancies = pregnancies
+      .filter(p => isPregnancyCompletedCheck(p))
+      .sort((a, b) => 
+        new Date(b.expectedDeliveryDate || 0).getTime() - new Date(a.expectedDeliveryDate || 0).getTime()
+      );
+    
+    const mostRecentCompleted = completedPregnancies[0];
+    
+    if (mostRecentCompleted) {
+      navigation.navigate('CreatePregnancy', { previousPregnancyId: mostRecentCompleted.id });
+    } else if (currentPregnancy) {
+      navigation.navigate('CreatePregnancy', { previousPregnancyId: currentPregnancy.id });
+    } else {
+      navigation.navigate('CreatePregnancy');
+    }
+  };
+
+  // Check if current pregnancy is completed (due date has passed)
+  const isPregnancyCompleted = currentPregnancy?.expectedDeliveryDate 
+    ? new Date() >= new Date(currentPregnancy.expectedDeliveryDate)
+    : false;
 
   const handleSelectChild = (childId: string) => {
     selectChild(childId);
@@ -241,48 +319,151 @@ const SettingsScreen: React.FC = () => {
           </Card>
         )}
 
-        {/* Pregnancy Profile Section */}
-        {currentPregnancy && (
+        {/* Pregnancy Profile Section - Show all pregnancy profiles */}
+        {pregnancies.length > 0 && (
           <Card style={styles.sectionCard}>
             <SectionTitle 
-              title={t('settings.pregnancyProfile', 'Pregnancy Profile')} 
+              title={t('settings.pregnancyProfiles', 'Pregnancy Profiles')} 
               icon="heart-outline"
               iconColor={colors.secondary}
             />
             
-            <View style={styles.pregnancyItemContainer}>
+            {/* Sort pregnancies: active first, then by creation date */}
+            {[...pregnancies]
+              .sort((a, b) => {
+                // Active pregnancies first
+                const aCompleted = isPregnancyCompletedCheck(a);
+                const bCompleted = isPregnancyCompletedCheck(b);
+                if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+                // Then by expected delivery date (most recent first)
+                return new Date(b.expectedDeliveryDate || 0).getTime() - new Date(a.expectedDeliveryDate || 0).getTime();
+              })
+              .map((pregnancy, index) => {
+                const isCompleted = isPregnancyCompletedCheck(pregnancy);
+                const isActive = currentPregnancy?.id === pregnancy.id;
+                
+                return (
+                  <View key={pregnancy.id}>
+                    {index > 0 && <View style={styles.pregnancySeparator} />}
+                    <View style={styles.pregnancyItemContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.pregnancyProfileItem, 
+                          { backgroundColor: isCompleted ? colors.gray[100] : colors.secondaryLight },
+                          isActive && styles.activePregnancyBorder,
+                          isActive && { borderColor: colors.secondary }
+                        ]}
+                        onPress={() => isCompleted ? handleViewPregnancy(pregnancy.id) : handleEditSpecificPregnancy(pregnancy.id)}
+                      >
+                        <View style={[
+                          styles.pregnancyIcon, 
+                          { backgroundColor: isCompleted ? colors.gray[400] : colors.secondary }
+                        ]}>
+                          <Ionicons name="heart" size={24} color={colors.white} />
+                        </View>
+                        <View style={styles.pregnancyInfo}>
+                          <View style={styles.pregnancyNameRow}>
+                            <Text style={[styles.pregnancyName, { color: colors.textPrimary }]}>
+                              {pregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom-to-be')}
+                            </Text>
+                            {isCompleted && (
+                              <View style={[styles.completedBadge, { backgroundColor: colors.success }]}>
+                                <Ionicons name="checkmark-circle" size={12} color={colors.white} />
+                                <Text style={styles.completedBadgeText}>
+                                  {t('pregnancy.completed', 'Completed')}
+                                </Text>
+                              </View>
+                            )}
+                            {isActive && !isCompleted && (
+                              <View style={[styles.completedBadge, { backgroundColor: colors.secondary }]}>
+                                <Ionicons name="pulse" size={12} color={colors.white} />
+                                <Text style={styles.completedBadgeText}>
+                                  {t('pregnancy.current', 'Current')}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={[styles.pregnancyMeta, { color: isCompleted ? colors.gray[500] : colors.secondary }]}>
+                            {isCompleted
+                              ? t('pregnancy.periodCompleted', 'Pregnancy period completed')
+                              : `${t('pregnancy.dueDate', 'Due')}: ${pregnancy.expectedDeliveryDate 
+                                  ? new Date(pregnancy.expectedDeliveryDate).toLocaleDateString() 
+                                  : '--'}`
+                            }
+                          </Text>
+                        </View>
+                        <View style={styles.pregnancyActions}>
+                          <Ionicons name={isCompleted ? "eye" : "create-outline"} size={20} color={isCompleted ? colors.gray[400] : colors.secondary} />
+                          <Text style={[styles.editText, { color: isCompleted ? colors.gray[400] : colors.secondary }]}>
+                            {isCompleted ? t('common.view', 'View') : t('common.edit', 'Edit')}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteSpecificPregnancy(pregnancy.id, pregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom-to-be'))}
+                      >
+                        <Ionicons name="trash-outline" size={20} color={colors.error} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+
+            {/* Add New Pregnancy Button - Show only when there's no active pregnancy */}
+            {!activePregnancy && pregnancies.some(p => isPregnancyCompletedCheck(p)) && (
               <TouchableOpacity
-                style={[styles.pregnancyProfileItem, { backgroundColor: colors.secondaryLight }]}
-                onPress={handleEditPregnancyProfile}
+                style={[styles.addNewPregnancyButton, { backgroundColor: colors.secondaryLight, borderColor: colors.secondary }]}
+                onPress={handleCreateNewPregnancyWithPrevious}
               >
-                <View style={[styles.pregnancyIcon, { backgroundColor: colors.secondary }]}>
-                  <Ionicons name="heart" size={24} color={colors.white} />
+                <View style={[styles.addPregnancyIcon, { backgroundColor: colors.secondary }]}>
+                  <Ionicons name="add" size={24} color={colors.white} />
                 </View>
-                <View style={styles.pregnancyInfo}>
-                  <Text style={[styles.pregnancyName, { color: colors.textPrimary }]}>
-                    {currentPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom-to-be')}
+                <View style={styles.addPregnancyTextContainer}>
+                  <Text style={[styles.addPregnancyTitle, { color: colors.secondary }]}>
+                    {t('settings.addNewPregnancy', 'Add New Pregnancy Profile')}
                   </Text>
-                  <Text style={[styles.pregnancyMeta, { color: colors.secondary }]}>
-                    {t('pregnancy.dueDate', 'Due')}: {currentPregnancy.expectedDeliveryDate 
-                      ? new Date(currentPregnancy.expectedDeliveryDate).toLocaleDateString() 
-                      : '--'}
+                  <Text style={[styles.addPregnancyDescription, { color: colors.textSecondary }]}>
+                    {t('settings.pregnantAgain', 'Start tracking your new pregnancy')}
                   </Text>
                 </View>
-                <View style={styles.pregnancyActions}>
-                  <Ionicons name="pencil" size={20} color={colors.secondary} />
-                  <Text style={[styles.editText, { color: colors.secondary }]}>
-                    {t('common.edit', 'Edit')}
-                  </Text>
-                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.secondary} />
               </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={handleDeletePregnancy}
-              >
-                <Ionicons name="trash-outline" size={20} color={colors.error} />
-              </TouchableOpacity>
-            </View>
+            )}
+          </Card>
+        )}
+
+        {/* Create Pregnancy Profile Section - Show when user has child profiles but no pregnancy */}
+        {!currentPregnancy && pregnancies.length === 0 && (children.length > 0 || profile !== null) && (
+          <Card style={styles.sectionCard}>
+            <SectionTitle 
+              title={t('settings.pregnancyTracking', 'Pregnancy Tracking')} 
+              icon="heart-outline"
+              iconColor={colors.secondary}
+            />
+            
+            <Text style={styles.sectionDescription}>
+              {t('settings.createPregnancyDescription', 'Are you expecting? Create a pregnancy profile to track your pregnancy journey alongside your child\'s profile.')}
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.addPregnancyButton, { backgroundColor: colors.secondaryLight, borderColor: colors.secondary }]}
+              onPress={handleCreatePregnancy}
+            >
+              <View style={[styles.addPregnancyIcon, { backgroundColor: colors.secondary }]}>
+                <Ionicons name="add" size={24} color={colors.white} />
+              </View>
+              <View style={styles.addPregnancyTextContainer}>
+                <Text style={[styles.addPregnancyTitle, { color: colors.secondary }]}>
+                  {t('settings.createPregnancyProfile', 'Create Pregnancy Profile')}
+                </Text>
+                <Text style={[styles.addPregnancyDescription, { color: colors.textSecondary }]}>
+                  {t('settings.startTrackingPregnancy', 'Start tracking your pregnancy journey')}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.secondary} />
+            </TouchableOpacity>
           </Card>
         )}
 
@@ -543,12 +724,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: SPACING.sm,
   },
+  pregnancySeparator: {
+    height: 1,
+    backgroundColor: COLORS.gray[200],
+    marginVertical: SPACING.sm,
+  },
   pregnancyProfileItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
+  },
+  activePregnancyBorder: {
+    borderWidth: 2,
   },
   pregnancyIcon: {
     width: 48,
@@ -561,13 +750,43 @@ const styles = StyleSheet.create({
   pregnancyInfo: {
     flex: 1,
   },
+  pregnancyNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+  },
   pregnancyName: {
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.semibold,
   },
+  completedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
+    gap: 4,
+  },
+  completedBadgeText: {
+    fontSize: FONT_SIZE.xs,
+    fontWeight: FONT_WEIGHT.medium,
+    color: COLORS.white,
+  },
   pregnancyMeta: {
     fontSize: FONT_SIZE.sm,
     marginTop: 2,
+  },
+  addNewPregnancyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
   },
   pregnancyActions: {
     flexDirection: 'row',
@@ -609,6 +828,34 @@ const styles = StyleSheet.create({
   addChildDescription: {
     fontSize: FONT_SIZE.xs,
     color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  addPregnancyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    gap: SPACING.sm,
+  },
+  addPregnancyIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addPregnancyTextContainer: {
+    flex: 1,
+  },
+  addPregnancyTitle: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+  },
+  addPregnancyDescription: {
+    fontSize: FONT_SIZE.xs,
     marginTop: 2,
   },
   languageList: {

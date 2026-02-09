@@ -67,13 +67,24 @@ const PregnancyJournalScreen: React.FC = () => {
   const { colors } = useThemeStore();
   const { 
     currentPregnancy, 
+    viewedPregnancy,
     isLoading, 
     fetchActivePregnancies,
     createJournalEntry,
     getJournalEntries,
     deleteJournalEntry,
+    isViewingCompleted,
+    viewActivePregnancy,
+    getActivePregnancy,
   } = usePregnancyStore();
   const { accessToken } = useAuthStore();
+  
+  // Check if viewing a completed/historical pregnancy
+  const isViewingHistorical = isViewingCompleted();
+  const activePregnancy = getActivePregnancy();
+  
+  // Use viewedPregnancy for display, fallback to currentPregnancy
+  const displayPregnancy = viewedPregnancy || currentPregnancy;
 
   // Local state for journal entries
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
@@ -92,17 +103,17 @@ const PregnancyJournalScreen: React.FC = () => {
 
   // Load journal entries when pregnancy is available
   useEffect(() => {
-    if (currentPregnancy?.id) {
+    if (displayPregnancy?.id) {
       loadJournalEntries();
     }
-  }, [currentPregnancy?.id]);
+  }, [displayPregnancy?.id]);
 
   const loadJournalEntries = async () => {
-    if (!currentPregnancy?.id) return;
+    if (!displayPregnancy?.id) return;
     
     setIsLoadingEntries(true);
     try {
-      const entries = await getJournalEntries(currentPregnancy.id);
+      const entries = await getJournalEntries(displayPregnancy.id);
       setJournalEntries(entries.map((e: any) => ({
         id: e.id,
         date: e.date,
@@ -120,9 +131,9 @@ const PregnancyJournalScreen: React.FC = () => {
 
   // Calculate current week
   const calculateCurrentWeek = (): number => {
-    if (!currentPregnancy?.expectedDeliveryDate) return 0;
+    if (!displayPregnancy?.expectedDeliveryDate) return 0;
     
-    const edd = new Date(currentPregnancy.expectedDeliveryDate);
+    const edd = new Date(displayPregnancy.expectedDeliveryDate);
     const today = new Date();
     const conceptionDate = addWeeks(edd, -40);
     const msPerDay = 24 * 60 * 60 * 1000;
@@ -155,11 +166,11 @@ const PregnancyJournalScreen: React.FC = () => {
       return;
     }
 
-    if (!currentPregnancy?.id) return;
+    if (!displayPregnancy?.id) return;
 
     setIsSaving(true);
     try {
-      const savedEntry = await createJournalEntry(currentPregnancy.id, {
+      const savedEntry = await createJournalEntry(displayPregnancy.id, {
         weekOfPregnancy: currentWeek,
         title: entryTitle,
         content: entryContent,
@@ -190,7 +201,7 @@ const PregnancyJournalScreen: React.FC = () => {
 
   // Delete journal entry
   const handleDeleteEntry = async (entryId: string) => {
-    if (!currentPregnancy?.id) return;
+    if (!displayPregnancy?.id) return;
 
     Alert.alert(
       t('common.confirm', 'Confirm'),
@@ -202,7 +213,7 @@ const PregnancyJournalScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteJournalEntry(currentPregnancy.id, entryId);
+              await deleteJournalEntry(displayPregnancy.id, entryId);
               setJournalEntries(prev => prev.filter(e => e.id !== entryId));
             } catch (error) {
               Alert.alert(t('common.error', 'Error'), t('pregnancy.failedToDeleteEntry', 'Failed to delete entry'));
@@ -214,7 +225,7 @@ const PregnancyJournalScreen: React.FC = () => {
   };
 
   // Loading state
-  if (isLoading && !currentPregnancy) {
+  if (isLoading && !displayPregnancy) {
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.secondary} />
@@ -226,7 +237,7 @@ const PregnancyJournalScreen: React.FC = () => {
   }
 
   // No pregnancy profile
-  if (!currentPregnancy) {
+  if (!displayPregnancy) {
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <Ionicons name="book-outline" size={64} color={colors.gray[300]} />
@@ -283,11 +294,35 @@ const PregnancyJournalScreen: React.FC = () => {
         </View>
       </View>
 
+      {/* Historical Pregnancy Banner - Removed - now using inline switch banner instead */}
+
       <ScrollView 
         style={styles.scrollViewWithHeader}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Switch to Current Pregnancy Banner - Show when viewing completed pregnancy with active one */}
+        {isViewingHistorical && activePregnancy && (
+          <TouchableOpacity
+            style={[styles.switchBanner, { backgroundColor: colors.warning }]}
+            onPress={() => viewActivePregnancy()}
+            activeOpacity={0.9}
+          >
+            <View style={styles.switchBannerIcon}>
+              <Ionicons name="swap-horizontal" size={24} color={colors.white} />
+            </View>
+            <View style={styles.switchBannerContent}>
+              <Text style={styles.switchBannerTitle}>
+                {t('pregnancy.switchToCurrent', 'Switch to current pregnancy profile')}
+              </Text>
+              <Text style={styles.switchBannerText}>
+                {t('pregnancy.viewingCompletedTapSwitch', 'You are viewing a completed pregnancy. Tap to switch to your current pregnancy.')}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={colors.white} />
+          </TouchableOpacity>
+        )}
+
         {/* Milestones Timeline */}
         <Card style={styles.milestonesCard}>
           <SectionTitle 
@@ -801,6 +836,67 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.semibold,
+  },
+  // Historical Pregnancy Banner Styles
+  historicalBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+  },
+  historicalBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  historicalBannerText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
+    color: COLORS.white,
+  },
+  historicalBannerAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  historicalBannerActionText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.semibold,
+    color: COLORS.white,
+    textDecorationLine: 'underline',
+  },
+  // Switch to Current Pregnancy Banner Styles
+  switchBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+  },
+  switchBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.sm,
+  },
+  switchBannerContent: {
+    flex: 1,
+  },
+  switchBannerTitle: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+    color: COLORS.white,
+    marginBottom: 2,
+  },
+  switchBannerText: {
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.white,
+    opacity: 0.9,
   },
 });
 

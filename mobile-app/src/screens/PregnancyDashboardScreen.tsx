@@ -26,7 +26,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format, differenceInWeeks, differenceInDays, addWeeks } from 'date-fns';
 
-import { Card, ProgressBar, SectionTitle, Button, FloatingChatButton } from '../components/common';
+import { Card, ProgressBar, SectionTitle, Button, FloatingChatButton, ConvertToChildModal } from '../components/common';
 import { usePregnancyStore, useAuthStore, useThemeStore, useChildStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList } from '../types';
@@ -127,9 +127,30 @@ const PregnancyDashboardScreen: React.FC = () => {
   const { colors } = useThemeStore();
   
   // Store hooks
-  const { currentPregnancy, pregnancies, isLoading, fetchActivePregnancies, deletePregnancy } = usePregnancyStore();
+  const { 
+    currentPregnancy, 
+    viewedPregnancy, 
+    pregnancies, 
+    isLoading, 
+    fetchActivePregnancies, 
+    deletePregnancy,
+    isViewingCompleted,
+    viewActivePregnancy,
+    getActivePregnancy,
+  } = usePregnancyStore();
   const { children, fetchChildren } = useChildStore();
   const { accessToken } = useAuthStore();
+  
+  // Check if viewing a completed/historical pregnancy
+  const isViewingHistorical = isViewingCompleted();
+  const activePregnancy = getActivePregnancy();
+  
+  // Use viewedPregnancy for display, fallback to currentPregnancy
+  const displayPregnancy = viewedPregnancy || currentPregnancy;
+
+  // Modal state for convert to child notification
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [hasDismissedModal, setHasDismissedModal] = useState(false);
 
   // Fetch data on mount
   useEffect(() => {
@@ -139,13 +160,41 @@ const PregnancyDashboardScreen: React.FC = () => {
     }
   }, [accessToken]);
 
+  // Check if due date has passed and show modal
+  useEffect(() => {
+    if (displayPregnancy?.expectedDeliveryDate && !hasDismissedModal && !isViewingHistorical) {
+      const dueDate = new Date(displayPregnancy.expectedDeliveryDate);
+      const today = new Date();
+      
+      // Show modal if due date has passed
+      if (today >= dueDate) {
+        // Small delay for better UX
+        const timer = setTimeout(() => {
+          setShowConvertModal(true);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [displayPregnancy?.expectedDeliveryDate, hasDismissedModal, isViewingHistorical]);
+
+  const handleCloseConvertModal = () => {
+    setShowConvertModal(false);
+    setHasDismissedModal(true);
+  };
+
+  const handleCreateChildProfile = () => {
+    setShowConvertModal(false);
+    setHasDismissedModal(true);
+    navigation.navigate('AddChild');
+  };
+
   // Calculate pregnancy progress
   const calculatePregnancyProgress = () => {
-    if (!currentPregnancy?.expectedDeliveryDate) {
+    if (!displayPregnancy?.expectedDeliveryDate) {
       return { weeks: 0, days: 0, progress: 0, daysRemaining: 280 };
     }
 
-    const edd = new Date(currentPregnancy.expectedDeliveryDate);
+    const edd = new Date(displayPregnancy.expectedDeliveryDate);
     const today = new Date();
     
     // Calculate from conception (40 weeks = 280 days before EDD)
@@ -170,7 +219,7 @@ const PregnancyDashboardScreen: React.FC = () => {
   };
 
   // Loading state
-  if (isLoading && !currentPregnancy) {
+  if (isLoading && !displayPregnancy) {
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -180,7 +229,7 @@ const PregnancyDashboardScreen: React.FC = () => {
   }
 
   // No pregnancy profile
-  if (!currentPregnancy) {
+  if (!displayPregnancy) {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <View style={styles.header}>
@@ -224,7 +273,7 @@ const PregnancyDashboardScreen: React.FC = () => {
                 {t('pregnancy.dashboard', 'Pregnancy Tracker')}
               </Text>
               <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-                {currentPregnancy.motherFullName || currentPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom-to-be')}
+                {displayPregnancy.motherFullName || displayPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom-to-be')}
               </Text>
             </View>
           </View>
@@ -247,11 +296,57 @@ const PregnancyDashboardScreen: React.FC = () => {
         </View>
       </View>
 
+      {/* Historical Pregnancy Banner - Removed - now using reminder banner style instead */}
+
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Reminder Banner - Show when due date has passed */}
+        {/* When viewing completed pregnancy with active one: show switch message */}
+        {/* When viewing completed pregnancy without active one: show create child message */}
+        {pregnancyProgress.daysRemaining === 0 && isViewingHistorical && activePregnancy && (
+          <TouchableOpacity
+            style={[styles.reminderBanner, { backgroundColor: colors.warning }]}
+            onPress={() => viewActivePregnancy()}
+            activeOpacity={0.9}
+          >
+            <View style={styles.reminderIconContainer}>
+              <Ionicons name="swap-horizontal" size={24} color={colors.white} />
+            </View>
+            <View style={styles.reminderContent}>
+              <Text style={styles.reminderTitle}>
+                {t('pregnancy.switchToCurrent', 'Switch to current pregnancy profile')}
+              </Text>
+              <Text style={styles.reminderText}>
+                {t('pregnancy.viewingCompletedTapSwitch', 'You are viewing a completed pregnancy. Tap to switch to your current pregnancy.')}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={colors.white} />
+          </TouchableOpacity>
+        )}
+        {pregnancyProgress.daysRemaining === 0 && !(isViewingHistorical && activePregnancy) && (
+          <TouchableOpacity
+            style={[styles.reminderBanner, { backgroundColor: colors.secondary }]}
+            onPress={() => navigation.navigate('AddChild')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.reminderIconContainer}>
+              <Ionicons name="gift" size={24} color={colors.white} />
+            </View>
+            <View style={styles.reminderContent}>
+              <Text style={styles.reminderTitle}>
+                {t('pregnancy.dueDateArrived', 'Your due date has arrived!')}
+              </Text>
+              <Text style={styles.reminderText}>
+                {t('pregnancy.tapToCreateChild', 'Tap here to create your baby\'s profile and start tracking their growth')}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={colors.white} />
+          </TouchableOpacity>
+        )}
+
         {/* Hero Section with Pregnancy Video */}
         <Card style={styles.heroCard}>
           <View style={styles.heroContentRow}>
@@ -265,7 +360,7 @@ const PregnancyDashboardScreen: React.FC = () => {
             />
             <View style={styles.heroTextContainer}>
               <Text style={[styles.heroGreeting, { color: '#8B4A6B' }]}>
-                {t('pregnancy.hello', 'Hello')}, {currentPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom')}! 
+                {t('pregnancy.hello', 'Hello')}, {displayPregnancy.motherFirstName || t('pregnancy.momToBe', 'Mom')}! 
               </Text>
               <Text style={[styles.heroWeekText, { color: '#6B3A5B' }]}>
                 {t('pregnancy.youAreInWeek', 'You are in week')} {pregnancyProgress.weeks}
@@ -301,7 +396,7 @@ const PregnancyDashboardScreen: React.FC = () => {
             color={colors.secondary}
           />
           <Text style={[styles.eddText, { color: colors.textSecondary }]}>
-            {t('pregnancy.expectedDate', 'Expected:')} {format(new Date(currentPregnancy.expectedDeliveryDate), 'MMMM d, yyyy')}
+            {t('pregnancy.expectedDate', 'Expected:')} {format(new Date(displayPregnancy.expectedDeliveryDate), 'MMMM d, yyyy')}
           </Text>
         </Card>
 
@@ -344,7 +439,7 @@ const PregnancyDashboardScreen: React.FC = () => {
                 {t('pregnancy.currentWeight', 'Current Weight')}
               </Text>
               <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
-                {currentPregnancy.prePregnancyWeight ? `${currentPregnancy.prePregnancyWeight} kg` : '--'}
+                {displayPregnancy.prePregnancyWeight ? `${displayPregnancy.prePregnancyWeight} kg` : '--'}
               </Text>
             </View>
             <View style={[styles.metricItem, { backgroundColor: colors.gray[50] }]}>
@@ -353,21 +448,21 @@ const PregnancyDashboardScreen: React.FC = () => {
                 {t('pregnancy.bloodType', 'Blood Type')}
               </Text>
               <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
-                {currentPregnancy.motherBloodType || '--'}
+                {displayPregnancy.motherBloodType || '--'}
               </Text>
             </View>
           </View>
         </Card>
 
         {/* Medical Info Card */}
-        {(currentPregnancy.hospitalName || currentPregnancy.obgynName) && (
+        {(displayPregnancy.hospitalName || displayPregnancy.obgynName) && (
           <Card style={styles.medicalCard}>
             <SectionTitle 
               title={t('pregnancy.healthcareProviders', 'Healthcare Providers')} 
               icon="medical-outline" 
               iconColor={colors.info}
             />
-            {currentPregnancy.hospitalName && (
+            {displayPregnancy.hospitalName && (
               <View style={styles.providerRow}>
                 <Ionicons name="business-outline" size={20} color={colors.gray[500]} />
                 <View style={styles.providerInfo}>
@@ -375,12 +470,12 @@ const PregnancyDashboardScreen: React.FC = () => {
                     {t('pregnancy.hospital', 'Hospital')}
                   </Text>
                   <Text style={[styles.providerName, { color: colors.textPrimary }]}>
-                    {currentPregnancy.hospitalName}
+                    {displayPregnancy.hospitalName}
                   </Text>
                 </View>
               </View>
             )}
-            {currentPregnancy.obgynName && (
+            {displayPregnancy.obgynName && (
               <View style={styles.providerRow}>
                 <Ionicons name="person-outline" size={20} color={colors.gray[500]} />
                 <View style={styles.providerInfo}>
@@ -388,7 +483,7 @@ const PregnancyDashboardScreen: React.FC = () => {
                     {t('pregnancy.doctor', 'Doctor')}
                   </Text>
                   <Text style={[styles.providerName, { color: colors.textPrimary }]}>
-                    {currentPregnancy.obgynName}
+                    {displayPregnancy.obgynName}
                   </Text>
                 </View>
               </View>
@@ -403,6 +498,15 @@ const PregnancyDashboardScreen: React.FC = () => {
       </ScrollView>
 
       <FloatingChatButton />
+
+      {/* Convert to Child Modal - shown when due date has passed */}
+      <ConvertToChildModal
+        visible={showConvertModal}
+        onClose={handleCloseConvertModal}
+        onCreateChildProfile={handleCreateChildProfile}
+        motherName={currentPregnancy?.motherFirstName}
+        dueDate={currentPregnancy?.expectedDeliveryDate}
+      />
     </View>
   );
 };
@@ -650,6 +754,71 @@ const styles = StyleSheet.create({
   providerName: {
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.medium,
+  },
+  // Reminder Banner Styles
+  reminderBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  reminderIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+  },
+  reminderContent: {
+    flex: 1,
+  },
+  reminderTitle: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.bold,
+    color: COLORS.white,
+    marginBottom: 2,
+  },
+  reminderText: {
+    fontSize: FONT_SIZE.sm,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 18,
+  },
+  // Historical Pregnancy Banner Styles
+  historicalBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+  },
+  historicalBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  historicalBannerText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
+    color: COLORS.white,
+  },
+  historicalBannerAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  historicalBannerActionText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.semibold,
+    color: COLORS.white,
+    textDecorationLine: 'underline',
   },
 });
 
