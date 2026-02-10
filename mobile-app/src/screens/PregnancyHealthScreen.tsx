@@ -82,7 +82,8 @@ const PregnancyHealthScreen: React.FC = () => {
   const navigation = useNavigation<PregnancyHealthNavigationProp>();
   const { colors } = useThemeStore();
   const { 
-    currentPregnancy, 
+    currentPregnancy,
+    viewedPregnancy,
     isLoading, 
     fetchActivePregnancies, 
     updateCurrentWeight,
@@ -91,8 +92,18 @@ const PregnancyHealthScreen: React.FC = () => {
     getTodaySymptoms,
     updateMedicalConditions,
     updateAllergies,
+    isViewingCompleted,
+    viewActivePregnancy,
+    getActivePregnancy,
   } = usePregnancyStore();
   const { accessToken } = useAuthStore();
+  
+  // Check if viewing a completed/historical pregnancy
+  const isViewingHistorical = isViewingCompleted();
+  const activePregnancy = getActivePregnancy();
+  
+  // Use viewedPregnancy for display, fallback to currentPregnancy
+  const displayPregnancy = viewedPregnancy || currentPregnancy;
 
   // Local state
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
@@ -115,15 +126,15 @@ const PregnancyHealthScreen: React.FC = () => {
 
   // Load today's symptoms on mount
   useEffect(() => {
-    if (currentPregnancy?.id) {
+    if (displayPregnancy?.id) {
       loadTodaySymptoms();
     }
-  }, [currentPregnancy?.id]);
+  }, [displayPregnancy?.id]);
 
   const loadTodaySymptoms = async () => {
-    if (!currentPregnancy?.id) return;
+    if (!displayPregnancy?.id) return;
     try {
-      const todayData = await getTodaySymptoms(currentPregnancy.id);
+      const todayData = await getTodaySymptoms(displayPregnancy.id);
       if (todayData && todayData.symptoms) {
         setSelectedSymptoms(todayData.symptoms);
       }
@@ -134,11 +145,11 @@ const PregnancyHealthScreen: React.FC = () => {
 
   // Calculate current week and trimester
   const calculateProgress = () => {
-    if (!currentPregnancy?.expectedDeliveryDate) {
+    if (!displayPregnancy?.expectedDeliveryDate) {
       return { week: 0, trimester: 1, progress: 0 };
     }
     
-    const edd = new Date(currentPregnancy.expectedDeliveryDate);
+    const edd = new Date(displayPregnancy.expectedDeliveryDate);
     const today = new Date();
     const conceptionDate = addWeeks(edd, -40);
     const msPerDay = 24 * 60 * 60 * 1000;
@@ -165,11 +176,11 @@ const PregnancyHealthScreen: React.FC = () => {
     
     setSelectedSymptoms(newSymptoms);
     
-    // Auto-save symptoms
-    if (currentPregnancy?.id) {
+    // Auto-save symptoms (only for active pregnancy)
+    if (displayPregnancy?.id && !isViewingHistorical) {
       setIsSavingSymptoms(true);
       try {
-        await saveSymptoms(currentPregnancy.id, {
+        await saveSymptoms(displayPregnancy.id, {
           weekOfPregnancy: week,
           symptoms: newSymptoms,
         });
@@ -183,10 +194,10 @@ const PregnancyHealthScreen: React.FC = () => {
 
   // Load symptoms history
   const handleShowSymptomsHistory = async () => {
-    if (!currentPregnancy?.id) return;
+    if (!displayPregnancy?.id) return;
     
     try {
-      const history = await getSymptomsHistory(currentPregnancy.id);
+      const history = await getSymptomsHistory(displayPregnancy.id);
       setSymptomsHistory(history);
       setShowSymptomsHistoryModal(true);
     } catch (error) {
@@ -196,10 +207,17 @@ const PregnancyHealthScreen: React.FC = () => {
 
   // Open medical edit modal
   const handleEditMedicalInfo = (type: 'conditions' | 'allergies') => {
+    if (isViewingHistorical) {
+      Alert.alert(
+        t('pregnancy.readOnly', 'Read Only'),
+        t('pregnancy.cannotEditCompleted', 'Cannot edit completed pregnancy profiles.')
+      );
+      return;
+    }
     setMedicalEditType(type);
     const items = type === 'conditions' 
-      ? currentPregnancy?.medicalConditions || []
-      : currentPregnancy?.allergies || [];
+      ? displayPregnancy?.medicalConditions || []
+      : displayPregnancy?.allergies || [];
     setMedicalItems([...items]);
     setNewMedicalItem('');
     setShowMedicalEditModal(true);
@@ -223,13 +241,13 @@ const PregnancyHealthScreen: React.FC = () => {
 
   // Save medical info
   const handleSaveMedicalInfo = async () => {
-    if (!currentPregnancy?.id) return;
+    if (!displayPregnancy?.id || isViewingHistorical) return;
 
     try {
       if (medicalEditType === 'conditions') {
-        await updateMedicalConditions(currentPregnancy.id, medicalItems);
+        await updateMedicalConditions(displayPregnancy.id, medicalItems);
       } else {
-        await updateAllergies(currentPregnancy.id, medicalItems);
+        await updateAllergies(displayPregnancy.id, medicalItems);
       }
       Alert.alert(t('common.success', 'Success'), t('pregnancy.medicalInfoUpdated', 'Medical information updated'));
       setShowMedicalEditModal(false);
@@ -246,11 +264,17 @@ const PregnancyHealthScreen: React.FC = () => {
       return;
     }
 
-    if (!currentPregnancy?.id) return;
+    if (!displayPregnancy?.id || isViewingHistorical) {
+      Alert.alert(
+        t('pregnancy.readOnly', 'Read Only'),
+        t('pregnancy.cannotEditCompleted', 'Cannot edit completed pregnancy profiles.')
+      );
+      return;
+    }
 
     setIsSavingWeight(true);
     try {
-      await updateCurrentWeight(currentPregnancy.id, weightValue);
+      await updateCurrentWeight(displayPregnancy.id, weightValue);
       Alert.alert(t('common.success', 'Success'), t('pregnancy.weightUpdated', 'Weight updated successfully'));
       setShowWeightModal(false);
       setNewWeight('');
@@ -268,8 +292,8 @@ const PregnancyHealthScreen: React.FC = () => {
 
   // Calculate recommended weight gain
   const getWeightGainInfo = () => {
-    const preWeight = currentPregnancy?.prePregnancyWeight || 0;
-    const currentWeight = currentPregnancy?.currentWeight || preWeight;
+    const preWeight = displayPregnancy?.prePregnancyWeight || 0;
+    const currentWeight = displayPregnancy?.currentWeight || preWeight;
     const gain = currentWeight - preWeight;
     
     // Recommended total gain based on BMI (simplified)
@@ -283,7 +307,7 @@ const PregnancyHealthScreen: React.FC = () => {
   const weightInfo = getWeightGainInfo();
 
   // Loading state
-  if (isLoading && !currentPregnancy) {
+  if (isLoading && !displayPregnancy) {
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.secondary} />
@@ -295,7 +319,7 @@ const PregnancyHealthScreen: React.FC = () => {
   }
 
   // No pregnancy profile
-  if (!currentPregnancy) {
+  if (!displayPregnancy) {
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <Ionicons name="fitness-outline" size={64} color={colors.gray[300]} />
@@ -351,6 +375,38 @@ const PregnancyHealthScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Banner for historical pregnancy */}
+        {isViewingHistorical && activePregnancy && (
+          <TouchableOpacity
+            style={[styles.historicalBanner, { backgroundColor: colors.warning }]}
+            onPress={() => viewActivePregnancy()}
+            activeOpacity={0.9}
+          >
+            <View style={styles.bannerIconContainer}>
+              <Ionicons name="swap-horizontal" size={24} color={colors.white} />
+            </View>
+            <View style={styles.bannerContent}>
+              <Text style={styles.bannerTitle}>
+                {t('pregnancy.viewingCompleted', 'Viewing completed pregnancy')}
+              </Text>
+              <Text style={styles.bannerText}>
+                {t('pregnancy.tapToSwitchCurrent', 'Tap to switch to current pregnancy')}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={colors.white} />
+          </TouchableOpacity>
+        )}
+
+        {/* Read-only notice for completed pregnancy */}
+        {isViewingHistorical && !activePregnancy && (
+          <View style={[styles.readOnlyBanner, { backgroundColor: colors.gray[100] }]}>
+            <Ionicons name="lock-closed-outline" size={20} color={colors.gray[500]} />
+            <Text style={[styles.readOnlyText, { color: colors.gray[500] }]}>
+              {t('pregnancy.viewingCompletedReadOnly', 'Viewing completed pregnancy (read-only)')}
+            </Text>
+          </View>
+        )}
+
         {/* Weight Tracking Card */}
         <Card style={styles.weightCard}>
           <SectionTitle 
@@ -385,15 +441,17 @@ const PregnancyHealthScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity 
-              style={[styles.updateButton, { backgroundColor: colors.secondary }]}
-              onPress={() => setShowWeightModal(true)}
-            >
-              <Ionicons name="add" size={20} color={colors.white} />
-              <Text style={styles.updateButtonText}>
-                {t('pregnancy.updateWeight', 'Update Weight')}
-              </Text>
-            </TouchableOpacity>
+            {!isViewingHistorical && (
+              <TouchableOpacity 
+                style={[styles.updateButton, { backgroundColor: colors.secondary }]}
+                onPress={() => setShowWeightModal(true)}
+              >
+                <Ionicons name="add" size={20} color={colors.white} />
+                <Text style={styles.updateButtonText}>
+                  {t('pregnancy.updateWeight', 'Update Weight')}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </Card>
 
@@ -455,7 +513,10 @@ const PregnancyHealthScreen: React.FC = () => {
             </View>
           )}
           <Text style={[styles.symptomsNote, { color: colors.textSecondary }]}>
-            {t('pregnancy.symptomsNote', 'Tap to log your symptoms. They are saved automatically.')}
+            {isViewingHistorical 
+              ? t('pregnancy.symptomsNoteReadOnly', 'Viewing historical symptoms data.')
+              : t('pregnancy.symptomsNote', 'Tap to log your symptoms. They are saved automatically.')
+            }
           </Text>
         </Card>
 
@@ -503,19 +564,21 @@ const PregnancyHealthScreen: React.FC = () => {
               <Text style={[styles.medicalLabel, { color: colors.textSecondary }]}>
                 {t('pregnancy.conditions', 'Conditions')}
               </Text>
-              <TouchableOpacity 
-                onPress={() => handleEditMedicalInfo('conditions')}
-                style={styles.editButton}
-              >
-                <Ionicons name="pencil" size={16} color={colors.primary} />
-                <Text style={[styles.editButtonText, { color: colors.primary }]}>
-                  {t('common.edit', 'Edit')}
-                </Text>
-              </TouchableOpacity>
+              {!isViewingHistorical && (
+                <TouchableOpacity 
+                  onPress={() => handleEditMedicalInfo('conditions')}
+                  style={styles.editButton}
+                >
+                  <Ionicons name="pencil" size={16} color={colors.primary} />
+                  <Text style={[styles.editButtonText, { color: colors.primary }]}>
+                    {t('common.edit', 'Edit')}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
-            {currentPregnancy.medicalConditions?.length > 0 ? (
+            {displayPregnancy.medicalConditions?.length > 0 ? (
               <View style={styles.tagContainer}>
-                {currentPregnancy.medicalConditions.map((condition, i) => (
+                {displayPregnancy.medicalConditions.map((condition, i) => (
                   <View key={i} style={[styles.tag, { backgroundColor: colors.gray[100] }]}>
                     <Text style={[styles.tagText, { color: colors.error }]}>{condition}</Text>
                   </View>
@@ -534,19 +597,21 @@ const PregnancyHealthScreen: React.FC = () => {
               <Text style={[styles.medicalLabel, { color: colors.textSecondary }]}>
                 {t('pregnancy.allergies', 'Allergies')}
               </Text>
-              <TouchableOpacity 
-                onPress={() => handleEditMedicalInfo('allergies')}
-                style={styles.editButton}
-              >
-                <Ionicons name="pencil" size={16} color={colors.primary} />
-                <Text style={[styles.editButtonText, { color: colors.primary }]}>
-                  {t('common.edit', 'Edit')}
-                </Text>
-              </TouchableOpacity>
+              {!isViewingHistorical && (
+                <TouchableOpacity 
+                  onPress={() => handleEditMedicalInfo('allergies')}
+                  style={styles.editButton}
+                >
+                  <Ionicons name="pencil" size={16} color={colors.primary} />
+                  <Text style={[styles.editButtonText, { color: colors.primary }]}>
+                    {t('common.edit', 'Edit')}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
-            {currentPregnancy.allergies?.length > 0 ? (
+            {displayPregnancy.allergies?.length > 0 ? (
               <View style={styles.tagContainer}>
-                {currentPregnancy.allergies.map((allergy, i) => (
+                {displayPregnancy.allergies.map((allergy, i) => (
                   <View key={i} style={[styles.tag, { backgroundColor: colors.gray[100] }]}>
                     <Text style={[styles.tagText, { color: colors.warning }]}>{allergy}</Text>
                   </View>
@@ -1162,6 +1227,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: SPACING.md,
     padding: SPACING.lg,
+  },
+  // Banner styles for historical pregnancy
+  historicalBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
+  },
+  bannerIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+  },
+  bannerContent: {
+    flex: 1,
+  },
+  bannerTitle: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.bold,
+    color: '#fff',
+  },
+  bannerText: {
+    fontSize: FONT_SIZE.sm,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 2,
+  },
+  readOnlyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  readOnlyText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
   },
 });
 
