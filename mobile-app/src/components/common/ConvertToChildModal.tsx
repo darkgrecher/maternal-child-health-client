@@ -168,7 +168,7 @@ export const ConvertToChildModal: React.FC<ConvertToChildModalProps> = ({
             {/* Message */}
             <Text style={[styles.message, { color: colors.textSecondary }]}>
               {motherName 
-                ? t('pregnancy.dueDatePassedPersonal', `Dear ${motherName}, your due date has arrived! We hope you're welcoming your little one soon.`)
+                ? t('pregnancy.dueDatePassedPersonal', { name: motherName })
                 : t('pregnancy.dueDatePassed', 'Your due date has arrived! We hope you\'re welcoming your little one soon.')}
             </Text>
 

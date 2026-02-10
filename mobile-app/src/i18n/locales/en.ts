@@ -467,6 +467,17 @@ export default {
     noProfile: 'No Pregnancy Profile',
     createProfileMessage: 'Create a pregnancy profile to start tracking your journey.',
     trackYourVisits: 'Track your visits',
+    // Checkups Screen
+    checkups: 'Prenatal Checkups',
+    noCheckups: 'No Pregnancy Profile',
+    createProfileForCheckups: 'Create a pregnancy profile to track your prenatal checkups.',
+    switchToCurrent: 'Switch to current pregnancy profile',
+    viewingCompletedTapSwitch: 'You are viewing a completed pregnancy. Tap to switch to your current pregnancy.',
+    yourProgress: 'Your Progress',
+    checkupsCompleted: 'checkups completed',
+    upcoming: 'upcoming',
+    checkupSchedule: 'Checkup Schedule',
+    now: 'NOW',
     // Health Screen
     readOnly: 'Read Only',
     cannotEditCompleted: 'Cannot edit completed pregnancy profiles.',
@@ -474,5 +485,14 @@ export default {
     tapToSwitchCurrent: 'Tap to switch to current pregnancy',
     viewingCompletedReadOnly: 'Viewing completed pregnancy (read-only)',
     symptomsNoteReadOnly: 'Viewing historical symptoms data.',
+    // Convert to Child Modal
+    congratulations: 'Congratulations!',
+    dueDatePassed: 'Your due date has arrived! We hope you\'re welcoming your little one soon.',
+    dueDatePassedPersonal: 'Dear {{name}}, your due date has arrived! We hope you\'re welcoming your little one soon.',
+    readyToCreateChild: 'Ready to start tracking your baby\'s growth?',
+    dueDate: 'Due Date',
+    createChildProfile: 'Create Child Profile',
+    maybeLater: 'Maybe Later',
+    canCreateLater: 'You can always create a child profile from Settings later.',
   },
 };

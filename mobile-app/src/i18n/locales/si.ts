@@ -390,6 +390,17 @@ export default {
     noProfile: 'ගැබ් ගැනීමේ පැතිකඩක් නැත',
     createProfileMessage: 'ඔබේ ගමන නිරීක්ෂණය ආරම්භ කිරීමට ගැබ් ගැනීමේ පැතිකඩක් නිර්මාණය කරන්න.',
     trackYourVisits: 'ඔබේ සංචාර නිරීක්ෂණය කරන්න',
+    // Checkups Screen
+    checkups: 'ප්‍රසව පූර්ව පරීක්ෂණ',
+    noCheckups: 'ගැබ් ගැනීමේ පැතිකඩක් නැත',
+    createProfileForCheckups: 'ඔබේ ප්‍රසව පූර්ව පරීක්ෂණ නිරීක්ෂණය කිරීමට ගැබ් ගැනීමේ පැතිකඩක් සාදන්න.',
+    switchToCurrent: 'වර්තමාන ගැබ් ගැනීමේ පැතිකඩට මාරු වන්න',
+    viewingCompletedTapSwitch: 'ඔබ සම්පූර්ණ කළ ගැබ් ගැනීමක් බලමින් සිටී. ඔබේ වර්තමාන ගැබ් ගැනීමට මාරු වීමට තට්ටු කරන්න.',
+    yourProgress: 'ඔබේ ප්‍රගතිය',
+    checkupsCompleted: 'පරීක්ෂණ සම්පූර්ණ විය',
+    upcoming: 'ඉදිරියට එන',
+    checkupSchedule: 'පරීක්ෂණ කාලසටහන',
+    now: 'දැන්',
     // Health Screen
     readOnly: 'කියවීම පමණි',
     cannotEditCompleted: 'සම්පූර්ණ කළ ගැබ් ගැනීමේ පැතිකඩ සංස්කරණය කළ නොහැක.',
@@ -397,5 +408,14 @@ export default {
     tapToSwitchCurrent: 'වර්තමාන ගැබ් ගැනීම වෙත මාරු වීමට තට්ටු කරන්න',
     viewingCompletedReadOnly: 'සම්පූර්ණ කළ ගැබ් ගැනීම බලමින් (කියවීම පමණි)',
     symptomsNoteReadOnly: 'ඓතිහාසික රෝග ලක්ෂණ දත්ත බලමින්.',
+    // Convert to Child Modal
+    congratulations: 'සුභ පැතුම්!',
+    dueDatePassed: 'ඔබේ දරුවන්ගේ දිනය පැමිණ ඇත! ඔබේ කුඩා දරුවා ඉක්මනින් පිළිගන්නවා යැයි අපි බලාපොරොත්තු වෙමු.',
+    dueDatePassedPersonal: 'ආදරණීය {{name}}, ඔබේ දරුවන්ගේ දිනය පැමිණ ඇත! ඔබේ කුඩා දරුවා ඉක්මනින් පිළිගන්නවා යැයි අපි බලාපොරොත්තු වෙමු.',
+    readyToCreateChild: 'ඔබේ දරුවාගේ වර්ධනය නිරීක්ෂණය කිරීමට සූදානම්ද?',
+    dueDate: 'දිනය',
+    createChildProfile: 'ළමා පැතිකඩ සාදන්න',
+    maybeLater: 'පසුව සමහර විට',
+    canCreateLater: 'ඔබට සෑම විටම සැකසීම් වලින් ළමා පැතිකඩක් සාදා ගත හැක.',
   },
 };

@@ -36,7 +36,7 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton } from '../components/common';
+import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton, ConvertToChildModal } from '../components/common';
 import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
 import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore, useEmergencyContactStore, usePregnancyStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
@@ -71,7 +71,12 @@ const HomeScreen: React.FC = () => {
   
   // Store hooks
   const { profile, children, selectedChildId, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay, selectChild } = useChildStore();
-  const { pregnancies, currentPregnancy, fetchActivePregnancies } = usePregnancyStore();
+  const { pregnancies, currentPregnancy, fetchActivePregnancies, fetchPregnancies } = usePregnancyStore();
+  
+  // State for convert to child modal (shown when user has only completed pregnancies)
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [hasShownConvertModal, setHasShownConvertModal] = useState(false);
+  const [completedPregnancyForModal, setCompletedPregnancyForModal] = useState<any>(null);
   const { fetchChildVaccinationRecords, getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine } = useVaccineStore();
   const { getNextAppointment, fetchAppointments } = useAppointmentStore();
   const { accessToken } = useAuthStore();
@@ -157,6 +162,7 @@ const HomeScreen: React.FC = () => {
     if (accessToken) {
       fetchChildren();
       fetchActivePregnancies();
+      fetchPregnancies(); // Also fetch all pregnancies including completed ones
       fetchEmergencyContacts();
     }
   }, [accessToken]);
@@ -198,6 +204,45 @@ const HomeScreen: React.FC = () => {
       });
     }
   }, [isLoadingChild, profile, currentPregnancy, children.length, navigation]);
+
+  // Show convert to child modal if user has only completed pregnancies without child profiles
+  // This handles the scenario where user has completed pregnancy but hasn't created child profile yet
+  useEffect(() => {
+    if (
+      !isLoadingChild && 
+      !hasShownConvertModal && 
+      !profile && 
+      !currentPregnancy && 
+      children.length === 0 &&
+      pregnancies.length > 0
+    ) {
+      // Find completed pregnancies that haven't been converted to child profiles
+      const completedWithoutChild = pregnancies.find(p => 
+        (p.status === 'delivered' || p.status === 'terminated') && 
+        !p.convertedToChildId
+      );
+      
+      if (completedWithoutChild) {
+        // Show modal after a short delay for better UX
+        const timer = setTimeout(() => {
+          setCompletedPregnancyForModal(completedWithoutChild);
+          setShowConvertModal(true);
+          setHasShownConvertModal(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isLoadingChild, profile, currentPregnancy, children.length, pregnancies, hasShownConvertModal]);
+
+  // Handlers for convert to child modal
+  const handleCloseConvertModal = () => {
+    setShowConvertModal(false);
+  };
+
+  const handleCreateChildFromModal = () => {
+    setShowConvertModal(false);
+    navigation.navigate('AddChild');
+  };
 
   const ageDisplay = getChildAgeDisplay();
   const latestMeasurement = getLatestGrowthMeasurement();
@@ -575,6 +620,15 @@ const HomeScreen: React.FC = () => {
             </View>
           </View>
           </View>
+          
+          {/* Convert to Child Modal - shown when user has completed pregnancy but no child profile */}
+          <ConvertToChildModal
+            visible={showConvertModal}
+            onClose={handleCloseConvertModal}
+            onCreateChildProfile={handleCreateChildFromModal}
+            motherName={completedPregnancyForModal?.motherFirstName}
+            dueDate={completedPregnancyForModal?.expectedDeliveryDate}
+          />
         </View>
       </SwipeableTabNavigator>
     );

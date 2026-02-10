@@ -195,7 +195,7 @@ const PregnancyCheckupsScreen: React.FC = () => {
           </TouchableOpacity>
         )}
 
-        {/* Progress Summary */}}
+        {/* Progress Summary */}
         <Card style={[styles.summaryCard, { borderLeftColor: colors.secondary, borderLeftWidth: 4 }]}>
           <View style={styles.summaryContent}>
             <View style={[styles.weekCircle, { backgroundColor: colors.secondary }]}>
