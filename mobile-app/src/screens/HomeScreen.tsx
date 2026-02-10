@@ -75,12 +75,14 @@ const HomeScreen: React.FC = () => {
   
   // State for convert to child modal (shown when user has only completed pregnancies)
   const [showConvertModal, setShowConvertModal] = useState(false);
-  const [hasShownConvertModal, setHasShownConvertModal] = useState(false);
   const [completedPregnancyForModal, setCompletedPregnancyForModal] = useState<any>(null);
   const { fetchChildVaccinationRecords, getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine } = useVaccineStore();
   const { getNextAppointment, fetchAppointments } = useAppointmentStore();
-  const { accessToken } = useAuthStore();
+  const { accessToken, user } = useAuthStore();
   const { getLatestMeasurement: getLatestGrowthMeasurement, fetchGrowthData } = useGrowthStore();
+  
+  // Track which user the modal was shown for (to reset when switching accounts)
+  const [shownModalForUserId, setShownModalForUserId] = useState<string | null>(null);
   const { activities, fetchActivities, createActivity, deleteActivity: deleteActivityFromStore, getRecentActivities } = useActivityStore();
   const { colors } = useThemeStore();
   const { contacts: emergencyContacts, fetchContacts: fetchEmergencyContacts, createContact: createEmergencyContact, deleteContact: deleteEmergencyContact } = useEmergencyContactStore();
@@ -207,10 +209,14 @@ const HomeScreen: React.FC = () => {
 
   // Show convert to child modal if user has only completed pregnancies without child profiles
   // This handles the scenario where user has completed pregnancy but hasn't created child profile yet
+  // Reset when user changes (different account login) by tracking the user ID
   useEffect(() => {
+    const currentUserId = user?.id;
+    
     if (
       !isLoadingChild && 
-      !hasShownConvertModal && 
+      currentUserId &&
+      shownModalForUserId !== currentUserId && // Only show if not already shown for this user
       !profile && 
       !currentPregnancy && 
       children.length === 0 &&
@@ -227,12 +233,12 @@ const HomeScreen: React.FC = () => {
         const timer = setTimeout(() => {
           setCompletedPregnancyForModal(completedWithoutChild);
           setShowConvertModal(true);
-          setHasShownConvertModal(true);
+          setShownModalForUserId(currentUserId); // Track that we showed modal for this user
         }, 1000);
         return () => clearTimeout(timer);
       }
     }
-  }, [isLoadingChild, profile, currentPregnancy, children.length, pregnancies, hasShownConvertModal]);
+  }, [isLoadingChild, profile, currentPregnancy, children.length, pregnancies, user?.id, shownModalForUserId]);
 
   // Handlers for convert to child modal
   const handleCloseConvertModal = () => {
