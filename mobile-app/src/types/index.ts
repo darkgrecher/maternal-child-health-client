@@ -514,14 +514,19 @@ export interface AppSettings {
  */
 export type RootStackParamList = {
   Main: undefined;
+  PregnancyMain: undefined;
   ProfileMain: undefined;
   EditProfile: { childId?: string; isNew?: boolean };
+  EditChild: { childId: string };
+  EditPregnancy: { pregnancyId: string };
   AddMeasurement: { childId: string };
   VaccineDetails: { vaccineId: string };
   AppointmentDetails: { appointmentId: string };
   Settings: undefined;
   Activities: undefined;
   AddChild: undefined;
+  CreatePregnancy: { previousPregnancyId?: string } | undefined;
+  PregnancyDashboard: undefined;
 };
 
 export type TabParamList = {
@@ -530,6 +535,13 @@ export type TabParamList = {
   Growth: undefined;
   Feeding: undefined;
   Schedule: undefined;
+};
+
+export type PregnancyTabParamList = {
+  PregnancyHome: undefined;
+  Checkups: undefined;
+  Health: undefined;
+  Journal: undefined;
 };
 
 // Re-export auth types

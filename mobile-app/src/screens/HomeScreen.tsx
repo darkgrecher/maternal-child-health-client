@@ -36,10 +36,9 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton } from '../components/common';
+import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton, ConvertToChildModal } from '../components/common';
 import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
-import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore, useEmergencyContactStore } from '../stores';
-import { mockActivities, mockHealthTip } from '../data/mockData';
+import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore, useEmergencyContactStore, usePregnancyStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList, TabParamList, Activity } from '../types';
 import { format } from 'date-fns';
@@ -72,10 +71,18 @@ const HomeScreen: React.FC = () => {
   
   // Store hooks
   const { profile, children, selectedChildId, isLoading: isLoadingChild, fetchChildren, getChildAgeDisplay, selectChild } = useChildStore();
+  const { pregnancies, currentPregnancy, fetchActivePregnancies, fetchPregnancies } = usePregnancyStore();
+  
+  // State for convert to child modal (shown when user has only completed pregnancies)
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [completedPregnancyForModal, setCompletedPregnancyForModal] = useState<any>(null);
   const { fetchChildVaccinationRecords, getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine } = useVaccineStore();
   const { getNextAppointment, fetchAppointments } = useAppointmentStore();
-  const { accessToken } = useAuthStore();
+  const { accessToken, user } = useAuthStore();
   const { getLatestMeasurement: getLatestGrowthMeasurement, fetchGrowthData } = useGrowthStore();
+  
+  // Track which user the modal was shown for (to reset when switching accounts)
+  const [shownModalForUserId, setShownModalForUserId] = useState<string | null>(null);
   const { activities, fetchActivities, createActivity, deleteActivity: deleteActivityFromStore, getRecentActivities } = useActivityStore();
   const { colors } = useThemeStore();
   const { contacts: emergencyContacts, fetchContacts: fetchEmergencyContacts, createContact: createEmergencyContact, deleteContact: deleteEmergencyContact } = useEmergencyContactStore();
@@ -156,6 +163,8 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     if (accessToken) {
       fetchChildren();
+      fetchActivePregnancies();
+      fetchPregnancies(); // Also fetch all pregnancies including completed ones
       fetchEmergencyContacts();
     }
   }, [accessToken]);
@@ -187,6 +196,59 @@ const HomeScreen: React.FC = () => {
 
     return () => clearInterval(intervalId);
   }, [profile?.id, fetchActivities]);
+
+  // Auto-navigate to pregnancy dashboard if user has only pregnancy profile (no children)
+  useEffect(() => {
+    if (!isLoadingChild && !profile && currentPregnancy && children.length === 0) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'PregnancyMain' as never }],
+      });
+    }
+  }, [isLoadingChild, profile, currentPregnancy, children.length, navigation]);
+
+  // Show convert to child modal if user has only completed pregnancies without child profiles
+  // This handles the scenario where user has completed pregnancy but hasn't created child profile yet
+  // Reset when user changes (different account login) by tracking the user ID
+  useEffect(() => {
+    const currentUserId = user?.id;
+    
+    if (
+      !isLoadingChild && 
+      currentUserId &&
+      shownModalForUserId !== currentUserId && // Only show if not already shown for this user
+      !profile && 
+      !currentPregnancy && 
+      children.length === 0 &&
+      pregnancies.length > 0
+    ) {
+      // Find completed pregnancies that haven't been converted to child profiles
+      const completedWithoutChild = pregnancies.find(p => 
+        (p.status === 'delivered' || p.status === 'terminated') && 
+        !p.convertedToChildId
+      );
+      
+      if (completedWithoutChild) {
+        // Show modal after a short delay for better UX
+        const timer = setTimeout(() => {
+          setCompletedPregnancyForModal(completedWithoutChild);
+          setShowConvertModal(true);
+          setShownModalForUserId(currentUserId); // Track that we showed modal for this user
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isLoadingChild, profile, currentPregnancy, children.length, pregnancies, user?.id, shownModalForUserId]);
+
+  // Handlers for convert to child modal
+  const handleCloseConvertModal = () => {
+    setShowConvertModal(false);
+  };
+
+  const handleCreateChildFromModal = () => {
+    setShowConvertModal(false);
+    navigation.navigate('AddChild');
+  };
 
   const ageDisplay = getChildAgeDisplay();
   const latestMeasurement = getLatestGrowthMeasurement();
@@ -335,6 +397,34 @@ const HomeScreen: React.FC = () => {
   };
 
   /**
+   * Navigate to create pregnancy profile
+   */
+  const handleCreatePregnancy = () => {
+    navigation.navigate('CreatePregnancy');
+  };
+
+  /**
+   * Handle logout - go back to auth screen
+   */
+  const handleLogout = () => {
+    Alert.alert(
+      t('settings.logout', 'Logout'),
+      t('settings.logoutConfirm', 'Are you sure you want to logout?'),
+      [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: t('settings.logout', 'Logout'),
+          style: 'destructive',
+          onPress: async () => {
+            const { logout } = useAuthStore.getState();
+            await logout();
+          },
+        },
+      ]
+    );
+  };
+
+  /**
    * Handle add record button - show options for different record types
    */
   const handleAddRecord = () => {
@@ -430,7 +520,7 @@ const HomeScreen: React.FC = () => {
   };
 
   // Show loading state
-  if (isLoadingChild && !profile) {
+  if (isLoadingChild && !profile && !currentPregnancy) {
     return (
       <SwipeableTabNavigator>
         <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
@@ -441,24 +531,110 @@ const HomeScreen: React.FC = () => {
     );
   }
 
-  // Show empty state if no child profile
-  if (!profile) {
+  // If user has only pregnancy profile (no children), show loading while auto-navigating
+  if (!profile && currentPregnancy && children.length === 0) {
     return (
       <SwipeableTabNavigator>
         <View style={[styles.container, styles.centerContent, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+          <ActivityIndicator size="large" color={colors.secondary} />
+          <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
+        </View>
+      </SwipeableTabNavigator>
+    );
+  }
+
+  // Show empty state if no child profile and no pregnancy profile
+  if (!profile && !currentPregnancy) {
+    return (
+      <SwipeableTabNavigator>
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+          {/* Header with logout button */}
+          <View style={styles.welcomeHeader}>
+            <TouchableOpacity 
+              style={styles.logoutButton}
+              onPress={handleLogout}
+            >
+              <Ionicons name="log-out-outline" size={24} color={colors.textPrimary} />
+              <Text style={[styles.logoutText, { color: colors.textPrimary }]}>
+                {t('settings.logout', 'Logout')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={[styles.centerContent, { flex: 1 }]}>
           <View style={styles.emptyStateContainer}>
-            <View style={[styles.emptyIconContainer, { backgroundColor: colors.gray[100] }]}>
-              <Ionicons name="happy-outline" size={64} color={colors.gray[300]} />
+            <View style={styles.welcomeVideoContainer}>
+              <Video
+                source={require('../../assets/Seamless_Video_Loop_Creation.mp4')}
+                style={styles.welcomeVideo}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay
+                isLooping
+                isMuted
+              />
             </View>
             <Text style={styles.emptyTitle}>{t('home.welcomeTitle', 'Welcome!')}</Text>
             <Text style={styles.emptySubtitle}>
-              {t('home.noChildMessage', 'Add your child\'s profile to start tracking their health journey')}
+              {t('home.getStartedMessage', 'Get started by creating a profile')}
             </Text>
-            <TouchableOpacity style={[styles.addChildButton, { backgroundColor: colors.primary }]} onPress={handleAddChild}>
-              <Ionicons name="add-circle-outline" size={24} color={colors.white} />
-              <Text style={styles.addChildButtonText}>{t('home.addChild', 'Add Child Profile')}</Text>
-            </TouchableOpacity>
+            
+            {/* Option Cards */}
+            <View style={styles.optionCardsContainer}>
+              {/* Pregnancy Profile Option */}
+              <TouchableOpacity 
+                style={[styles.optionCard, { backgroundColor: colors.white, borderColor: colors.gray[200] }]} 
+                onPress={handleCreatePregnancy}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: colors.secondaryLight }]}>
+                  <Ionicons name="heart-outline" size={32} color={colors.secondary} />
+                </View>
+                <Text style={[styles.optionTitle, { color: colors.textPrimary }]}>
+                  {t('home.pregnancyProfile', 'Pregnancy Profile')}
+                </Text>
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+                  {t('home.pregnancyDescription', 'Track your pregnancy journey')}
+                </Text>
+                <View style={[styles.optionButton, { backgroundColor: colors.secondaryLight }]}>
+                  <Text style={[styles.optionButtonText, { color: colors.secondary }]}>
+                    {t('home.createProfile', 'Create Profile')}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.secondary} />
+                </View>
+              </TouchableOpacity>
+
+              {/* Child Profile Option */}
+              <TouchableOpacity 
+                style={[styles.optionCard, { backgroundColor: colors.white, borderColor: colors.gray[200] }]} 
+                onPress={handleAddChild}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: colors.primaryLight }]}>
+                  <Ionicons name="happy-outline" size={32} color={colors.primary} />
+                </View>
+                <Text style={[styles.optionTitle, { color: colors.textPrimary }]}>
+                  {t('home.childProfile', 'Child Profile')}
+                </Text>
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+                  {t('home.childDescription', 'Track your child\'s health and growth')}
+                </Text>
+                <View style={[styles.optionButton, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[styles.optionButtonText, { color: colors.primary }]}>
+                    {t('home.addChild', 'Add Child Profile')}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.primary} />
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
+          </View>
+          
+          {/* Convert to Child Modal - shown when user has completed pregnancy but no child profile */}
+          <ConvertToChildModal
+            visible={showConvertModal}
+            onClose={handleCloseConvertModal}
+            onCreateChildProfile={handleCreateChildFromModal}
+            motherName={completedPregnancyForModal?.motherFirstName}
+            dueDate={completedPregnancyForModal?.expectedDeliveryDate}
+          />
         </View>
       </SwipeableTabNavigator>
     );
@@ -492,12 +668,6 @@ const HomeScreen: React.FC = () => {
             >
               <Ionicons name="settings-outline" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.headerIconButton}
-              onPress={() => navigation.navigate('ProfileMain')}
-            >
-              <Ionicons name="person-circle-outline" size={24} color={colors.textPrimary} />
-            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -514,6 +684,22 @@ const HomeScreen: React.FC = () => {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+
+      {/* Pregnancy Profile Banner - Show when user has both pregnancy and child profiles */}
+      {currentPregnancy && profile && (
+        <TouchableOpacity 
+          style={[styles.pregnancySwitchBanner, { backgroundColor: colors.secondaryLight }]}
+          onPress={() => navigation.navigate('PregnancyMain' as never)}
+        >
+          <View style={styles.pregnancySwitchContent}>
+            <Ionicons name="heart" size={20} color={colors.secondary} />
+            <Text style={[styles.pregnancySwitchText, { color: colors.secondary }]}>
+              {t('home.viewPregnancyDashboard', 'View Pregnancy Dashboard')}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.secondary} />
+        </TouchableOpacity>
+      )}
 
       {/* Child Summary Card */}
       {profile && (
@@ -874,6 +1060,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  welcomeHeader: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    alignItems: 'flex-end',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+  },
+  logoutText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
+  },
   fixedHeader: {
     backgroundColor: COLORS.background,
     borderBottomWidth: 1,
@@ -943,14 +1145,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
   },
-  emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.gray[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.lg,
+  welcomeVideoContainer: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    overflow: 'hidden',
+    marginBottom: SPACING.md,
+    marginTop: -SPACING.xl * 2,
+  },
+  welcomeVideo: {
+    width: '100%',
+    height: '100%',
   },
   emptyTitle: {
     fontSize: FONT_SIZE.xl,
@@ -962,21 +1167,57 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
-  addChildButton: {
+  optionCardsContainer: {
+    width: '100%',
+    gap: SPACING.md,
+  },
+  optionCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+    padding: SPACING.lg,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  optionIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  optionTitle: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: FONT_WEIGHT.bold,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+    textAlign: 'center',
+  },
+  optionDescription: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: SPACING.md,
+  },
+  optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
-    gap: SPACING.sm,
+    gap: SPACING.xs,
   },
-  addChildButtonText: {
-    fontSize: FONT_SIZE.md,
+  optionButtonText: {
+    fontSize: FONT_SIZE.sm,
     fontWeight: FONT_WEIGHT.semibold,
-    color: COLORS.white,
   },
   
   // Header
@@ -1358,6 +1599,66 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.semibold,
     color: COLORS.white,
+  },
+  
+  // Pregnancy tracking state styles
+  pregnancyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  quickActionsContainer: {
+    width: '100%',
+    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.xl,
+    gap: SPACING.md,
+  },
+  primaryActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    gap: SPACING.sm,
+  },
+  primaryActionText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+  },
+  secondaryActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    gap: SPACING.sm,
+  },
+  secondaryActionText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.medium,
+  },
+  
+  // Pregnancy switch banner styles
+  pregnancySwitchBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+  },
+  pregnancySwitchContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  pregnancySwitchText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
   },
 });
 

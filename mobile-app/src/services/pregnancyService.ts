@@ -440,4 +440,107 @@ export const pregnancyService = {
     const response = await apiClient.get<MeasurementApiResponse[]>(`/pregnancies/${pregnancyId}/measurements`);
     return response.map(mapToMeasurement);
   },
+
+  // ============================================================================
+  // SYMPTOMS
+  // ============================================================================
+
+  /**
+   * Save symptoms for a specific day
+   */
+  async saveSymptoms(pregnancyId: string, data: {
+    date?: string;
+    weekOfPregnancy: number;
+    symptoms: string[];
+    notes?: string;
+  }): Promise<any> {
+    const response = await apiClient.post(`/pregnancies/${pregnancyId}/symptoms`, data);
+    return response;
+  },
+
+  /**
+   * Get symptoms history
+   */
+  async getSymptomsHistory(pregnancyId: string): Promise<any[]> {
+    const response = await apiClient.get<any[]>(`/pregnancies/${pregnancyId}/symptoms`);
+    return response;
+  },
+
+  /**
+   * Get today's symptoms
+   */
+  async getTodaySymptoms(pregnancyId: string): Promise<any | null> {
+    const response = await apiClient.get<any>(`/pregnancies/${pregnancyId}/symptoms/today`);
+    return response;
+  },
+
+  // ============================================================================
+  // JOURNAL
+  // ============================================================================
+
+  /**
+   * Create a journal entry
+   */
+  async createJournalEntry(pregnancyId: string, data: {
+    date?: string;
+    weekOfPregnancy: number;
+    title: string;
+    content: string;
+    mood?: string;
+  }): Promise<any> {
+    const response = await apiClient.post(`/pregnancies/${pregnancyId}/journals`, data);
+    return response;
+  },
+
+  /**
+   * Get journal entries
+   */
+  async getJournalEntries(pregnancyId: string): Promise<any[]> {
+    const response = await apiClient.get<any[]>(`/pregnancies/${pregnancyId}/journals`);
+    return response;
+  },
+
+  /**
+   * Delete a journal entry
+   */
+  async deleteJournalEntry(pregnancyId: string, journalId: string): Promise<void> {
+    await apiClient.delete(`/pregnancies/${pregnancyId}/journals/${journalId}`);
+  },
+
+  // ============================================================================
+  // MEDICAL INFO
+  // ============================================================================
+
+  /**
+   * Update medical conditions
+   */
+  async updateMedicalConditions(pregnancyId: string, conditions: string[]): Promise<PregnancyProfile> {
+    const response = await apiClient.put<PregnancyApiResponse>(
+      `/pregnancies/${pregnancyId}/medical-conditions`,
+      { conditions }
+    );
+    return mapToPregnancyProfile(response);
+  },
+
+  /**
+   * Update allergies
+   */
+  async updateAllergies(pregnancyId: string, allergies: string[]): Promise<PregnancyProfile> {
+    const response = await apiClient.put<PregnancyApiResponse>(
+      `/pregnancies/${pregnancyId}/allergies`,
+      { allergies }
+    );
+    return mapToPregnancyProfile(response);
+  },
+
+  /**
+   * Update weight
+   */
+  async updateWeight(pregnancyId: string, weight: number): Promise<PregnancyProfile> {
+    const response = await apiClient.put<PregnancyApiResponse>(
+      `/pregnancies/${pregnancyId}/weight`,
+      { weight }
+    );
+    return mapToPregnancyProfile(response);
+  },
 };

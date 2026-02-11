@@ -7,7 +7,7 @@
 // API Base URL - Update this with your server URL
 // Using local network IP instead of localhost for Expo Go on physical devices
 export const API_BASE_URL = __DEV__ 
-  ? 'http://192.168.1.101:3000/api'  // Development - Use your local IP for physical devices (Wi-Fi)
+  ? 'http://10.233.150.144:3000/api'  // Development - Use your local IP for physical devices (Wi-Fi)
   : 'https://your-production-server.com/api';  // Production
 
 /**
@@ -25,5 +25,11 @@ export const API_ENDPOINTS = {
   CHILDREN: {
     BASE: '/children',
     BY_ID: (id: string) => `/children/${id}`,
+  },
+  PREGNANCIES: {
+    BASE: '/pregnancies',
+    BY_ID: (id: string) => `/pregnancies/${id}`,
+    ACTIVE: '/pregnancies/active',
+    CONVERT: (id: string) => `/pregnancies/${id}/convert-to-child`,
   },
 } as const;

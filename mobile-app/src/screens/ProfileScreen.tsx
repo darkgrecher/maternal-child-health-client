@@ -259,30 +259,16 @@ const ProfileScreen: React.FC = () => {
           )}
         </Card>
 
-        {/* Account Section */}
-        <Card style={styles.sectionCard}>
-          <SectionTitle 
-            title={t('profile.account', 'Account')} 
-            icon="person-outline"
-            iconColor={colors.info}
-          />
-          {user && (
-            <View style={styles.singleInfo}>
-              <Text style={styles.infoLabel}>{t('profile.signedInAs', 'Signed in as')}</Text>
-              <Text style={styles.infoValue}>{user.email}</Text>
-              {user.name && (
-                <Text style={styles.userName}>{user.name}</Text>
-              )}
-            </View>
-          )}
-          <TouchableOpacity 
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
-            <Ionicons name="log-out-outline" size={20} color={colors.error} />
-            <Text style={[styles.logoutText, { color: colors.error }]}>{t('auth.logout', 'Sign Out')}</Text>
-          </TouchableOpacity>
-        </Card>
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={20} color={colors.error} />
+          <Text style={[styles.logoutText, { color: colors.error }]}>
+            {t('settings.logout', 'Logout')}
+          </Text>
+        </TouchableOpacity>
 
         {/* Bottom spacing */}
         <View style={{ height: SPACING.xl }} />
@@ -455,15 +441,13 @@ const styles = StyleSheet.create({
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.md,
-    marginTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray[100],
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    marginTop: SPACING.lg,
   },
   logoutText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.error,
-    marginLeft: SPACING.sm,
     fontWeight: FONT_WEIGHT.medium,
   },
 });

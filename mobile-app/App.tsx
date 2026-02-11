@@ -19,7 +19,7 @@ import './src/i18n';
 import Navigation from './src/navigation';
 
 // Stores
-import { useAppStore, useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useThemeStore } from './src/stores';
+import { useAppStore, useAuthStore, useThemeStore } from './src/stores';
 
 // Context
 import { ThemeProvider } from './src/context';
@@ -50,7 +50,6 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const [isInitialized, setIsInitialized] = useState(false);
   
   const { setOnlineStatus } = useAppStore();
-  const { loadMockData: loadChildData } = useChildStore();
   const { status, accessToken, setStatus, fetchProfile } = useAuthStore();
 
   useEffect(() => {
@@ -70,10 +69,6 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
         } else if (!accessToken && status === 'idle') {
           setStatus('unauthenticated');
         }
-        
-        // Load mock data for development (child data only)
-        // Appointment data is now fetched from API in each screen
-        loadChildData();
         
         // Set online status (could be from NetInfo in production)
         setOnlineStatus(true);

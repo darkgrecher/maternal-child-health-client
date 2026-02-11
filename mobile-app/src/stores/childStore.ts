@@ -10,11 +10,6 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ChildProfile, GrowthMeasurement, DevelopmentMilestone, SyncStatus } from '../types';
 import { childService, CreateChildRequest, UpdateChildRequest } from '../services/childService';
-import {
-  mockChildProfile,
-  mockGrowthMeasurements,
-  mockMilestones,
-} from '../data/mockData';
 
 interface ChildState {
   // Data
@@ -48,7 +43,6 @@ interface ChildState {
   updateMilestone: (id: string, achievedDate: string) => void;
   
   // Utility
-  loadMockData: () => void;
   clearData: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -240,15 +234,6 @@ export const useChildStore = create<ChildState>()(
             : m
         ),
       })),
-
-      // Load mock data for development
-      loadMockData: () => set({
-        profile: mockChildProfile,
-        growthMeasurements: mockGrowthMeasurements,
-        milestones: mockMilestones,
-        isLoading: false,
-        error: null,
-      }),
 
       // Clear all data
       clearData: () => set({
