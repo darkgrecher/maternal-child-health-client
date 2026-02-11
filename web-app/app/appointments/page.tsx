@@ -30,7 +30,7 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
-import { MainLayout, Header } from '../components/layout';
+import { MainLayout, Header } from '../components/main-layout';
 import {
   Card,
   Button,
@@ -273,7 +273,7 @@ export default function AppointmentsPage() {
 
       {/* View Toggle & Filters */}
       <Card className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="flex gap-2">
             <Button
               variant={viewMode === 'list' ? 'primary' : 'ghost'}
@@ -290,7 +290,7 @@ export default function AppointmentsPage() {
               Calendar
             </Button>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 w-full">
             <Input
               placeholder="Search appointments..."
               icon={Search}
@@ -308,7 +308,7 @@ export default function AppointmentsPage() {
             ]}
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="w-full sm:w-40"
+            className="w-full sm:w-44"
           />
         </div>
       </Card>

@@ -24,7 +24,7 @@ import {
   Activity,
   FileText,
 } from 'lucide-react';
-import { MainLayout, Header } from '../components/layout';
+import { MainLayout, Header } from '../components/main-layout';
 import {
   Card,
   Button,
@@ -333,8 +333,8 @@ export default function PatientsPage() {
             </button>
           </div>
 
-          <div className="flex-1 flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+          <div className="flex-1 flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex-1 w-full">
               <Input
                 placeholder="Search by name, NIC, or phone..."
                 icon={Search}
@@ -349,7 +349,7 @@ export default function PatientsPage() {
               ]}
               value={filterArea}
               onChange={(e) => setFilterArea(e.target.value)}
-              className="w-full sm:w-40"
+              className="w-full sm:w-44"
             />
           </div>
         </div>
@@ -372,7 +372,7 @@ export default function PatientsPage() {
                         {mother.name}
                       </h3>
                       {mother.pregnancies.some(p => p.status === 'active') && (
-                        <Badge variant="pink">Pregnant</Badge>
+                        <Badge variant="info">Pregnant</Badge>
                       )}
                       {mother.pregnancies.some(p => p.riskFactors && p.riskFactors.length > 0) && (
                         <Badge variant="warning">High Risk</Badge>
@@ -430,7 +430,7 @@ export default function PatientsPage() {
                       <h3 className="font-semibold text-slate-900 dark:text-white">
                         {child.name}
                       </h3>
-                      <Badge variant={child.gender === 'male' ? 'blue' : 'pink'}>
+                      <Badge variant={child.gender === 'male' ? 'info' : 'default'}>
                         {child.gender === 'male' ? '♂' : '♀'}
                       </Badge>
                     </div>
@@ -466,7 +466,7 @@ export default function PatientsPage() {
                 <p className="text-slate-500">{selectedPatient.nic}</p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {selectedPatient.pregnancies.some(p => p.status === 'active') && (
-                    <Badge variant="pink">Currently Pregnant</Badge>
+                    <Badge variant="info">Currently Pregnant</Badge>
                   )}
                   {selectedPatient.pregnancies.some(p => p.riskFactors && p.riskFactors.length > 0) && (
                     <Badge variant="warning">High Risk</Badge>
@@ -553,7 +553,7 @@ export default function PatientsPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-slate-900 dark:text-white">{child.name}</p>
-                            <Badge variant={child.gender === 'male' ? 'blue' : 'pink'}>
+                            <Badge variant={child.gender === 'male' ? 'info' : 'default'}>
                               {child.gender === 'male' ? '♂ Male' : '♀ Female'}
                             </Badge>
                           </div>

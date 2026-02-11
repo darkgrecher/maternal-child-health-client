@@ -26,7 +26,7 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
-import { MainLayout, Header } from '../components/layout';
+import { MainLayout, Header } from '../components/main-layout';
 import {
   Card,
   Button,
@@ -270,8 +270,8 @@ export default function VaccinationsPage() {
         <>
           {/* Filters */}
           <Card className="mb-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <div className="flex-1 w-full">
                 <Input
                   placeholder="Search by child name or vaccine..."
                   icon={Search}
@@ -288,7 +288,7 @@ export default function VaccinationsPage() {
                 ]}
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full sm:w-40"
+                className="w-full sm:w-44"
               />
             </div>
           </Card>

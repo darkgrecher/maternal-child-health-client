@@ -315,7 +315,7 @@ export const useVaccineStore = create<VaccineStore>((set, get) => ({
     const { records } = get();
     const childRecords = records.filter((r) => r.childId === childId);
     if (childRecords.length === 0) return 0;
-    const completed = childRecords.filter((r) => r.status === 'completed').length;
+    const completed = childRecords.filter((r) => r.status === 'administered').length;
     return Math.round((completed / childRecords.length) * 100);
   },
 
@@ -401,8 +401,8 @@ export const useAppointmentStore = create<AppointmentStore>((set, get) => ({
     const { appointments } = get();
     const now = new Date();
     return appointments
-      .filter((a) => new Date(a.dateTime) > now && a.status !== 'cancelled')
-      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+      .filter((a) => new Date(`${a.scheduledDate}T${a.scheduledTime}`) > now && a.status !== 'cancelled')
+      .sort((a, b) => new Date(`${a.scheduledDate}T${a.scheduledTime}`).getTime() - new Date(`${b.scheduledDate}T${b.scheduledTime}`).getTime());
   },
 
   getTodayAppointments: () => {
@@ -413,7 +413,7 @@ export const useAppointmentStore = create<AppointmentStore>((set, get) => ({
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     return appointments.filter((a) => {
-      const appointmentDate = new Date(a.dateTime);
+      const appointmentDate = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
       return appointmentDate >= today && appointmentDate < tomorrow;
     });
   },

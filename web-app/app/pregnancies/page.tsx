@@ -27,8 +27,9 @@ import {
   Baby,
   Activity,
   Stethoscope,
+  QrCode,
 } from 'lucide-react';
-import { MainLayout, Header } from '../components/layout';
+import { MainLayout, Header } from '../components/main-layout';
 import {
   Card,
   Button,
@@ -182,6 +183,7 @@ export default function PregnanciesPage() {
   const [filterRisk, setFilterRisk] = useState('all');
   const [selectedPregnancy, setSelectedPregnancy] = useState<typeof mockPregnancies[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   const filteredPregnancies = mockPregnancies.filter((pregnancy) => {
     const matchesSearch = pregnancy.motherName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -202,9 +204,18 @@ export default function PregnanciesPage() {
         title="Pregnancy Management"
         subtitle={`${activeCount} active pregnancies being monitored`}
         actions={
-          <Button icon={Plus} variant="primary">
-            Register Pregnancy
-          </Button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsQrModalOpen(true)}
+              className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-pink-50 dark:hover:bg-pink-900/20 hover:text-pink-500 text-slate-500 transition-all"
+              title="Scan to add pregnancy profile"
+            >
+              <QrCode className="w-5 h-5" />
+            </button>
+            <Button icon={Plus} variant="primary">
+              Register Pregnancy
+            </Button>
+          </div>
         }
       />
 
@@ -250,8 +261,8 @@ export default function PregnanciesPage() {
 
       {/* Filters */}
       <Card className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex-1 w-full">
             <Input
               placeholder="Search by mother's name..."
               icon={Search}
@@ -277,7 +288,7 @@ export default function PregnanciesPage() {
             ]}
             value={filterRisk}
             onChange={(e) => setFilterRisk(e.target.value)}
-            className="w-full sm:w-40"
+            className="w-full sm:w-44"
           />
         </div>
       </Card>
@@ -397,6 +408,47 @@ export default function PregnanciesPage() {
             </Button>
           }
         />
+      )}
+
+      {/* QR Code Video Modal */}
+      {isQrModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsQrModalOpen(false)}
+          />
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl animate-slide-up overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-900/30">
+                  <QrCode className="w-5 h-5 text-pink-500" />
+                </div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Scan to Add Pregnancy Profile</h2>
+              </div>
+              <button
+                onClick={() => setIsQrModalOpen(false)}
+                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-400 hover:text-slate-600"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-5">
+              <video
+                src="/Baby_Animation_with_Static_QR_Code%20(online-video-cutter.com).mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full rounded-xl"
+              />
+              <p className="text-center text-sm text-slate-500 mt-4">
+                Scan the QR code with your mobile device to quickly add a new pregnancy profile
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Detail Modal */}
