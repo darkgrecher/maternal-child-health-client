@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3001",
     "lint": "eslint"
   },
   "dependencies": {
+    "@auth0/auth0-react": "^2.15.0",
     "chart.js": "^4.4.1",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",

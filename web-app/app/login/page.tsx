@@ -1,68 +1,100 @@
 /**
  * Login Page
- * 
- * Authentication page for admin and midwives
+ *
+ * Authentication page using Auth0 for admin and midwives.
+ * Supports Auth0 Universal Login (redirect) and displays
+ * a branded login experience.
  */
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth0 } from '@auth0/auth0-react';
 import {
   Heart,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
   LogIn,
   AlertCircle,
+  Loader2,
+  ShieldCheck,
 } from 'lucide-react';
+import { useAuthStore } from '../lib/stores';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    isAuthenticated: auth0Authenticated,
+    isLoading: auth0Loading,
+    loginWithRedirect,
+    getAccessTokenSilently,
+    error: auth0Error,
+  } = useAuth0();
+
+  const { loginWithAuth0Token, isAuthenticated: backendAuthenticated, isLoading: storeLoading } = useAuthStore();
   const [error, setError] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [isExchangingToken, setIsExchangingToken] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /**
+   * After Auth0 authenticates, exchange the Auth0 token with our backend
+   */
+  const exchangeToken = useCallback(async () => {
+    if (!auth0Authenticated || backendAuthenticated || isExchangingToken) return;
+
+    setIsExchangingToken(true);
     setError('');
-    setIsLoading(true);
 
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simple validation
-      if (!email || !password) {
-        throw new Error('Please enter both email and password');
-      }
-
-      if (!email.includes('@')) {
-        throw new Error('Please enter a valid email address');
-      }
-
-      if (password.length < 6) {
-        throw new Error('Password must be at least 6 characters');
-      }
-
-      // Store user info in localStorage for demo
-      localStorage.setItem('userEmail', email);
-      localStorage.setItem('isAuthenticated', 'true');
-
-      // Redirect to dashboard
+      const auth0Token = await getAccessTokenSilently();
+      await loginWithAuth0Token(auth0Token);
       router.push('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsLoading(false);
+      console.error('Token exchange failed:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to authenticate with the server. Please try again.'
+      );
+      setIsExchangingToken(false);
     }
+  }, [auth0Authenticated, backendAuthenticated, isExchangingToken, getAccessTokenSilently, loginWithAuth0Token, router]);
+
+  useEffect(() => {
+    exchangeToken();
+  }, [exchangeToken]);
+
+  // If already fully authenticated, redirect to dashboard
+  useEffect(() => {
+    if (backendAuthenticated && !storeLoading) {
+      router.push('/');
+    }
+  }, [backendAuthenticated, storeLoading, router]);
+
+  // Handle Auth0 errors
+  useEffect(() => {
+    if (auth0Error) {
+      setError(auth0Error.message);
+    }
+  }, [auth0Error]);
+
+  const handleLogin = () => {
+    setError('');
+    loginWithRedirect({
+      appState: { returnTo: '/login' },
+    });
   };
+
+  const handleSignup = () => {
+    setError('');
+    loginWithRedirect({
+      appState: { returnTo: '/login' },
+      authorizationParams: {
+        screen_hint: 'signup',
+      },
+    });
+  };
+
+  const isProcessing = auth0Loading || isExchangingToken || storeLoading;
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 flex items-center justify-center p-4">
@@ -87,13 +119,15 @@ export default function LoginPage() {
 
           <h2 className="text-lg font-bold text-center mt-4">
             <span className="text-slate-700">Empowering Healthcare</span><br />
-            <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent text-base">One Family at a Time</span>
+            <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent text-base">
+              One Family at a Time
+            </span>
           </h2>
 
-          <p className="text-slate-400 text-xs mt-4">© 2026 Ministry of Health, Sri Lanka</p>
+          <p className="text-slate-400 text-xs mt-4">&copy; 2026 Ministry of Health, Sri Lanka</p>
         </div>
 
-        {/* Right Side - Login Form */}
+        {/* Right Side - Login */}
         <div className="w-full md:w-7/12 flex items-center justify-center p-8 sm:p-10 bg-white dark:bg-slate-800">
           <div className="w-full max-w-sm">
             {/* Mobile Logo */}
@@ -117,103 +151,59 @@ export default function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email Input */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Mail className="w-5 h-5 text-slate-400" />
-                  </div>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@health.gov.lk"
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
-                    required
-                  />
-                </div>
+            {/* Processing state - exchanging token with backend */}
+            {isProcessing && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-10 h-10 text-pink-500 animate-spin mb-4" />
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                  {auth0Loading
+                    ? 'Checking authentication...'
+                    : isExchangingToken
+                    ? 'Signing you in...'
+                    : 'Loading...'}
+                </p>
               </div>
+            )}
 
-              {/* Password Input */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="w-5 h-5 text-slate-400" />
-                  </div>
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5 text-slate-400 hover:text-slate-600" />
-                    ) : (
-                      <Eye className="w-5 h-5 text-slate-400 hover:text-slate-600" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-pink-500 focus:ring-pink-500"
-                  />
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Remember me</span>
-                </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-pink-600 hover:text-pink-700 dark:text-pink-400 font-medium"
+            {/* Login Buttons - shown when not processing */}
+            {!isProcessing && (
+              <div className="space-y-4">
+                {/* Auth0 Login Button */}
+                <button
+                  onClick={handleLogin}
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40"
                 >
-                  Forgot password?
-                </Link>
+                  <LogIn className="w-5 h-5" />
+                  <span>Sign In</span>
+                </button>
+
+                {/* Divider */}
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200 dark:border-slate-600" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-white dark:bg-slate-800 px-3 text-slate-400">or</span>
+                  </div>
+                </div>
+
+                {/* Sign Up Button */}
+                <button
+                  onClick={handleSignup}
+                  className="w-full py-3.5 px-4 bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 hover:border-pink-300 dark:hover:border-pink-500 text-slate-700 dark:text-slate-200 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-3"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                  <span>Create Account</span>
+                </button>
+
+                {/* Info */}
+                <p className="text-center text-xs text-slate-400 mt-6">
+                  Secure authentication powered by Auth0.
+                  <br />
+                  Supports email/password and social login.
+                </p>
               </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-pink-500/25"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Signing in...</span>
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-5 h-5" />
-                    <span>Sign In</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-
-          {/* Footer Links */}
-          <div className="mt-6 text-center text-sm text-slate-500">
-            
+            )}
           </div>
         </div>
       </div>

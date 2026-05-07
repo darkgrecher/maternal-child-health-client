@@ -24,11 +24,12 @@ import type {
 interface AuthStore {
   user: User | null;
   accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   setUser: (user: User | null) => void;
   setAccessToken: (token: string | null) => void;
-  login: (email: string, password: string) => Promise<void>;
+  loginWithAuth0Token: (auth0Token: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -37,6 +38,7 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
 
@@ -47,18 +49,31 @@ export const useAuthStore = create<AuthStore>()(
         set({ accessToken: token });
       },
 
-      login: async (email: string, password: string) => {
+      /**
+       * Exchange an Auth0 access token for backend JWT tokens
+       */
+      loginWithAuth0Token: async (auth0Token: string) => {
         set({ isLoading: true });
         try {
-          const response = await apiClient.post<{ user: User; accessToken: string }>(
-            '/auth/login',
-            { email, password },
+          const response = await apiClient.post<{
+            success: boolean;
+            data: {
+              accessToken: string;
+              refreshToken: string;
+              expiresIn: number;
+              user: User;
+            };
+          }>(
+            '/auth/auth0',
+            { auth0Token },
             { requiresAuth: false }
           );
-          apiClient.setAccessToken(response.accessToken);
+          const { accessToken, refreshToken, user } = response.data;
+          apiClient.setAccessToken(accessToken);
           set({
-            user: response.user,
-            accessToken: response.accessToken,
+            user,
+            accessToken,
+            refreshToken,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -69,10 +84,16 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
+        const { refreshToken } = get();
+        // Attempt to invalidate on server (fire-and-forget)
+        if (refreshToken) {
+          apiClient.post('/auth/logout', { refreshToken }).catch(() => {});
+        }
         apiClient.setAccessToken(null);
         set({
           user: null,
           accessToken: null,
+          refreshToken: null,
           isAuthenticated: false,
         });
       },
@@ -82,6 +103,7 @@ export const useAuthStore = create<AuthStore>()(
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
     }

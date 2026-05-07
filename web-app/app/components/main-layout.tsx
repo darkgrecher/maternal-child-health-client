@@ -7,6 +7,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth0 } from '@auth0/auth0-react';
+import { useAuthStore } from '../lib/stores';
 import { clsx } from 'clsx';
 import {
   LayoutDashboard,
@@ -52,6 +54,16 @@ export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { logout: auth0Logout, user: auth0User } = useAuth0();
+  const { logout: storeLogout, user: storeUser } = useAuthStore();
+
+  const displayName = storeUser?.name || auth0User?.name || 'User';
+  const displayRole = storeUser?.role || 'Midwife';
+
+  const handleLogout = () => {
+    storeLogout();
+    auth0Logout({ logoutParams: { returnTo: window.location.origin + '/login' } });
+  };
 
   return (
     <>
@@ -177,18 +189,22 @@ export const Sidebar: React.FC = () => {
         {/* User Profile */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-700">
           <div className={clsx('flex items-center gap-3', isCollapsed && 'justify-center')}>
-            <Avatar name="Sarah Johnson" size="md" />
+            <Avatar name={displayName} size="md" />
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                  Sarah Johnson
+                  {displayName}
                 </p>
-                <p className="text-xs text-slate-500 truncate">Senior Midwife</p>
+                <p className="text-xs text-slate-500 truncate capitalize">{displayRole}</p>
               </div>
             )}
             {!isCollapsed && (
-              <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <LogOut className="w-4 h-4 text-slate-500" />
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors"
+              >
+                <LogOut className="w-4 h-4 text-slate-500 hover:text-red-500" />
               </button>
             )}
           </div>
