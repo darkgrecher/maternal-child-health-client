@@ -25,18 +25,80 @@ export interface User {
 
 export interface PregnancyProfile {
   id: string;
-  patientId: string;
-  patientName: string;
-  lmp: string; // Last Menstrual Period
-  edd: string; // Expected Due Date
-  gestationalAge: number;
-  riskLevel: 'low' | 'medium' | 'high';
-  bloodType?: string;
-  complications?: string[];
-  notes?: string;
-  status: 'active' | 'completed' | 'terminated';
+  userId: string;
+  motherFirstName: string;
+  motherLastName: string;
+  motherFullName: string;
+  motherDateOfBirth?: string;
+  motherBloodType?: string;
+  motherPhotoUri?: string;
+  expectedDeliveryDate: string;
+  lastMenstrualPeriod?: string;
+  conceptionDate?: string;
+  status: 'active' | 'delivered' | 'terminated' | 'converted';
+  currentWeek?: number;
+  trimester?: number;
+  gravida?: number;
+  para?: number;
+  bloodPressure?: string;
+  prePregnancyWeight?: number;
+  currentWeight?: number;
+  height?: number;
+  isHighRisk: boolean;
+  riskFactors: string[];
+  medicalConditions: string[];
+  allergies: string[];
+  medications: string[];
+  hospitalName?: string;
+  obgynName?: string;
+  obgynContact?: string;
+  midwifeName?: string;
+  midwifeContact?: string;
+  expectedGender?: 'male' | 'female';
+  babyNickname?: string;
+  numberOfBabies?: number;
+  convertedToChildId?: string;
+  deliveryDate?: string;
+  deliveryType?: 'normal' | 'cesarean' | 'assisted';
+  deliveryNotes?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
+  checkups?: PregnancyCheckup[];
+  measurements?: PregnancyMeasurement[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PregnancyCheckup {
+  id: string;
+  pregnancyId: string;
+  checkupDate?: string;
+  weekOfPregnancy?: number;
+  weight?: number;
+  bloodPressure?: string | null;
+  notes?: string | null;
+  recommendations?: string | null;
+  nextCheckupDate?: string;
+  providerName?: string | null;
+  location?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PregnancyMeasurement {
+  id: string;
+  pregnancyId: string;
+  measurementDate?: string;
+  weekOfPregnancy?: number;
+  weight?: number;
+  bellyCircumference?: number | null;
+  bloodPressure?: string | null;
+  symptoms?: string[] | null;
+  mood?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ============================================================================

@@ -139,7 +139,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
   fetchPregnancies: async () => {
     set({ isLoading: true, error: null });
     try {
-      const data = await apiClient.get<PregnancyProfile[]>('/pregnancy');
+      const data = await apiClient.get<PregnancyProfile[]>('/pregnancies');
       set({ pregnancies: data, isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
@@ -149,7 +149,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
   fetchPregnancy: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await apiClient.get<PregnancyProfile>(`/pregnancy/${id}`);
+      const data = await apiClient.get<PregnancyProfile>(`/pregnancies/${id}`);
       set({ currentPregnancy: data, isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
@@ -159,7 +159,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
   createPregnancy: async (data: Partial<PregnancyProfile>) => {
     set({ isLoading: true, error: null });
     try {
-      const newPregnancy = await apiClient.post<PregnancyProfile>('/pregnancy', data);
+      const newPregnancy = await apiClient.post<PregnancyProfile>('/pregnancies', data);
       set((state) => ({
         pregnancies: [...state.pregnancies, newPregnancy],
         isLoading: false,
@@ -174,7 +174,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
   updatePregnancy: async (id: string, data: Partial<PregnancyProfile>) => {
     set({ isLoading: true, error: null });
     try {
-      const updated = await apiClient.patch<PregnancyProfile>(`/pregnancy/${id}`, data);
+      const updated = await apiClient.put<PregnancyProfile>(`/pregnancies/${id}`, data);
       set((state) => ({
         pregnancies: state.pregnancies.map((p) => (p.id === id ? updated : p)),
         currentPregnancy: state.currentPregnancy?.id === id ? updated : state.currentPregnancy,
@@ -188,7 +188,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
   deletePregnancy: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      await apiClient.delete(`/pregnancy/${id}`);
+      await apiClient.delete(`/pregnancies/${id}`);
       set((state) => ({
         pregnancies: state.pregnancies.filter((p) => p.id !== id),
         currentPregnancy: state.currentPregnancy?.id === id ? null : state.currentPregnancy,
