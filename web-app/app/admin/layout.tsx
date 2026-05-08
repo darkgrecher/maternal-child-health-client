@@ -8,7 +8,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useAuth0 } from '@auth0/auth0-react';
 import { clsx } from 'clsx';
 import {
   LayoutDashboard,
@@ -29,6 +30,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { Avatar } from '../components/ui';
+import { useAuthStore } from '../lib/stores';
 
 interface NavItem {
   name: string;
@@ -53,15 +55,20 @@ const bottomNavItems: NavItem[] = [
 
 const AdminSidebar: React.FC = () => {
   const pathname = usePathname();
-  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { logout: auth0Logout, user: auth0User } = useAuth0();
+  const { logout: storeLogout, user: storeUser } = useAuthStore();
+
+  const displayName = storeUser?.name || auth0User?.name || 'System Admin';
+  const displayRole = storeUser?.role || 'Administrator';
 
   const handleLogout = () => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('isAuthenticated');
-    router.push('/login');
+    storeLogout();
+    auth0Logout({ logoutParams: { returnTo: window.location.origin + '/login' } });
   };
 
   return (
@@ -188,13 +195,13 @@ const AdminSidebar: React.FC = () => {
         {/* User Profile & Logout */}
         <div className="p-4 border-t border-slate-800">
           <div className={clsx('flex items-center gap-3', isCollapsed && 'justify-center')}>
-            <Avatar name="System Admin" size="md" />
+            <Avatar name={displayName} size="md" />
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white truncate">
-                  System Admin
+                  {displayName}
                 </p>
-                <p className="text-xs text-slate-400 truncate">Administrator</p>
+                <p className="text-xs text-slate-400 truncate">{displayRole}</p>
               </div>
             )}
             {!isCollapsed && (

@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import {
   Settings,
   User,
@@ -39,6 +40,7 @@ import {
   Alert,
 } from '../components/ui';
 import { useTheme } from '../components/theme-provider';
+import { useAuthStore } from '../lib/stores';
 
 interface SettingCardProps {
   icon: React.ElementType;
@@ -94,6 +96,8 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ enabled, onChange }) => (
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { logout: auth0Logout } = useAuth0();
+  const { logout: storeLogout } = useAuthStore();
   const [language, setLanguage] = useState('en');
   const [dateFormat, setDateFormat] = useState('dmy');
   const [notifications, setNotifications] = useState({
@@ -134,6 +138,11 @@ export default function SettingsPage() {
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleLogout = () => {
+    storeLogout();
+    auth0Logout({ logoutParams: { returnTo: window.location.origin + '/login' } });
   };
 
   return (
@@ -414,7 +423,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* Logout */}
-          <Button variant="outline" className="w-full" icon={LogOut}>
+          <Button variant="outline" className="w-full" icon={LogOut} onClick={handleLogout}>
             Sign Out
           </Button>
 

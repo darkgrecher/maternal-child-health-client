@@ -87,7 +87,7 @@ export const useAuthStore = create<AuthStore>()(
         const { refreshToken } = get();
         // Attempt to invalidate on server (fire-and-forget)
         if (refreshToken) {
-          apiClient.post('/auth/logout', { refreshToken }).catch(() => {});
+          apiClient.post('/auth/logout', { refreshToken }, { keepalive: true }).catch(() => {});
         }
         apiClient.setAccessToken(null);
         set({
@@ -106,6 +106,9 @@ export const useAuthStore = create<AuthStore>()(
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        apiClient.setAccessToken(state?.accessToken ?? null);
+      },
     }
   )
 );
