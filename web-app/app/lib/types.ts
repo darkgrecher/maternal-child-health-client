@@ -107,17 +107,24 @@ export interface PregnancyMeasurement {
 
 export interface ChildProfile {
   id: string;
-  name: string;
+  chdrNumber?: string | null;
+  firstName: string;
+  lastName: string;
   dateOfBirth: string;
-  gender: 'male' | 'female' | 'other';
-  birthWeight?: number;
-  birthLength?: number;
-  parentId: string;
-  parentName: string;
-  bloodType?: string;
-  allergies?: string[];
-  medicalConditions?: string[];
-  notes?: string;
+  gender: 'male' | 'female';
+  photoUri?: string | null;
+  birthWeight?: number | null;
+  birthHeight?: number | null;
+  birthHeadCircumference?: number | null;
+  bloodType?: string | null;
+  placeOfBirth?: string | null;
+  deliveryType?: 'normal' | 'cesarean' | 'assisted' | null;
+  allergies: string[];
+  specialConditions: string[];
+  motherName?: string | null;
+  fatherName?: string | null;
+  emergencyContact?: string | null;
+  address?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -126,21 +133,31 @@ export interface ChildProfile {
 // VACCINATION TYPES
 // ============================================================================
 
-export interface VaccinationRecord {
+export interface VaccineInfo {
   id: string;
+  name: string;
+  shortName: string;
+  description?: string | null;
+  scheduledAgeMonths: number;
+  scheduledAgeDays?: number | null;
+  doseNumber: number;
+  totalDoses: number;
+  ageGroup: string;
+}
+
+export interface VaccinationRecord {
+  id?: string | null;
+  vaccineId: string;
+  vaccine?: VaccineInfo;
   childId: string;
-  childName: string;
-  vaccineName: string;
-  vaccineType: string;
   scheduledDate: string;
-  administeredDate?: string;
-  status: 'scheduled' | 'administered' | 'missed' | 'overdue';
-  batchNumber?: string;
-  administeredBy?: string;
-  sideEffects?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
+  administeredDate?: string | null;
+  administeredBy?: string | null;
+  location?: string | null;
+  batchNumber?: string | null;
+  notes?: string | null;
+  sideEffectsOccurred?: string[];
+  status: 'pending' | 'scheduled' | 'overdue' | 'completed' | 'missed';
 }
 
 // ============================================================================

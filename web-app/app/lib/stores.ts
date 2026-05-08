@@ -15,6 +15,7 @@ import type {
   Activity,
   EmergencyContact,
   DashboardStats,
+  ApiResponse,
 } from './types';
 
 // ============================================================================
@@ -228,8 +229,8 @@ export const useChildStore = create<ChildStore>((set, get) => ({
   fetchChildren: async () => {
     set({ isLoading: true, error: null });
     try {
-      const data = await apiClient.get<ChildProfile[]>('/child');
-      set({ children: data, isLoading: false });
+      const response = await apiClient.get<ApiResponse<ChildProfile[]>>('/children');
+      set({ children: response.data ?? [], isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
@@ -238,8 +239,8 @@ export const useChildStore = create<ChildStore>((set, get) => ({
   fetchChild: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await apiClient.get<ChildProfile>(`/child/${id}`);
-      set({ currentChild: data, isLoading: false });
+      const response = await apiClient.get<ApiResponse<ChildProfile>>(`/children/${id}`);
+      set({ currentChild: response.data ?? null, isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
@@ -248,7 +249,8 @@ export const useChildStore = create<ChildStore>((set, get) => ({
   createChild: async (data: Partial<ChildProfile>) => {
     set({ isLoading: true, error: null });
     try {
-      const newChild = await apiClient.post<ChildProfile>('/child', data);
+      const response = await apiClient.post<ApiResponse<ChildProfile>>('/children', data);
+      const newChild = response.data as ChildProfile;
       set((state) => ({
         children: [...state.children, newChild],
         isLoading: false,
@@ -263,7 +265,8 @@ export const useChildStore = create<ChildStore>((set, get) => ({
   updateChild: async (id: string, data: Partial<ChildProfile>) => {
     set({ isLoading: true, error: null });
     try {
-      const updated = await apiClient.patch<ChildProfile>(`/child/${id}`, data);
+      const response = await apiClient.put<ApiResponse<ChildProfile>>(`/children/${id}`, data);
+      const updated = response.data as ChildProfile;
       set((state) => ({
         children: state.children.map((c) => (c.id === id ? updated : c)),
         currentChild: state.currentChild?.id === id ? updated : state.currentChild,
@@ -277,7 +280,7 @@ export const useChildStore = create<ChildStore>((set, get) => ({
   deleteChild: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      await apiClient.delete(`/child/${id}`);
+      await apiClient.delete(`/children/${id}`);
       set((state) => ({
         children: state.children.filter((c) => c.id !== id),
         currentChild: state.currentChild?.id === id ? null : state.currentChild,
@@ -295,40 +298,62 @@ export const useChildStore = create<ChildStore>((set, get) => ({
 // VACCINE STORE
 // ============================================================================
 
+interface VaccineStatistics {
+  completed: number;
+  total: number;
+  overdue: number;
+  pending: number;
+  completionPercentage: number;
+}
+
 interface VaccineStore {
   records: VaccinationRecord[];
+  statistics: VaccineStatistics | null;
+  nextVaccine: VaccinationRecord | null;
   isLoading: boolean;
   error: string | null;
   fetchRecords: (childId: string) => Promise<void>;
-  administerVaccine: (recordId: string, data: Partial<VaccinationRecord>) => Promise<void>;
-  getCompletionPercentage: (childId: string) => number;
-  getOverdueCount: (childId: string) => number;
+  administerVaccine: (childId: string, vaccineId: string, data: Partial<VaccinationRecord>) => Promise<void>;
+  getCompletionPercentage: (childId?: string) => number;
+  getOverdueCount: (childId?: string) => number;
 }
 
 export const useVaccineStore = create<VaccineStore>((set, get) => ({
   records: [],
+  statistics: null,
+  nextVaccine: null,
   isLoading: false,
   error: null,
 
   fetchRecords: async (childId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await apiClient.get<VaccinationRecord[]>(`/vaccine/child/${childId}/records`);
-      set({ records: data, isLoading: false });
+      const response = await apiClient.get<ApiResponse<{
+        schedule: VaccinationRecord[];
+        statistics: VaccineStatistics;
+        nextVaccine: VaccinationRecord | null;
+      }>>(`/vaccines/child/${childId}`);
+      set({
+        records: response.data?.schedule ?? [],
+        statistics: response.data?.statistics ?? null,
+        nextVaccine: response.data?.nextVaccine ?? null,
+        isLoading: false,
+      });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
   },
 
-  administerVaccine: async (recordId: string, data: Partial<VaccinationRecord>) => {
+  administerVaccine: async (childId: string, vaccineId: string, data: Partial<VaccinationRecord>) => {
     set({ isLoading: true, error: null });
     try {
-      const updated = await apiClient.patch<VaccinationRecord>(
-        `/vaccine/records/${recordId}/administer`,
+      const response = await apiClient.post<ApiResponse<VaccinationRecord>>(
+        `/vaccines/child/${childId}/administer/${vaccineId}`,
         data
       );
+      const updated = response.data as VaccinationRecord;
       set((state) => ({
-        records: state.records.map((r) => (r.id === recordId ? updated : r)),
+        records: state.records.map((r) => (r.vaccineId === updated.vaccineId ? { ...r, ...updated } : r)),
         isLoading: false,
       }));
     } catch (error) {
@@ -336,17 +361,18 @@ export const useVaccineStore = create<VaccineStore>((set, get) => ({
     }
   },
 
-  getCompletionPercentage: (childId: string) => {
-    const { records } = get();
-    const childRecords = records.filter((r) => r.childId === childId);
-    if (childRecords.length === 0) return 0;
-    const completed = childRecords.filter((r) => r.status === 'administered').length;
-    return Math.round((completed / childRecords.length) * 100);
+  getCompletionPercentage: () => {
+    const { records, statistics } = get();
+    if (statistics) return statistics.completionPercentage;
+    if (records.length === 0) return 0;
+    const completed = records.filter((r) => r.status === 'completed').length;
+    return Math.round((completed / records.length) * 100);
   },
 
-  getOverdueCount: (childId: string) => {
-    const { records } = get();
-    return records.filter((r) => r.childId === childId && r.status === 'overdue').length;
+  getOverdueCount: () => {
+    const { records, statistics } = get();
+    if (statistics) return statistics.overdue;
+    return records.filter((r) => r.status === 'overdue').length;
   },
 }));
 

@@ -7,25 +7,20 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { format, differenceInMonths, differenceInYears } from 'date-fns';
 import {
   Baby,
   Plus,
   Search,
-  Filter,
-  ChevronRight,
   Calendar,
   Syringe,
   TrendingUp,
   User,
-  Phone,
-  Eye,
   Edit,
   Scale,
   Ruler,
   Activity,
-  Heart,
   AlertCircle,
   QrCode,
 } from 'lucide-react';
@@ -36,134 +31,71 @@ import {
   Badge,
   Avatar,
   ProgressBar,
-  SectionTitle,
   Input,
   Select,
   Modal,
   EmptyState,
+  Alert,
 } from '../components/ui';
+import apiClient from '../lib/api-client';
+import { useChildStore } from '../lib/stores';
+import type { ApiResponse, ChildProfile } from '../lib/types';
 
-// Mock children data
-const mockChildren = [
-  {
-    id: '1',
-    firstName: 'Kavisha',
-    lastName: 'Fernando',
-    dateOfBirth: '2025-10-15',
-    gender: 'female',
-    bloodType: 'O+',
-    parentName: 'Sithumi Fernando',
-    parentPhone: '+94 77 123 4567',
-    birthWeight: 3.2,
-    birthHeight: 50,
-    currentWeight: 5.8,
-    currentHeight: 58,
-    vaccineCompletion: 75,
-    overdueVaccines: 0,
-    lastCheckup: '2026-01-20',
-    nextAppointment: '2026-02-05',
-    growthStatus: 'normal',
-  },
-  {
-    id: '2',
-    firstName: 'Kasun',
-    lastName: 'Silva',
-    dateOfBirth: '2025-05-20',
-    gender: 'male',
-    bloodType: 'A+',
-    parentName: 'Nethmi Silva',
-    parentPhone: '+94 71 234 5678',
-    birthWeight: 3.5,
-    birthHeight: 52,
-    currentWeight: 8.2,
-    currentHeight: 68,
-    vaccineCompletion: 90,
-    overdueVaccines: 1,
-    lastCheckup: '2026-01-15',
-    nextAppointment: '2026-01-30',
-    growthStatus: 'normal',
-  },
-  {
-    id: '3',
-    firstName: 'Tharindu',
-    lastName: 'Perera',
-    dateOfBirth: '2025-09-28',
-    gender: 'male',
-    bloodType: 'B+',
-    parentName: 'Amaya Perera',
-    parentPhone: '+94 76 345 6789',
-    birthWeight: 2.9,
-    birthHeight: 48,
-    currentWeight: 5.1,
-    currentHeight: 55,
-    vaccineCompletion: 50,
-    overdueVaccines: 2,
-    lastCheckup: '2026-01-10',
-    nextAppointment: '2026-01-28',
-    growthStatus: 'below_average',
-  },
-  {
-    id: '4',
-    firstName: 'Dinithi',
-    lastName: 'Herath',
-    dateOfBirth: '2024-08-10',
-    gender: 'female',
-    bloodType: 'AB+',
-    parentName: 'Rashmi Herath',
-    parentPhone: '+94 77 456 7890',
-    birthWeight: 3.3,
-    birthHeight: 51,
-    currentWeight: 10.5,
-    currentHeight: 76,
-    vaccineCompletion: 100,
-    overdueVaccines: 0,
-    lastCheckup: '2026-01-25',
-    nextAppointment: '2026-02-20',
-    growthStatus: 'normal',
-  },
-  {
-    id: '5',
-    firstName: 'Nipun',
-    lastName: 'Bandara',
-    dateOfBirth: '2025-12-05',
-    gender: 'male',
-    bloodType: 'O-',
-    parentName: 'Kumari Bandara',
-    parentPhone: '+94 71 567 8901',
-    birthWeight: 3.1,
-    birthHeight: 49,
-    currentWeight: 4.2,
-    currentHeight: 53,
-    vaccineCompletion: 25,
-    overdueVaccines: 0,
-    lastCheckup: '2026-01-22',
-    nextAppointment: '2026-02-10',
-    growthStatus: 'normal',
-  },
-  {
-    id: '6',
-    firstName: 'Kavindi',
-    lastName: 'Jayawardena',
-    dateOfBirth: '2025-04-18',
-    gender: 'female',
-    bloodType: 'A-',
-    parentName: 'Dilani Jayawardena',
-    parentPhone: '+94 76 678 9012',
-    birthWeight: 3.0,
-    birthHeight: 50,
-    currentWeight: 8.8,
-    currentHeight: 70,
-    vaccineCompletion: 80,
-    overdueVaccines: 1,
-    lastCheckup: '2026-01-18',
-    nextAppointment: '2026-02-01',
-    growthStatus: 'above_average',
-  },
-];
+interface VaccineScheduleResponse {
+  statistics?: {
+    completionPercentage: number;
+    overdue: number;
+  };
+  nextVaccine?: {
+    scheduledDate?: string | null;
+  } | null;
+}
 
-const calculateAge = (dateOfBirth: string) => {
+interface GrowthSummaryResponse {
+  summary?: {
+    latestWeight?: number | null;
+    latestHeight?: number | null;
+    lastMeasurementDate?: string | null;
+    latestWeightPercentile?: number | null;
+    latestHeightPercentile?: number | null;
+  } | null;
+}
+
+interface ChildMetrics {
+  vaccineCompletion: number;
+  overdueVaccines: number;
+  nextAppointment?: string | null;
+  currentWeight?: number | null;
+  currentHeight?: number | null;
+  growthStatus: 'normal' | 'above_average' | 'below_average' | 'concerning' | 'unknown';
+  lastCheckup?: string | null;
+}
+
+interface UiChild {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: 'male' | 'female';
+  bloodType?: string | null;
+  parentName: string;
+  parentPhone: string;
+  birthWeight?: number | null;
+  birthHeight?: number | null;
+  currentWeight?: number | null;
+  currentHeight?: number | null;
+  vaccineCompletion: number;
+  overdueVaccines: number;
+  lastCheckup?: string | null;
+  nextAppointment?: string | null;
+  growthStatus: 'normal' | 'above_average' | 'below_average' | 'concerning' | 'unknown';
+}
+
+const calculateAge = (dateOfBirth?: string) => {
+  if (!dateOfBirth) return 'Unknown';
   const today = new Date();
   const birthDate = new Date(dateOfBirth);
+  if (Number.isNaN(birthDate.getTime())) return 'Unknown';
   const months = differenceInMonths(today, birthDate);
   const years = differenceInYears(today, birthDate);
   
@@ -184,20 +116,164 @@ const getGrowthStatusBadge = (status: string) => {
       return <Badge variant="warning">Below Average</Badge>;
     case 'concerning':
       return <Badge variant="error">Needs Attention</Badge>;
+    case 'unknown':
+      return <Badge variant="default">No Data</Badge>;
     default:
       return <Badge variant="info">Normal</Badge>;
   }
 };
 
+const formatShortDate = (value?: string | null) => {
+  if (!value) return 'Not scheduled';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not scheduled';
+  return format(date, 'MMM d');
+};
+
+const formatLongDate = (value?: string | null) => {
+  if (!value) return 'Unknown';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return format(date, 'MMMM d, yyyy');
+};
+
+const deriveGrowthStatus = (weightPercentile?: number | null, heightPercentile?: number | null) => {
+  const values = [weightPercentile, heightPercentile].filter(
+    (value): value is number => typeof value === 'number'
+  );
+  if (values.length === 0) return 'unknown';
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+
+  if (min < 3 || max > 97) return 'concerning';
+  if (average < 10) return 'below_average';
+  if (average > 90) return 'above_average';
+  return 'normal';
+};
+
+const isGrowthCheckDue = (lastCheckup?: string | null) => {
+  if (!lastCheckup) return true;
+  const lastDate = new Date(lastCheckup);
+  if (Number.isNaN(lastDate.getTime())) return true;
+  const daysSince = (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
+  return daysSince > 90;
+};
+
+const getChildParentName = (child: ChildProfile) =>
+  child.motherName || child.fatherName || 'Not provided';
+
+const getChildParentPhone = (child: ChildProfile) =>
+  child.emergencyContact || 'Not provided';
+
 export default function ChildrenPage() {
+  const { children, isLoading, error, fetchChildren } = useChildStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGender, setFilterGender] = useState('all');
   const [filterVaccine, setFilterVaccine] = useState('all');
-  const [selectedChild, setSelectedChild] = useState<typeof mockChildren[0] | null>(null);
+  const [selectedChild, setSelectedChild] = useState<UiChild | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [childMetrics, setChildMetrics] = useState<Record<string, ChildMetrics>>({});
 
-  const filteredChildren = mockChildren.filter((child) => {
+  useEffect(() => {
+    fetchChildren();
+  }, [fetchChildren]);
+
+  useEffect(() => {
+    if (children.length === 0) {
+      setChildMetrics({});
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadMetrics = async () => {
+      const entries = await Promise.all(
+        children.map(async (child) => {
+          const metrics: ChildMetrics = {
+            vaccineCompletion: 0,
+            overdueVaccines: 0,
+            growthStatus: 'unknown',
+          };
+
+          try {
+            const vaccineResponse = await apiClient.get<ApiResponse<VaccineScheduleResponse>>(
+              `/vaccines/child/${child.id}`
+            );
+            const vaccineData = vaccineResponse.data;
+            if (vaccineData?.statistics) {
+              metrics.vaccineCompletion = vaccineData.statistics.completionPercentage;
+              metrics.overdueVaccines = vaccineData.statistics.overdue;
+            }
+            metrics.nextAppointment = vaccineData?.nextVaccine?.scheduledDate ?? null;
+          } catch {
+            metrics.vaccineCompletion = 0;
+            metrics.overdueVaccines = 0;
+          }
+
+          try {
+            const growthResponse = await apiClient.get<ApiResponse<GrowthSummaryResponse>>(
+              `/growth/child/${child.id}`
+            );
+            const summary = growthResponse.data?.summary ?? null;
+            metrics.currentWeight = summary?.latestWeight ?? null;
+            metrics.currentHeight = summary?.latestHeight ?? null;
+            metrics.lastCheckup = summary?.lastMeasurementDate ?? null;
+            metrics.growthStatus = deriveGrowthStatus(
+              summary?.latestWeightPercentile ?? null,
+              summary?.latestHeightPercentile ?? null
+            );
+          } catch {
+            metrics.growthStatus = 'unknown';
+          }
+
+          return [child.id, metrics] as const;
+        })
+      );
+
+      if (!isCancelled) {
+        setChildMetrics(Object.fromEntries(entries));
+      }
+    };
+
+    loadMetrics();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [children]);
+
+  const childCards = useMemo<UiChild[]>(
+    () =>
+      children.map((child) => {
+        const metrics = childMetrics[child.id];
+
+        return {
+          id: child.id,
+          firstName: child.firstName,
+          lastName: child.lastName,
+          dateOfBirth: child.dateOfBirth,
+          gender: child.gender,
+          bloodType: child.bloodType ?? 'unknown',
+          parentName: getChildParentName(child),
+          parentPhone: getChildParentPhone(child),
+          birthWeight: child.birthWeight,
+          birthHeight: child.birthHeight,
+          currentWeight: metrics?.currentWeight ?? child.birthWeight ?? null,
+          currentHeight: metrics?.currentHeight ?? child.birthHeight ?? null,
+          vaccineCompletion: metrics?.vaccineCompletion ?? 0,
+          overdueVaccines: metrics?.overdueVaccines ?? 0,
+          lastCheckup: metrics?.lastCheckup ?? null,
+          nextAppointment: metrics?.nextAppointment ?? null,
+          growthStatus: metrics?.growthStatus ?? 'unknown',
+        };
+      }),
+    [children, childMetrics]
+  );
+
+  const filteredChildren = childCards.filter((child) => {
     const fullName = `${child.firstName} ${child.lastName}`.toLowerCase();
     const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
       child.parentName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -208,9 +284,14 @@ export default function ChildrenPage() {
     return matchesSearch && matchesGender && matchesVaccine;
   });
 
-  const totalChildren = mockChildren.length;
-  const overdueVaccineCount = mockChildren.filter(c => c.overdueVaccines > 0).length;
-  const underOneYear = mockChildren.filter(c => differenceInMonths(new Date(), new Date(c.dateOfBirth)) < 12).length;
+  const totalChildren = childCards.length;
+  const overdueVaccineCount = childCards.filter((child) => child.overdueVaccines > 0).length;
+  const underOneYear = childCards.filter((child) => {
+    const birthDate = new Date(child.dateOfBirth);
+    if (Number.isNaN(birthDate.getTime())) return false;
+    return differenceInMonths(new Date(), birthDate) < 12;
+  }).length;
+  const growthChecksDue = childCards.filter((child) => isGrowthCheckDue(child.lastCheckup)).length;
 
   return (
     <MainLayout>
@@ -267,11 +348,17 @@ export default function ChildrenPage() {
             <TrendingUp className="w-6 h-6 text-emerald-500" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">12</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">{growthChecksDue}</p>
             <p className="text-sm text-slate-500">Growth Checks Due</p>
           </div>
         </Card>
       </div>
+
+      {error && (
+        <Alert variant="warning" title="Unable to load children" className="mb-6">
+          {error}
+        </Alert>
+      )}
 
       {/* Filters */}
       <Card className="mb-6">
@@ -308,8 +395,11 @@ export default function ChildrenPage() {
       </Card>
 
       {/* Children Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filteredChildren.map((child) => {
+      {isLoading ? (
+        <Card className="p-6 text-center text-slate-500">Loading children...</Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredChildren.map((child) => {
           const age = calculateAge(child.dateOfBirth);
           const hasOverdue = child.overdueVaccines > 0;
 
@@ -335,7 +425,7 @@ export default function ChildrenPage() {
                     </Badge>
                   </div>
                   <p className="text-sm text-slate-500 mb-2">
-                    {age} • {child.bloodType}
+                    {age} • {child.bloodType ?? 'unknown'}
                   </p>
                   
                   {/* Parent Info */}
@@ -371,11 +461,11 @@ export default function ChildrenPage() {
                     <div className="flex items-center gap-2 text-xs text-slate-500">
                       <span className="flex items-center gap-1">
                         <Scale className="w-3 h-3" />
-                        {child.currentWeight} kg
+                        {child.currentWeight ?? '--'} kg
                       </span>
                       <span className="flex items-center gap-1">
                         <Ruler className="w-3 h-3" />
-                        {child.currentHeight} cm
+                        {child.currentHeight ?? '--'} cm
                       </span>
                     </div>
                   </div>
@@ -388,7 +478,7 @@ export default function ChildrenPage() {
                   <Calendar className="w-4 h-4 text-slate-400" />
                   <span className="text-slate-500">Next:</span>
                   <span className="font-medium text-slate-900 dark:text-white">
-                    {format(new Date(child.nextAppointment), 'MMM d')}
+                    {formatShortDate(child.nextAppointment)}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -401,11 +491,12 @@ export default function ChildrenPage() {
                 </div>
               </div>
             </Card>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      {filteredChildren.length === 0 && (
+      {!isLoading && filteredChildren.length === 0 && (
         <EmptyState
           icon={Baby}
           title="No children found"
@@ -475,10 +566,10 @@ export default function ChildrenPage() {
                   {selectedChild.firstName} {selectedChild.lastName}
                 </h3>
                 <p className="text-slate-500">
-                  {calculateAge(selectedChild.dateOfBirth)} • {selectedChild.gender === 'male' ? 'Male' : 'Female'} • {selectedChild.bloodType}
+                  {calculateAge(selectedChild.dateOfBirth)} • {selectedChild.gender === 'male' ? 'Male' : 'Female'} • {selectedChild.bloodType ?? 'unknown'}
                 </p>
                 <p className="text-sm text-slate-400">
-                  Born: {format(new Date(selectedChild.dateOfBirth), 'MMMM d, yyyy')}
+                  Born: {formatLongDate(selectedChild.dateOfBirth)}
                 </p>
               </div>
             </div>
@@ -495,12 +586,12 @@ export default function ChildrenPage() {
               <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800 text-center">
                 <Scale className="w-5 h-5 text-purple-500 mx-auto mb-1" />
                 <p className="text-sm text-slate-500">Weight</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-white">{selectedChild.currentWeight} kg</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white">{selectedChild.currentWeight ?? '--'} kg</p>
               </div>
               <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800 text-center">
                 <Ruler className="w-5 h-5 text-blue-500 mx-auto mb-1" />
                 <p className="text-sm text-slate-500">Height</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-white">{selectedChild.currentHeight} cm</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white">{selectedChild.currentHeight ?? '--'} cm</p>
               </div>
               <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800 text-center">
                 <Syringe className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
@@ -518,11 +609,11 @@ export default function ChildrenPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800">
                 <p className="text-sm text-slate-500">Birth Weight</p>
-                <p className="font-semibold text-slate-900 dark:text-white">{selectedChild.birthWeight} kg</p>
+                <p className="font-semibold text-slate-900 dark:text-white">{selectedChild.birthWeight ?? '--'} kg</p>
               </div>
               <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800">
                 <p className="text-sm text-slate-500">Birth Height</p>
-                <p className="font-semibold text-slate-900 dark:text-white">{selectedChild.birthHeight} cm</p>
+                <p className="font-semibold text-slate-900 dark:text-white">{selectedChild.birthHeight ?? '--'} cm</p>
               </div>
             </div>
 
