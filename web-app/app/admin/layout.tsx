@@ -27,6 +27,7 @@ import {
   BarChart3,
   Building2,
   AlertTriangle,
+  Heart,
 } from 'lucide-react';
 import { Avatar } from '../components/ui';
 import { useAuthStore } from '../lib/stores';
@@ -36,9 +37,11 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   badge?: number;
+  external?: boolean;
 }
 
 const adminNavItems: NavItem[] = [
+  { name: 'MidwifeHub', href: 'http://localhost:3001/', icon: Heart, external: true },
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'User Management', href: '/admin/users', icon: Users },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
@@ -128,36 +131,64 @@ const AdminSidebar: React.FC = () => {
         <nav className="flex-1 overflow-y-auto py-4 px-3">
           <ul className="space-y-1">
             {adminNavItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = !item.external && pathname === item.href;
               return (
                 <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={clsx(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-                      isActive
-                        ? 'bg-linear-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-500/30'
-                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                    )}
-                    onClick={() => setIsMobileOpen(false)}
-                  >
-                    <item.icon className={clsx('w-5 h-5 shrink-0', isActive && 'text-pink-400')} />
-                    {!isCollapsed && (
-                      <>
-                        <span className="flex-1 font-medium">{item.name}</span>
-                        {item.badge && (
-                          <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
-                            {item.badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {isCollapsed && item.badge && (
-                      <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
+                  {item.external ? (
+                    <a
+                      href={item.href}
+                      className={clsx(
+                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                        'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      )}
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      <item.icon className="w-5 h-5 shrink-0" />
+                      {!isCollapsed && (
+                        <>
+                          <span className="flex-1 font-medium">{item.name}</span>
+                          {item.badge && (
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {isCollapsed && item.badge && (
+                        <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                          {item.badge}
+                        </span>
+                      )}
+                    </a>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className={clsx(
+                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                        isActive
+                          ? 'bg-linear-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-500/30'
+                          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      )}
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      <item.icon className={clsx('w-5 h-5 shrink-0', isActive && 'text-pink-400')} />
+                      {!isCollapsed && (
+                        <>
+                          <span className="flex-1 font-medium">{item.name}</span>
+                          {item.badge && (
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {isCollapsed && item.badge && (
+                        <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  )}
                 </li>
               );
             })}

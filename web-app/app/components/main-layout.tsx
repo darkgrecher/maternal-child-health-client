@@ -25,6 +25,7 @@ import {
   Search,
   Menu,
   X,
+  Shield,
 } from 'lucide-react';
 import { Avatar } from './ui';
 
@@ -33,6 +34,7 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   badge?: number;
+  external?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -54,6 +56,20 @@ export const Sidebar: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { logout: storeLogout, user: storeUser } = useAuthStore();
+
+  const isAdmin = storeUser?.role === 'admin';
+  const visibleNavItems = isAdmin
+    ? [
+        navItems[0],
+        {
+          name: 'Admin Portal',
+          href: 'http://localhost:3001/admin',
+          icon: Shield,
+          external: true,
+        },
+        ...navItems.slice(1),
+      ]
+    : navItems;
 
   const displayName = storeUser?.name || 'User';
   const displayRole = storeUser?.role || 'Midwife';
@@ -121,37 +137,65 @@ export const Sidebar: React.FC = () => {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-3">
           <ul className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
+            {visibleNavItems.map((item) => {
+              const isActive = !item.external && pathname === item.href;
               return (
                 <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={clsx(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-                      isActive
-                        ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    )}
-                    onClick={() => setIsMobileOpen(false)}
-                  >
-                    <item.icon className={clsx('w-5 h-5 shrink-0', isActive && 'text-pink-500')} />
-                    {!isCollapsed && (
-                      <>
-                        <span className="flex-1 font-medium">{item.name}</span>
-                        {item.badge && (
-                          <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
-                            {item.badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {isCollapsed && item.badge && (
-                      <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
+                  {item.external ? (
+                    <a
+                      href={item.href}
+                      className={clsx(
+                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                        'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      )}
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      <item.icon className="w-5 h-5 shrink-0" />
+                      {!isCollapsed && (
+                        <>
+                          <span className="flex-1 font-medium">{item.name}</span>
+                          {item.badge && (
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {isCollapsed && item.badge && (
+                        <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                          {item.badge}
+                        </span>
+                      )}
+                    </a>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className={clsx(
+                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                        isActive
+                          ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      )}
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      <item.icon className={clsx('w-5 h-5 shrink-0', isActive && 'text-pink-500')} />
+                      {!isCollapsed && (
+                        <>
+                          <span className="flex-1 font-medium">{item.name}</span>
+                          {item.badge && (
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {isCollapsed && item.badge && (
+                        <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  )}
                 </li>
               );
             })}
