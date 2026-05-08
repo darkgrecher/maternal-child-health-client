@@ -28,9 +28,11 @@ interface AuthStore {
   refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  hasHydrated: boolean;
   setUser: (user: User | null) => void;
   setAccessToken: (token: string | null) => void;
-  loginWithAuth0Token: (auth0Token: string) => Promise<void>;
+  setHasHydrated: (value: boolean) => void;
+  loginWithCredentials: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -42,6 +44,7 @@ export const useAuthStore = create<AuthStore>()(
       refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
+      hasHydrated: false,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       
@@ -50,10 +53,12 @@ export const useAuthStore = create<AuthStore>()(
         set({ accessToken: token });
       },
 
+      setHasHydrated: (value) => set({ hasHydrated: value }),
+
       /**
-       * Exchange an Auth0 access token for backend JWT tokens
+       * Authenticate midwife with email/password
        */
-      loginWithAuth0Token: async (auth0Token: string) => {
+      loginWithCredentials: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
           const response = await apiClient.post<{
@@ -65,8 +70,8 @@ export const useAuthStore = create<AuthStore>()(
               user: User;
             };
           }>(
-            '/auth/auth0',
-            { auth0Token },
+            '/auth/midwife/login',
+            { email, password },
             { requiresAuth: false }
           );
           const { accessToken, refreshToken, user } = response.data;
@@ -109,6 +114,7 @@ export const useAuthStore = create<AuthStore>()(
       }),
       onRehydrateStorage: () => (state) => {
         apiClient.setAccessToken(state?.accessToken ?? null);
+        state?.setHasHydrated(true);
       },
     }
   )

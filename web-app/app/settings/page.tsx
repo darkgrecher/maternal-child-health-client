@@ -7,7 +7,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
 import {
   Settings,
   User,
@@ -96,7 +95,6 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ enabled, onChange }) => (
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
-  const { logout: auth0Logout } = useAuth0();
   const { logout: storeLogout } = useAuthStore();
   const [language, setLanguage] = useState('en');
   const [dateFormat, setDateFormat] = useState('dmy');
@@ -142,7 +140,6 @@ export default function SettingsPage() {
 
   const handleLogout = () => {
     storeLogout();
-    auth0Logout({ logoutParams: { returnTo: window.location.origin + '/login' } });
   };
 
   return (

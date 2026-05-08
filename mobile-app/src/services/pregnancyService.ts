@@ -33,8 +33,7 @@ export interface CreatePregnancyRequest {
   hospitalName?: string;
   obgynName?: string;
   obgynContact?: string;
-  midwifeName?: string;
-  midwifeContact?: string;
+  midwifeId?: string;
   expectedGender?: 'male' | 'female';
   babyNickname?: string;
   numberOfBabies?: number;
@@ -135,8 +134,18 @@ interface PregnancyApiResponse {
   hospitalName: string | null;
   obgynName: string | null;
   obgynContact: string | null;
+  midwifeId: string | null;
   midwifeName: string | null;
   midwifeContact: string | null;
+  midwife?: {
+    id: string;
+    name: string | null;
+    role?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    facilityName?: string | null;
+    region?: string | null;
+  } | null;
   expectedGender: 'male' | 'female' | null;
   babyNickname: string | null;
   numberOfBabies: number;
@@ -258,8 +267,20 @@ const mapToPregnancyProfile = (data: PregnancyApiResponse): PregnancyProfile => 
   hospitalName: data.hospitalName || undefined,
   obgynName: data.obgynName || undefined,
   obgynContact: data.obgynContact || undefined,
+  midwifeId: data.midwifeId || undefined,
   midwifeName: data.midwifeName || undefined,
   midwifeContact: data.midwifeContact || undefined,
+  midwife: data.midwife
+    ? {
+        id: data.midwife.id,
+        name: data.midwife.name || 'Midwife',
+        role: 'midwife',
+        phone: data.midwife.phone || '',
+        email: data.midwife.email || undefined,
+        clinic: data.midwife.facilityName || undefined,
+        address: data.midwife.region || undefined,
+      }
+    : null,
   expectedGender: data.expectedGender || undefined,
   babyNickname: data.babyNickname || undefined,
   numberOfBabies: data.numberOfBabies,

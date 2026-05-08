@@ -7,7 +7,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth0 } from '@auth0/auth0-react';
 import { useAuthStore } from '../lib/stores';
 import { clsx } from 'clsx';
 import {
@@ -54,15 +53,13 @@ export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { logout: auth0Logout, user: auth0User } = useAuth0();
   const { logout: storeLogout, user: storeUser } = useAuthStore();
 
-  const displayName = storeUser?.name || auth0User?.name || 'User';
+  const displayName = storeUser?.name || 'User';
   const displayRole = storeUser?.role || 'Midwife';
 
   const handleLogout = () => {
     storeLogout();
-    auth0Logout({ logoutParams: { returnTo: window.location.origin + '/login' } });
   };
 
   return (
@@ -138,7 +135,7 @@ export const Sidebar: React.FC = () => {
                     )}
                     onClick={() => setIsMobileOpen(false)}
                   >
-                    <item.icon className={clsx('w-5 h-5 flex-shrink-0', isActive && 'text-pink-500')} />
+                    <item.icon className={clsx('w-5 h-5 shrink-0', isActive && 'text-pink-500')} />
                     {!isCollapsed && (
                       <>
                         <span className="flex-1 font-medium">{item.name}</span>
@@ -176,7 +173,7 @@ export const Sidebar: React.FC = () => {
                       )}
                       onClick={() => setIsMobileOpen(false)}
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <item.icon className="w-5 h-5 shrink-0" />
                       {!isCollapsed && <span className="font-medium">{item.name}</span>}
                     </Link>
                   </li>

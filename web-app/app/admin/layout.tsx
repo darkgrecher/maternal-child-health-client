@@ -9,7 +9,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth0 } from '@auth0/auth0-react';
 import { clsx } from 'clsx';
 import {
   LayoutDashboard,
@@ -57,10 +56,9 @@ const AdminSidebar: React.FC = () => {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { logout: auth0Logout, user: auth0User } = useAuth0();
   const { logout: storeLogout, user: storeUser } = useAuthStore();
 
-  const displayName = storeUser?.name || auth0User?.name || 'System Admin';
+  const displayName = storeUser?.name || 'System Admin';
   const displayRole = storeUser?.role || 'Administrator';
 
   const handleLogout = () => {
@@ -68,7 +66,6 @@ const AdminSidebar: React.FC = () => {
     localStorage.removeItem('userEmail');
     localStorage.removeItem('isAuthenticated');
     storeLogout();
-    auth0Logout({ logoutParams: { returnTo: window.location.origin + '/login' } });
   };
 
   return (
@@ -101,7 +98,7 @@ const AdminSidebar: React.FC = () => {
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
           {!isCollapsed && (
             <Link href="/admin" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-pink-500 to-purple-600 flex items-center justify-center">
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -111,7 +108,7 @@ const AdminSidebar: React.FC = () => {
             </Link>
           )}
           {isCollapsed && (
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mx-auto">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-pink-500 to-purple-600 flex items-center justify-center mx-auto">
               <Shield className="w-6 h-6 text-white" />
             </div>
           )}
@@ -139,12 +136,12 @@ const AdminSidebar: React.FC = () => {
                     className={clsx(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
                       isActive
-                        ? 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-500/30'
+                        ? 'bg-linear-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-500/30'
                         : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                     )}
                     onClick={() => setIsMobileOpen(false)}
                   >
-                    <item.icon className={clsx('w-5 h-5 flex-shrink-0', isActive && 'text-pink-400')} />
+                    <item.icon className={clsx('w-5 h-5 shrink-0', isActive && 'text-pink-400')} />
                     {!isCollapsed && (
                       <>
                         <span className="flex-1 font-medium">{item.name}</span>
@@ -177,12 +174,12 @@ const AdminSidebar: React.FC = () => {
                       className={clsx(
                         'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
                         isActive
-                          ? 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-500/30'
+                          ? 'bg-linear-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-500/30'
                           : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                       )}
                       onClick={() => setIsMobileOpen(false)}
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <item.icon className="w-5 h-5 shrink-0" />
                       {!isCollapsed && <span className="font-medium">{item.name}</span>}
                     </Link>
                   </li>
