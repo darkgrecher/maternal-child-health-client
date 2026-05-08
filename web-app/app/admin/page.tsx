@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Users,
   Baby,
@@ -417,13 +418,15 @@ export default function AdminDashboardPage() {
 
       {/* Quick Actions */}
       <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card hover className="cursor-pointer text-center">
-          <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/30 w-fit mx-auto mb-3">
-            <Users className="w-6 h-6 text-blue-500" />
-          </div>
-          <h4 className="font-medium text-slate-900 dark:text-white">Manage Users</h4>
-          <p className="text-xs text-slate-500 mt-1">Add, edit, or remove users</p>
-        </Card>
+        <Link href="/admin/users" className="block">
+          <Card hover className="cursor-pointer text-center">
+            <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/30 w-fit mx-auto mb-3">
+              <Users className="w-6 h-6 text-blue-500" />
+            </div>
+            <h4 className="font-medium text-slate-900 dark:text-white">Manage Users</h4>
+            <p className="text-xs text-slate-500 mt-1">Add, edit, or remove users</p>
+          </Card>
+        </Link>
         <Card hover className="cursor-pointer text-center">
           <div className="p-3 rounded-xl bg-purple-100 dark:bg-purple-900/30 w-fit mx-auto mb-3">
             <BarChart3 className="w-6 h-6 text-purple-500" />
