@@ -529,6 +529,7 @@ export type RootStackParamList = {
   AddChild: undefined;
   CreatePregnancy: { previousPregnancyId?: string } | undefined;
   PregnancyDashboard: undefined;
+  QrScan: undefined;
 };
 
 export type TabParamList = {

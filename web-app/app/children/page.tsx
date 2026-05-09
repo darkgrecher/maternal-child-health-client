@@ -40,6 +40,7 @@ import {
 import apiClient from '../lib/api-client';
 import { useChildStore } from '../lib/stores';
 import type { ApiResponse, ChildProfile } from '../lib/types';
+import QRCode from 'qrcode';
 
 interface VaccineScheduleResponse {
   statistics?: {
@@ -176,10 +177,57 @@ export default function ChildrenPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [childMetrics, setChildMetrics] = useState<Record<string, ChildMetrics>>({});
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
+  const [isQrLoading, setIsQrLoading] = useState(false);
 
   useEffect(() => {
     fetchChildren();
   }, [fetchChildren]);
+
+  useEffect(() => {
+    if (!isQrModalOpen) {
+      setQrImageUrl(null);
+      setQrError(null);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadQrCode = async () => {
+      setIsQrLoading(true);
+      setQrError(null);
+
+      try {
+        const response = await apiClient.post<ApiResponse<{ qrPayload: string }>>('/midwife-links/qr');
+        const qrPayload = response.data?.qrPayload;
+        if (!qrPayload) {
+          throw new Error('QR code payload unavailable');
+        }
+
+        const dataUrl = await QRCode.toDataURL(qrPayload, { width: 320, margin: 1 });
+        if (!isCancelled) {
+          setQrImageUrl(dataUrl);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          const message = error instanceof Error ? error.message : 'Failed to generate QR code';
+          setQrError(message);
+          setQrImageUrl(null);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsQrLoading(false);
+        }
+      }
+    };
+
+    loadQrCode();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isQrModalOpen]);
 
   useEffect(() => {
     if (children.length === 0) {
@@ -534,14 +582,25 @@ export default function ChildrenPage() {
               </button>
             </div>
             <div className="p-5">
-              <video
-                src="/Baby_Animation_with_Static_QR_Code%20(online-video-cutter.com).mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full rounded-xl"
-              />
+              <div className="flex flex-col items-center gap-4">
+                {isQrLoading && (
+                  <div className="w-full rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-10 text-center text-sm text-slate-500">
+                    Generating QR code...
+                  </div>
+                )}
+                {qrError && (
+                  <Alert variant="warning" title="Unable to generate QR code" className="w-full">
+                    {qrError}
+                  </Alert>
+                )}
+                {qrImageUrl && !isQrLoading && (
+                  <img
+                    src={qrImageUrl}
+                    alt="Midwife QR code"
+                    className="w-full max-w-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white"
+                  />
+                )}
+              </div>
               <p className="text-center text-sm text-slate-500 mt-4">
                 Scan the QR code with your mobile device to quickly add a new child profile
               </p>

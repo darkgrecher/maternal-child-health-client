@@ -656,6 +656,12 @@ const HomeScreen: React.FC = () => {
             </View>
           </View>
           <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.headerIconButton}
+              onPress={() => navigation.navigate('QrScan')}
+            >
+              <Ionicons name="qr-code-outline" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.headerIconButton}>
               <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
               <View style={[styles.notificationBadge, { backgroundColor: colors.primary }]}>

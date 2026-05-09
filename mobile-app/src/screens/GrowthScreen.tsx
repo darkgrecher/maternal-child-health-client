@@ -643,6 +643,10 @@ const GrowthScreen: React.FC = () => {
         subtitle={t('growth.subtitle')}
         icon="trending-up-outline"
         iconColor={colors.success}
+        leadingRightIcon="qr-code-outline"
+        onLeadingRightPress={() => {
+          navigation.navigate('QrScan');
+        }}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
           // TODO: Navigate to notifications

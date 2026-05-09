@@ -1,0 +1,328 @@
+/**
+ * QR Scan Screen
+ * 
+ * Scans a midwife QR code and links the selected profile.
+ */
+
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
+
+import { Header, Button } from '../components/common';
+import { useChildStore, usePregnancyStore, useThemeStore } from '../stores';
+import { midwifeLinkService } from '../services/midwifeLinkService';
+import { RootStackParamList, ProfileType } from '../types';
+import { SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
+
+const QR_PREFIX = 'mch-midwife:';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const extractCode = (payload: string) => {
+  const trimmed = payload.trim();
+  if (trimmed.startsWith(QR_PREFIX)) {
+    return trimmed.slice(QR_PREFIX.length);
+  }
+  const idx = trimmed.indexOf(QR_PREFIX);
+  if (idx >= 0) {
+    return trimmed.slice(idx + QR_PREFIX.length);
+  }
+  return trimmed;
+};
+
+const QrScanScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation();
+  const { colors } = useThemeStore();
+  const { profile, fetchChildren } = useChildStore();
+  const { currentPregnancy, fetchPregnancies } = usePregnancyStore();
+  const [permission, requestPermission] = useCameraPermissions();
+  const [profileType, setProfileType] = useState<ProfileType>(() => {
+    if (currentPregnancy) return 'pregnancy';
+    return 'child';
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [hasScanned, setHasScanned] = useState(false);
+
+  const hasChildProfile = Boolean(profile);
+  const hasPregnancyProfile = Boolean(currentPregnancy);
+
+  const selectedProfileId = useMemo(() => {
+    if (profileType === 'pregnancy') return currentPregnancy?.id ?? null;
+    return profile?.id ?? null;
+  }, [profileType, currentPregnancy, profile]);
+
+  const selectedProfileLabel = useMemo(() => {
+    if (profileType === 'pregnancy') {
+      const name = currentPregnancy?.motherFullName || currentPregnancy?.motherFirstName || t('pregnancy.momToBe', 'Mom-to-be');
+      return `${t('pregnancy.profile', 'Pregnancy')}: ${name}`;
+    }
+    if (profile) {
+      return `${t('child.profile', 'Child')}: ${profile.firstName} ${profile.lastName}`.trim();
+    }
+    return t('profile.noProfile', 'No profile selected');
+  }, [profileType, currentPregnancy, profile, t]);
+
+  const handleBarcodeScanned = async ({ data }: BarcodeScanningResult) => {
+    if (hasScanned || isProcessing || !selectedProfileId) {
+      return;
+    }
+
+    setHasScanned(true);
+    setIsProcessing(true);
+    setScanError(null);
+
+    try {
+      const code = extractCode(data);
+      if (!code) {
+        throw new Error(t('qr.invalidCode', 'Invalid QR code.'));
+      }
+
+      await midwifeLinkService.claimMidwifeLink({
+        code,
+        profileType: profileType === 'pregnancy' ? 'pregnancy' : 'child',
+        profileId: selectedProfileId,
+      });
+
+      await Promise.all([fetchChildren(), fetchPregnancies()]);
+
+      Alert.alert(
+        t('qr.linkedTitle', 'Midwife Linked'),
+        t('qr.linkedMessage', 'Your profile has been linked to the midwife successfully.'),
+        [{ text: t('common.ok', 'OK'), onPress: () => navigation.goBack() }]
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('qr.linkFailed', 'Failed to link midwife.');
+      setScanError(message);
+      setHasScanned(false);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const canScan = Boolean(selectedProfileId);
+
+  if (!permission) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}> 
+        <Header title={t('qr.title', 'Scan QR Code')} showBack onBackPress={() => navigation.goBack()} />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}> 
+        <Header title={t('qr.title', 'Scan QR Code')} showBack onBackPress={() => navigation.goBack()} />
+        <View style={styles.permissionContainer}>
+          <Ionicons name="camera-outline" size={64} color={colors.gray[400]} />
+          <Text style={[styles.permissionTitle, { color: colors.textPrimary }]}> 
+            {t('qr.permissionTitle', 'Camera access needed')}
+          </Text>
+          <Text style={[styles.permissionText, { color: colors.textSecondary }]}> 
+            {t('qr.permissionMessage', 'Allow camera access to scan the midwife QR code.')}
+          </Text>
+          <Button
+            title={t('qr.allowCamera', 'Allow Camera')}
+            onPress={requestPermission}
+            icon="camera-outline"
+            style={{ marginTop: SPACING.md }}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Header title={t('qr.title', 'Scan QR Code')} showBack onBackPress={() => navigation.goBack()} />
+      <View style={styles.content}>
+        {(hasChildProfile || hasPregnancyProfile) && (
+          <View style={styles.selectorContainer}>
+            {hasPregnancyProfile && (
+              <TouchableOpacity
+                style={[
+                  styles.selectorButton,
+                  profileType === 'pregnancy' && { backgroundColor: colors.secondary, borderColor: colors.secondary },
+                ]}
+                onPress={() => setProfileType('pregnancy')}
+              >
+                <Text
+                  style={[
+                    styles.selectorText,
+                    profileType === 'pregnancy' ? styles.selectorTextActive : { color: colors.textPrimary },
+                  ]}
+                >
+                  {t('pregnancy.profile', 'Pregnancy')}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {hasChildProfile && (
+              <TouchableOpacity
+                style={[
+                  styles.selectorButton,
+                  profileType === 'child' && { backgroundColor: colors.primary, borderColor: colors.primary },
+                ]}
+                onPress={() => setProfileType('child')}
+              >
+                <Text
+                  style={[
+                    styles.selectorText,
+                    profileType === 'child' ? styles.selectorTextActive : { color: colors.textPrimary },
+                  ]}
+                >
+                  {t('child.profile', 'Child')}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        <Text style={[styles.profileLabel, { color: colors.textSecondary }]}>{selectedProfileLabel}</Text>
+
+        <View style={[styles.cameraContainer, { borderColor: colors.gray[200] }]}> 
+          {canScan ? (
+            <CameraView
+              style={styles.camera}
+              onBarcodeScanned={handleBarcodeScanned}
+              barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            />
+          ) : (
+            <View style={styles.centered}>
+              <Ionicons name="warning-outline" size={48} color={colors.gray[400]} />
+              <Text style={[styles.permissionText, { color: colors.textSecondary }]}> 
+                {t('qr.noProfile', 'Create a child or pregnancy profile to link a midwife.')}
+              </Text>
+            </View>
+          )}
+          <View pointerEvents="none" style={styles.overlay}>
+            <View style={[styles.focusFrame, { borderColor: colors.primary }]} />
+          </View>
+        </View>
+
+        {isProcessing && (
+          <View style={styles.processingRow}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.processingText, { color: colors.textSecondary }]}> 
+              {t('qr.linking', 'Linking midwife...')}
+            </Text>
+          </View>
+        )}
+
+        {scanError && (
+          <Text style={[styles.errorText, { color: colors.error }]}>{scanError}</Text>
+        )}
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    padding: SPACING.md,
+    gap: SPACING.md,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.md,
+    gap: SPACING.sm,
+  },
+  selectorContainer: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  selectorButton: {
+    flex: 1,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  selectorText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.semibold,
+  },
+  selectorTextActive: {
+    color: '#FFFFFF',
+  },
+  profileLabel: {
+    textAlign: 'center',
+    fontSize: FONT_SIZE.sm,
+  },
+  cameraContainer: {
+    flex: 1,
+    borderRadius: BORDER_RADIUS.xl,
+    borderWidth: 1,
+    overflow: 'hidden',
+    backgroundColor: '#000000',
+  },
+  camera: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  focusFrame: {
+    width: 220,
+    height: 220,
+    borderWidth: 2,
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  permissionContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.md,
+    gap: SPACING.sm,
+  },
+  permissionTitle: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: FONT_WEIGHT.bold,
+    textAlign: 'center',
+  },
+  permissionText: {
+    fontSize: FONT_SIZE.sm,
+    textAlign: 'center',
+  },
+  processingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+  },
+  processingText: {
+    fontSize: FONT_SIZE.sm,
+  },
+  errorText: {
+    textAlign: 'center',
+    fontSize: FONT_SIZE.sm,
+  },
+});
+
+export default QrScanScreen;

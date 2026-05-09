@@ -374,6 +374,10 @@ const VaccinesScreen: React.FC = () => {
         subtitle={t('vaccines.subtitle', 'Sri Lanka National Schedule')}
         icon="shield-checkmark-outline"
         iconColor={colors.success}
+        leadingRightIcon="qr-code-outline"
+        onLeadingRightPress={() => {
+          navigation.navigate('QrScan');
+        }}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
           // TODO: Navigate to notifications

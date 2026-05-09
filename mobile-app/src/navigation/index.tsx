@@ -35,6 +35,7 @@ import {
   PregnancyCheckupsScreen,
   PregnancyHealthScreen,
   PregnancyJournalScreen,
+  QrScanScreen,
   AuthScreen,
 } from '../screens';
 
@@ -258,6 +259,7 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="Activities" component={ActivitiesScreen} />
       <Stack.Screen name="AddChild" component={AddChildScreen} />
+      <Stack.Screen name="QrScan" component={QrScanScreen} />
       <Stack.Screen name="CreatePregnancy" component={CreatePregnancyScreen} />
       <Stack.Screen name="EditPregnancy" component={EditPregnancyScreen} />
       <Stack.Screen name="PregnancyDashboard" component={PregnancyDashboardScreen} />

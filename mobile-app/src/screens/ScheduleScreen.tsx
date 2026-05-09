@@ -348,6 +348,10 @@ const ScheduleScreen: React.FC = () => {
         subtitle={t('schedule.subtitle')}
         icon="calendar-outline"
         iconColor={colors.info}
+        leadingRightIcon="qr-code-outline"
+        onLeadingRightPress={() => {
+          navigation.navigate('QrScan');
+        }}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
           // TODO: Navigate to notifications

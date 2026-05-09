@@ -360,6 +360,12 @@ const PregnancyHealthScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerIconButton}
+              onPress={() => navigation.navigate('QrScan')}
+            >
+              <Ionicons name="qr-code-outline" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerIconButton}
               onPress={() => {
                 // TODO: Navigate to notifications
               }}
