@@ -117,7 +117,7 @@ const ProfileScreen: React.FC = () => {
         iconColor={colors.primary}
         leadingRightIcon="qr-code-outline"
         onLeadingRightPress={() => {
-          navigation.navigate('QrScan');
+          navigation.navigate('QrScan', { profileType: 'child' });
         }}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {

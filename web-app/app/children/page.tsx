@@ -199,7 +199,9 @@ export default function ChildrenPage() {
       setQrError(null);
 
       try {
-        const response = await apiClient.post<ApiResponse<{ qrPayload: string }>>('/midwife-links/qr');
+        const response = await apiClient.post<ApiResponse<{ qrPayload: string }>>('/midwife-links/qr', {
+          profileType: 'child',
+        });
         const qrPayload = response.data?.qrPayload;
         if (!qrPayload) {
           throw new Error('QR code payload unavailable');

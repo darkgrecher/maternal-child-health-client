@@ -141,7 +141,9 @@ export default function PregnanciesPage() {
       setQrError(null);
 
       try {
-        const response = await apiClient.post<ApiResponse<{ qrPayload: string }>>('/midwife-links/qr');
+        const response = await apiClient.post<ApiResponse<{ qrPayload: string }>>('/midwife-links/qr', {
+          profileType: 'pregnancy',
+        });
         const qrPayload = response.data?.qrPayload;
         if (!qrPayload) {
           throw new Error('QR code payload unavailable');

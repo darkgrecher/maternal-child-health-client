@@ -645,7 +645,7 @@ const GrowthScreen: React.FC = () => {
         iconColor={colors.success}
         leadingRightIcon="qr-code-outline"
         onLeadingRightPress={() => {
-          navigation.navigate('QrScan');
+          navigation.navigate('QrScan', { profileType: 'child' });
         }}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {

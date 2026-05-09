@@ -350,7 +350,7 @@ const ScheduleScreen: React.FC = () => {
         iconColor={colors.info}
         leadingRightIcon="qr-code-outline"
         onLeadingRightPress={() => {
-          navigation.navigate('QrScan');
+          navigation.navigate('QrScan', { profileType: 'child' });
         }}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {

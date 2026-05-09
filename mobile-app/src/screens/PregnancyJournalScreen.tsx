@@ -284,7 +284,7 @@ const PregnancyJournalScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerIconButton}
-              onPress={() => navigation.navigate('QrScan')}
+              onPress={() => navigation.navigate('QrScan', { profileType: 'pregnancy' })}
             >
               <Ionicons name="qr-code-outline" size={24} color={colors.textPrimary} />
             </TouchableOpacity>

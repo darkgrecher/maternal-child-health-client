@@ -9,55 +9,52 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from 'react-native';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
 import { Header, Button } from '../components/common';
 import { useChildStore, usePregnancyStore, useThemeStore } from '../stores';
 import { midwifeLinkService } from '../services/midwifeLinkService';
-import { RootStackParamList, ProfileType } from '../types';
+import { RootStackParamList } from '../types';
 import { SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 
 const QR_PREFIX = 'mch-midwife:';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type RouteProps = RouteProp<RootStackParamList, 'QrScan'>;
 
 const extractCode = (payload: string) => {
   const trimmed = payload.trim();
-  if (trimmed.startsWith(QR_PREFIX)) {
-    return trimmed.slice(QR_PREFIX.length);
-  }
-  const idx = trimmed.indexOf(QR_PREFIX);
-  if (idx >= 0) {
-    return trimmed.slice(idx + QR_PREFIX.length);
-  }
-  return trimmed;
+  const withPrefix = trimmed.startsWith(QR_PREFIX)
+    ? trimmed.slice(QR_PREFIX.length)
+    : trimmed.includes(QR_PREFIX)
+      ? trimmed.slice(trimmed.indexOf(QR_PREFIX) + QR_PREFIX.length)
+      : trimmed;
+
+  const segments = withPrefix.split(':');
+  return segments.length > 1 ? segments.slice(1).join(':') : withPrefix;
 };
 
 const QrScanScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProps>();
   const { t } = useTranslation();
   const { colors } = useThemeStore();
   const { profile, fetchChildren } = useChildStore();
   const { currentPregnancy, fetchPregnancies } = usePregnancyStore();
   const [permission, requestPermission] = useCameraPermissions();
-  const [profileType, setProfileType] = useState<ProfileType>(() => {
-    if (currentPregnancy) return 'pregnancy';
-    return 'child';
-  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [hasScanned, setHasScanned] = useState(false);
 
-  const hasChildProfile = Boolean(profile);
-  const hasPregnancyProfile = Boolean(currentPregnancy);
+  const profileType = route.params.profileType;
 
   const selectedProfileId = useMemo(() => {
     if (profileType === 'pregnancy') return currentPregnancy?.id ?? null;
@@ -107,6 +104,11 @@ const QrScanScreen: React.FC = () => {
       const message = error instanceof Error ? error.message : t('qr.linkFailed', 'Failed to link midwife.');
       setScanError(message);
       setHasScanned(false);
+      Alert.alert(
+        t('qr.linkFailedTitle', 'Unable to Link'),
+        message,
+        [{ text: t('common.ok', 'OK') }]
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -152,47 +154,6 @@ const QrScanScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header title={t('qr.title', 'Scan QR Code')} showBack onBackPress={() => navigation.goBack()} />
       <View style={styles.content}>
-        {(hasChildProfile || hasPregnancyProfile) && (
-          <View style={styles.selectorContainer}>
-            {hasPregnancyProfile && (
-              <TouchableOpacity
-                style={[
-                  styles.selectorButton,
-                  profileType === 'pregnancy' && { backgroundColor: colors.secondary, borderColor: colors.secondary },
-                ]}
-                onPress={() => setProfileType('pregnancy')}
-              >
-                <Text
-                  style={[
-                    styles.selectorText,
-                    profileType === 'pregnancy' ? styles.selectorTextActive : { color: colors.textPrimary },
-                  ]}
-                >
-                  {t('pregnancy.profile', 'Pregnancy')}
-                </Text>
-              </TouchableOpacity>
-            )}
-            {hasChildProfile && (
-              <TouchableOpacity
-                style={[
-                  styles.selectorButton,
-                  profileType === 'child' && { backgroundColor: colors.primary, borderColor: colors.primary },
-                ]}
-                onPress={() => setProfileType('child')}
-              >
-                <Text
-                  style={[
-                    styles.selectorText,
-                    profileType === 'child' ? styles.selectorTextActive : { color: colors.textPrimary },
-                  ]}
-                >
-                  {t('child.profile', 'Child')}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
         <Text style={[styles.profileLabel, { color: colors.textSecondary }]}>{selectedProfileLabel}</Text>
 
         <View style={[styles.cameraContainer, { borderColor: colors.gray[200] }]}> 
@@ -206,7 +167,9 @@ const QrScanScreen: React.FC = () => {
             <View style={styles.centered}>
               <Ionicons name="warning-outline" size={48} color={colors.gray[400]} />
               <Text style={[styles.permissionText, { color: colors.textSecondary }]}> 
-                {t('qr.noProfile', 'Create a child or pregnancy profile to link a midwife.')}
+                {profileType === 'pregnancy'
+                  ? t('qr.noPregnancyProfile', 'Create a pregnancy profile to link a midwife.')
+                  : t('qr.noChildProfile', 'Create a child profile to link a midwife.')}
               </Text>
             </View>
           )}
@@ -247,26 +210,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: SPACING.md,
     gap: SPACING.sm,
-  },
-  selectorContainer: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  selectorButton: {
-    flex: 1,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  selectorText: {
-    fontSize: FONT_SIZE.sm,
-    fontWeight: FONT_WEIGHT.semibold,
-  },
-  selectorTextActive: {
-    color: '#FFFFFF',
   },
   profileLabel: {
     textAlign: 'center',
