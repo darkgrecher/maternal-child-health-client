@@ -15,6 +15,7 @@ import type {
   Activity,
   EmergencyContact,
   DashboardStats,
+  ApiResponse,
 } from './types';
 
 // ============================================================================
@@ -24,11 +25,14 @@ import type {
 interface AuthStore {
   user: User | null;
   accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  hasHydrated: boolean;
   setUser: (user: User | null) => void;
   setAccessToken: (token: string | null) => void;
-  login: (email: string, password: string) => Promise<void>;
+  setHasHydrated: (value: boolean) => void;
+  loginWithCredentials: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -37,8 +41,10 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
+      hasHydrated: false,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       
@@ -47,18 +53,33 @@ export const useAuthStore = create<AuthStore>()(
         set({ accessToken: token });
       },
 
-      login: async (email: string, password: string) => {
+      setHasHydrated: (value) => set({ hasHydrated: value }),
+
+      /**
+       * Authenticate midwife with email/password
+       */
+      loginWithCredentials: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
-          const response = await apiClient.post<{ user: User; accessToken: string }>(
-            '/auth/login',
+          const response = await apiClient.post<{
+            success: boolean;
+            data: {
+              accessToken: string;
+              refreshToken: string;
+              expiresIn: number;
+              user: User;
+            };
+          }>(
+            '/auth/midwife/login',
             { email, password },
             { requiresAuth: false }
           );
-          apiClient.setAccessToken(response.accessToken);
+          const { accessToken, refreshToken, user } = response.data;
+          apiClient.setAccessToken(accessToken);
           set({
-            user: response.user,
-            accessToken: response.accessToken,
+            user,
+            accessToken,
+            refreshToken,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -69,10 +90,16 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
+        const { refreshToken } = get();
+        // Attempt to invalidate on server (fire-and-forget)
+        if (refreshToken) {
+          apiClient.post('/auth/logout', { refreshToken }, { keepalive: true }).catch(() => {});
+        }
         apiClient.setAccessToken(null);
         set({
           user: null,
           accessToken: null,
+          refreshToken: null,
           isAuthenticated: false,
         });
       },
@@ -82,8 +109,13 @@ export const useAuthStore = create<AuthStore>()(
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        apiClient.setAccessToken(state?.accessToken ?? null);
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
@@ -114,7 +146,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
   fetchPregnancies: async () => {
     set({ isLoading: true, error: null });
     try {
-      const data = await apiClient.get<PregnancyProfile[]>('/pregnancy');
+      const data = await apiClient.get<PregnancyProfile[]>('/pregnancies');
       set({ pregnancies: data, isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
@@ -124,7 +156,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
   fetchPregnancy: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await apiClient.get<PregnancyProfile>(`/pregnancy/${id}`);
+      const data = await apiClient.get<PregnancyProfile>(`/pregnancies/${id}`);
       set({ currentPregnancy: data, isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
@@ -134,7 +166,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
   createPregnancy: async (data: Partial<PregnancyProfile>) => {
     set({ isLoading: true, error: null });
     try {
-      const newPregnancy = await apiClient.post<PregnancyProfile>('/pregnancy', data);
+      const newPregnancy = await apiClient.post<PregnancyProfile>('/pregnancies', data);
       set((state) => ({
         pregnancies: [...state.pregnancies, newPregnancy],
         isLoading: false,
@@ -149,7 +181,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
   updatePregnancy: async (id: string, data: Partial<PregnancyProfile>) => {
     set({ isLoading: true, error: null });
     try {
-      const updated = await apiClient.patch<PregnancyProfile>(`/pregnancy/${id}`, data);
+      const updated = await apiClient.put<PregnancyProfile>(`/pregnancies/${id}`, data);
       set((state) => ({
         pregnancies: state.pregnancies.map((p) => (p.id === id ? updated : p)),
         currentPregnancy: state.currentPregnancy?.id === id ? updated : state.currentPregnancy,
@@ -163,7 +195,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
   deletePregnancy: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      await apiClient.delete(`/pregnancy/${id}`);
+      await apiClient.delete(`/pregnancies/${id}`);
       set((state) => ({
         pregnancies: state.pregnancies.filter((p) => p.id !== id),
         currentPregnancy: state.currentPregnancy?.id === id ? null : state.currentPregnancy,
@@ -203,8 +235,8 @@ export const useChildStore = create<ChildStore>((set, get) => ({
   fetchChildren: async () => {
     set({ isLoading: true, error: null });
     try {
-      const data = await apiClient.get<ChildProfile[]>('/child');
-      set({ children: data, isLoading: false });
+      const response = await apiClient.get<ApiResponse<ChildProfile[]>>('/children');
+      set({ children: response.data ?? [], isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
@@ -213,8 +245,8 @@ export const useChildStore = create<ChildStore>((set, get) => ({
   fetchChild: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await apiClient.get<ChildProfile>(`/child/${id}`);
-      set({ currentChild: data, isLoading: false });
+      const response = await apiClient.get<ApiResponse<ChildProfile>>(`/children/${id}`);
+      set({ currentChild: response.data ?? null, isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
@@ -223,7 +255,8 @@ export const useChildStore = create<ChildStore>((set, get) => ({
   createChild: async (data: Partial<ChildProfile>) => {
     set({ isLoading: true, error: null });
     try {
-      const newChild = await apiClient.post<ChildProfile>('/child', data);
+      const response = await apiClient.post<ApiResponse<ChildProfile>>('/children', data);
+      const newChild = response.data as ChildProfile;
       set((state) => ({
         children: [...state.children, newChild],
         isLoading: false,
@@ -238,7 +271,8 @@ export const useChildStore = create<ChildStore>((set, get) => ({
   updateChild: async (id: string, data: Partial<ChildProfile>) => {
     set({ isLoading: true, error: null });
     try {
-      const updated = await apiClient.patch<ChildProfile>(`/child/${id}`, data);
+      const response = await apiClient.put<ApiResponse<ChildProfile>>(`/children/${id}`, data);
+      const updated = response.data as ChildProfile;
       set((state) => ({
         children: state.children.map((c) => (c.id === id ? updated : c)),
         currentChild: state.currentChild?.id === id ? updated : state.currentChild,
@@ -252,7 +286,7 @@ export const useChildStore = create<ChildStore>((set, get) => ({
   deleteChild: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      await apiClient.delete(`/child/${id}`);
+      await apiClient.delete(`/children/${id}`);
       set((state) => ({
         children: state.children.filter((c) => c.id !== id),
         currentChild: state.currentChild?.id === id ? null : state.currentChild,
@@ -270,40 +304,62 @@ export const useChildStore = create<ChildStore>((set, get) => ({
 // VACCINE STORE
 // ============================================================================
 
+interface VaccineStatistics {
+  completed: number;
+  total: number;
+  overdue: number;
+  pending: number;
+  completionPercentage: number;
+}
+
 interface VaccineStore {
   records: VaccinationRecord[];
+  statistics: VaccineStatistics | null;
+  nextVaccine: VaccinationRecord | null;
   isLoading: boolean;
   error: string | null;
   fetchRecords: (childId: string) => Promise<void>;
-  administerVaccine: (recordId: string, data: Partial<VaccinationRecord>) => Promise<void>;
-  getCompletionPercentage: (childId: string) => number;
-  getOverdueCount: (childId: string) => number;
+  administerVaccine: (childId: string, vaccineId: string, data: Partial<VaccinationRecord>) => Promise<void>;
+  getCompletionPercentage: (childId?: string) => number;
+  getOverdueCount: (childId?: string) => number;
 }
 
 export const useVaccineStore = create<VaccineStore>((set, get) => ({
   records: [],
+  statistics: null,
+  nextVaccine: null,
   isLoading: false,
   error: null,
 
   fetchRecords: async (childId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await apiClient.get<VaccinationRecord[]>(`/vaccine/child/${childId}/records`);
-      set({ records: data, isLoading: false });
+      const response = await apiClient.get<ApiResponse<{
+        schedule: VaccinationRecord[];
+        statistics: VaccineStatistics;
+        nextVaccine: VaccinationRecord | null;
+      }>>(`/vaccines/child/${childId}`);
+      set({
+        records: response.data?.schedule ?? [],
+        statistics: response.data?.statistics ?? null,
+        nextVaccine: response.data?.nextVaccine ?? null,
+        isLoading: false,
+      });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
   },
 
-  administerVaccine: async (recordId: string, data: Partial<VaccinationRecord>) => {
+  administerVaccine: async (childId: string, vaccineId: string, data: Partial<VaccinationRecord>) => {
     set({ isLoading: true, error: null });
     try {
-      const updated = await apiClient.patch<VaccinationRecord>(
-        `/vaccine/records/${recordId}/administer`,
+      const response = await apiClient.post<ApiResponse<VaccinationRecord>>(
+        `/vaccines/child/${childId}/administer/${vaccineId}`,
         data
       );
+      const updated = response.data as VaccinationRecord;
       set((state) => ({
-        records: state.records.map((r) => (r.id === recordId ? updated : r)),
+        records: state.records.map((r) => (r.vaccineId === updated.vaccineId ? { ...r, ...updated } : r)),
         isLoading: false,
       }));
     } catch (error) {
@@ -311,17 +367,18 @@ export const useVaccineStore = create<VaccineStore>((set, get) => ({
     }
   },
 
-  getCompletionPercentage: (childId: string) => {
-    const { records } = get();
-    const childRecords = records.filter((r) => r.childId === childId);
-    if (childRecords.length === 0) return 0;
-    const completed = childRecords.filter((r) => r.status === 'completed').length;
-    return Math.round((completed / childRecords.length) * 100);
+  getCompletionPercentage: () => {
+    const { records, statistics } = get();
+    if (statistics) return statistics.completionPercentage;
+    if (records.length === 0) return 0;
+    const completed = records.filter((r) => r.status === 'completed').length;
+    return Math.round((completed / records.length) * 100);
   },
 
-  getOverdueCount: (childId: string) => {
-    const { records } = get();
-    return records.filter((r) => r.childId === childId && r.status === 'overdue').length;
+  getOverdueCount: () => {
+    const { records, statistics } = get();
+    if (statistics) return statistics.overdue;
+    return records.filter((r) => r.status === 'overdue').length;
   },
 }));
 
@@ -401,8 +458,8 @@ export const useAppointmentStore = create<AppointmentStore>((set, get) => ({
     const { appointments } = get();
     const now = new Date();
     return appointments
-      .filter((a) => new Date(a.dateTime) > now && a.status !== 'cancelled')
-      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+      .filter((a) => new Date(`${a.scheduledDate}T${a.scheduledTime}`) > now && a.status !== 'cancelled')
+      .sort((a, b) => new Date(`${a.scheduledDate}T${a.scheduledTime}`).getTime() - new Date(`${b.scheduledDate}T${b.scheduledTime}`).getTime());
   },
 
   getTodayAppointments: () => {
@@ -413,7 +470,7 @@ export const useAppointmentStore = create<AppointmentStore>((set, get) => ({
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     return appointments.filter((a) => {
-      const appointmentDate = new Date(a.dateTime);
+      const appointmentDate = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
       return appointmentDate >= today && appointmentDate < tomorrow;
     });
   },

@@ -73,8 +73,6 @@ const EditPregnancyScreen: React.FC = () => {
   const [hospitalName, setHospitalName] = useState('');
   const [obgynName, setObgynName] = useState('');
   const [obgynContact, setObgynContact] = useState('');
-  const [midwifeName, setMidwifeName] = useState('');
-  const [midwifeContact, setMidwifeContact] = useState('');
   
   // Form state - Emergency Contact
   const [emergencyContactName, setEmergencyContactName] = useState('');
@@ -141,8 +139,6 @@ const EditPregnancyScreen: React.FC = () => {
     setHospitalName(pregnancy.hospitalName || '');
     setObgynName(pregnancy.obgynName || '');
     setObgynContact(pregnancy.obgynContact || '');
-    setMidwifeName(pregnancy.midwifeName || '');
-    setMidwifeContact(pregnancy.midwifeContact || '');
     
     setEmergencyContactName(pregnancy.emergencyContactName || '');
     setEmergencyContactPhone(pregnancy.emergencyContactPhone || '');
@@ -205,8 +201,6 @@ const EditPregnancyScreen: React.FC = () => {
         hospitalName: hospitalName.trim() || undefined,
         obgynName: obgynName.trim() || undefined,
         obgynContact: obgynContact.trim() || undefined,
-        midwifeName: midwifeName.trim() || undefined,
-        midwifeContact: midwifeContact.trim() || undefined,
         emergencyContactName: emergencyContactName.trim() || undefined,
         emergencyContactPhone: emergencyContactPhone.trim() || undefined,
         emergencyContactRelation: emergencyContactRelation.trim() || undefined,
@@ -591,35 +585,6 @@ const EditPregnancyScreen: React.FC = () => {
                   style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
                   value={obgynContact}
                   onChangeText={setObgynContact}
-                  placeholder="Phone"
-                  placeholderTextColor={colors.gray[400]}
-                  keyboardType="phone-pad"
-                />
-              </View>
-            </View>
-
-            {/* Midwife */}
-            <View style={styles.rowInputs}>
-              <View style={[styles.inputGroup, { flex: 2 }]}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>
-                  {t('pregnancy.midwifeName', 'Midwife Name')}
-                </Text>
-                <TextInput
-                  style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
-                  value={midwifeName}
-                  onChangeText={setMidwifeName}
-                  placeholder={t('pregnancy.enterMidwifeName', 'Midwife name')}
-                  placeholderTextColor={colors.gray[400]}
-                />
-              </View>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>
-                  {t('pregnancy.contact', 'Contact')}
-                </Text>
-                <TextInput
-                  style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
-                  value={midwifeContact}
-                  onChangeText={setMidwifeContact}
                   placeholder="Phone"
                   placeholderTextColor={colors.gray[400]}
                   keyboardType="phone-pad"

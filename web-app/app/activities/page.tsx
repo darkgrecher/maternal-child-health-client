@@ -22,7 +22,7 @@ import {
   Clock,
   ChevronRight,
 } from 'lucide-react';
-import { MainLayout, Header } from '../components/layout';
+import { MainLayout, Header } from '../components/main-layout';
 import {
   Card,
   Button,
@@ -248,8 +248,8 @@ export default function ActivitiesPage() {
 
       {/* Filters */}
       <Card className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex-1 w-full">
             <Input
               placeholder="Search activities..."
               icon={Search}

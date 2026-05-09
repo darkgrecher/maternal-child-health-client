@@ -27,7 +27,7 @@ import {
   AlertCircle,
   Check,
 } from 'lucide-react';
-import { MainLayout, Header } from '../components/layout';
+import { MainLayout, Header } from '../components/main-layout';
 import {
   Card,
   Button,
@@ -38,6 +38,8 @@ import {
   Select,
   Alert,
 } from '../components/ui';
+import { useTheme } from '../components/theme-provider';
+import { useAuthStore } from '../lib/stores';
 
 interface SettingCardProps {
   icon: React.ElementType;
@@ -92,7 +94,8 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ enabled, onChange }) => (
 );
 
 export default function SettingsPage() {
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+  const { theme, setTheme } = useTheme();
+  const { logout: storeLogout } = useAuthStore();
   const [language, setLanguage] = useState('en');
   const [dateFormat, setDateFormat] = useState('dmy');
   const [notifications, setNotifications] = useState({
@@ -133,6 +136,10 @@ export default function SettingsPage() {
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleLogout = () => {
+    storeLogout();
   };
 
   return (
@@ -258,13 +265,13 @@ export default function SettingsPage() {
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { value: 'light', label: 'Light', icon: Sun },
-                      { value: 'dark', label: 'Dark', icon: Moon },
-                      { value: 'system', label: 'System', icon: Monitor },
+                      { value: 'light' as const, label: 'Light', icon: Sun },
+                      { value: 'dark' as const, label: 'Dark', icon: Moon },
+                      { value: 'system' as const, label: 'System', icon: Monitor },
                     ].map((option) => (
                       <button
                         key={option.value}
-                        onClick={() => setTheme(option.value as typeof theme)}
+                        onClick={() => setTheme(option.value)}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                           theme === option.value
                             ? 'border-primary bg-primary/5'
@@ -413,7 +420,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* Logout */}
-          <Button variant="outline" className="w-full" icon={LogOut}>
+          <Button variant="outline" className="w-full" icon={LogOut} onClick={handleLogout}>
             Sign Out
           </Button>
 

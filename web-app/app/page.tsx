@@ -25,7 +25,7 @@ import {
   MapPin,
   FileText,
 } from 'lucide-react';
-import { MainLayout, Header } from './components/layout';
+import { MainLayout, Header } from './components/main-layout';
 import {
   Card,
   StatCard,

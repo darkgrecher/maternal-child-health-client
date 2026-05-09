@@ -74,8 +74,10 @@ export interface PregnancyProfile {
   hospitalName?: string;
   obgynName?: string;
   obgynContact?: string;
+  midwifeId?: string;
   midwifeName?: string;
   midwifeContact?: string;
+  midwife?: HealthcareProvider | null;
   
   // Baby Information
   expectedGender?: Gender;

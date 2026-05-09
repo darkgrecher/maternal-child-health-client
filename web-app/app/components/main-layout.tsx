@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuthStore } from '../lib/stores';
 import { clsx } from 'clsx';
 import {
   LayoutDashboard,
@@ -24,6 +25,7 @@ import {
   Search,
   Menu,
   X,
+  Shield,
 } from 'lucide-react';
 import { Avatar } from './ui';
 
@@ -32,6 +34,7 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   badge?: number;
+  external?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -52,6 +55,28 @@ export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { logout: storeLogout, user: storeUser } = useAuthStore();
+
+  const isAdmin = storeUser?.role === 'admin';
+  const visibleNavItems = isAdmin
+    ? [
+        navItems[0],
+        {
+          name: 'Admin Portal',
+          href: 'http://localhost:3001/admin',
+          icon: Shield,
+          external: true,
+        },
+        ...navItems.slice(1),
+      ]
+    : navItems;
+
+  const displayName = storeUser?.name || 'User';
+  const displayRole = storeUser?.role || 'Midwife';
+
+  const handleLogout = () => {
+    storeLogout();
+  };
 
   return (
     <>
@@ -112,37 +137,65 @@ export const Sidebar: React.FC = () => {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-3">
           <ul className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
+            {visibleNavItems.map((item) => {
+              const isActive = !item.external && pathname === item.href;
               return (
                 <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={clsx(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-                      isActive
-                        ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    )}
-                    onClick={() => setIsMobileOpen(false)}
-                  >
-                    <item.icon className={clsx('w-5 h-5 flex-shrink-0', isActive && 'text-pink-500')} />
-                    {!isCollapsed && (
-                      <>
-                        <span className="flex-1 font-medium">{item.name}</span>
-                        {item.badge && (
-                          <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
-                            {item.badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {isCollapsed && item.badge && (
-                      <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
+                  {item.external ? (
+                    <a
+                      href={item.href}
+                      className={clsx(
+                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                        'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      )}
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      <item.icon className="w-5 h-5 shrink-0" />
+                      {!isCollapsed && (
+                        <>
+                          <span className="flex-1 font-medium">{item.name}</span>
+                          {item.badge && (
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {isCollapsed && item.badge && (
+                        <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                          {item.badge}
+                        </span>
+                      )}
+                    </a>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className={clsx(
+                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                        isActive
+                          ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      )}
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      <item.icon className={clsx('w-5 h-5 shrink-0', isActive && 'text-pink-500')} />
+                      {!isCollapsed && (
+                        <>
+                          <span className="flex-1 font-medium">{item.name}</span>
+                          {item.badge && (
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {isCollapsed && item.badge && (
+                        <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  )}
                 </li>
               );
             })}
@@ -164,7 +217,7 @@ export const Sidebar: React.FC = () => {
                       )}
                       onClick={() => setIsMobileOpen(false)}
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <item.icon className="w-5 h-5 shrink-0" />
                       {!isCollapsed && <span className="font-medium">{item.name}</span>}
                     </Link>
                   </li>
@@ -177,18 +230,22 @@ export const Sidebar: React.FC = () => {
         {/* User Profile */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-700">
           <div className={clsx('flex items-center gap-3', isCollapsed && 'justify-center')}>
-            <Avatar name="Sarah Johnson" size="md" />
+            <Avatar name={displayName} size="md" />
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                  Sarah Johnson
+                  {displayName}
                 </p>
-                <p className="text-xs text-slate-500 truncate">Senior Midwife</p>
+                <p className="text-xs text-slate-500 truncate capitalize">{displayRole}</p>
               </div>
             )}
             {!isCollapsed && (
-              <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <LogOut className="w-4 h-4 text-slate-500" />
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors"
+              >
+                <LogOut className="w-4 h-4 text-slate-500 hover:text-red-500" />
               </button>
             )}
           </div>
@@ -217,12 +274,12 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
       </div>
       <div className="flex items-center gap-4">
         {/* Search */}
-        <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl">
-          <Search className="w-5 h-5 text-slate-400" />
+        <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus-within:ring-2 focus-within:ring-pink-500/40 focus-within:border-pink-500 focus-within:bg-white dark:focus-within:bg-slate-700 transition-all">
+          <Search className="w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Search..."
-            className="bg-transparent border-none outline-none text-sm w-48 placeholder:text-slate-400"
+            className="bg-transparent border-none outline-none text-sm w-48 text-slate-900 dark:text-white placeholder:text-slate-400"
           />
         </div>
 
