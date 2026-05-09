@@ -16,7 +16,6 @@ import {
   Calendar,
   Syringe,
   TrendingUp,
-  User,
   Edit,
   Scale,
   Ruler,
@@ -30,12 +29,11 @@ import {
   Button,
   Badge,
   Avatar,
-  ProgressBar,
   Input,
   Select,
   Modal,
-  EmptyState,
   Alert,
+  Table,
 } from '../components/ui';
 import apiClient from '../lib/api-client';
 import { useChildStore } from '../lib/stores';
@@ -374,6 +372,78 @@ export default function ChildrenPage() {
   }).length;
   const growthChecksDue = childCards.filter((child) => isGrowthCheckDue(child.lastCheckup)).length;
 
+  const childColumns = [
+    {
+      key: 'child',
+      header: 'Child',
+      render: (child: UiChild) => (
+        <div className="flex items-center gap-3 min-w-[220px]">
+          <Avatar name={`${child.firstName} ${child.lastName}`} size="sm" />
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-900 dark:text-white truncate">
+              {child.firstName} {child.lastName}
+            </p>
+            <p className="text-xs text-slate-500">{child.bloodType ?? 'unknown'}</p>
+          </div>
+          <Badge variant={child.gender === 'male' ? 'info' : 'default'} size="sm">
+            {child.gender === 'male' ? 'Male' : 'Female'}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      key: 'age',
+      header: 'Age',
+      render: (child: UiChild) => calculateAge(child.dateOfBirth),
+    },
+    {
+      key: 'parent',
+      header: 'Parent',
+      render: (child: UiChild) => (
+        <div className="min-w-[180px]">
+          <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{child.parentName}</p>
+          <p className="text-xs text-slate-500 truncate">{child.parentPhone}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'vaccines',
+      header: 'Vaccines',
+      render: (child: UiChild) => (
+        <div>
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">{child.vaccineCompletion}%</p>
+          {child.overdueVaccines > 0 ? (
+            <p className="text-xs text-red-500 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {child.overdueVaccines} overdue
+            </p>
+          ) : (
+            <p className="text-xs text-slate-500">On track</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'growth',
+      header: 'Growth',
+      render: (child: UiChild) => (
+        <div className="text-xs text-slate-600 dark:text-slate-300">
+          {child.currentWeight ?? '--'} kg / {child.currentHeight ?? '--'} cm
+        </div>
+      ),
+    },
+    {
+      key: 'next',
+      header: 'Next visit',
+      render: (child: UiChild) => formatShortDate(child.nextAppointment),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (child: UiChild) => getGrowthStatusBadge(child.growthStatus),
+    },
+  ];
+
   return (
     <MainLayout>
       <Header
@@ -475,120 +545,20 @@ export default function ChildrenPage() {
         </div>
       </Card>
 
-      {/* Children Cards */}
-      {isLoading ? (
-        <Card className="p-6 text-center text-slate-500">Loading children...</Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredChildren.map((child) => {
-          const age = calculateAge(child.dateOfBirth);
-          const hasOverdue = child.overdueVaccines > 0;
-
-          return (
-            <Card
-              key={child.id}
-              hover
-              className={hasOverdue ? 'border-l-4 border-l-red-500' : ''}
-              onClick={() => {
-                setSelectedChild(child);
-                setIsModalOpen(true);
-              }}
-            >
-              <div className="flex items-start gap-4">
-                <Avatar name={`${child.firstName} ${child.lastName}`} size="lg" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-slate-900 dark:text-white truncate">
-                      {child.firstName} {child.lastName}
-                    </h3>
-                    <Badge variant={child.gender === 'male' ? 'info' : 'default'} size="sm">
-                      {child.gender === 'male' ? '♂' : '♀'}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-slate-500 mb-2">
-                    {age} • {child.bloodType ?? 'unknown'}
-                  </p>
-                  
-                  {/* Parent Info */}
-                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
-                    <User className="w-4 h-4" />
-                    <span className="truncate">{child.parentName}</span>
-                  </div>
-
-                  {/* Vaccine Progress */}
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-slate-500">Vaccination</span>
-                      <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        {child.vaccineCompletion}%
-                      </span>
-                    </div>
-                    <ProgressBar
-                      value={child.vaccineCompletion}
-                      color={hasOverdue ? 'bg-red-500' : 'bg-emerald-500'}
-                      size="sm"
-                    />
-                    {hasOverdue && (
-                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {child.overdueVaccines} overdue
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Growth Status */}
-                  <div className="flex items-center justify-between">
-                    {getGrowthStatusBadge(child.growthStatus)}
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <Scale className="w-3 h-3" />
-                        {child.currentWeight ?? '--'} kg
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Ruler className="w-3 h-3" />
-                        {child.currentHeight ?? '--'} cm
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Next Appointment */}
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-500">Next:</span>
-                  <span className="font-medium text-slate-900 dark:text-white">
-                    {formatShortDate(child.nextAppointment)}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" icon={TrendingUp}>
-                    Growth
-                  </Button>
-                  <Button variant="ghost" size="sm" icon={Syringe}>
-                    Vaccines
-                  </Button>
-                </div>
-              </div>
-            </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {!isLoading && filteredChildren.length === 0 && (
-        <EmptyState
-          icon={Baby}
-          title="No children found"
-          description="Try adjusting your search or filter criteria"
-          action={
-            <Button icon={Plus} variant="primary">
-              Register New Child
-            </Button>
-          }
+      {/* Children Table */}
+      <Card className="mb-6">
+        <Table
+          columns={childColumns}
+          data={filteredChildren}
+          keyExtractor={(child) => child.id}
+          onRowClick={(child) => {
+            setSelectedChild(child);
+            setIsModalOpen(true);
+          }}
+          isLoading={isLoading}
+          emptyMessage="No children found"
         />
-      )}
+      </Card>
 
       {/* QR Code Video Modal */}
       {isQrModalOpen && (

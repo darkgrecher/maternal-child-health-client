@@ -13,20 +13,11 @@ import {
   Heart,
   Plus,
   Search,
-  Filter,
-  ChevronRight,
   Calendar,
   AlertTriangle,
-  User,
-  Phone,
-  MapPin,
   FileText,
   Edit,
-  Trash2,
-  Eye,
   Baby,
-  Activity,
-  Stethoscope,
   QrCode,
 } from 'lucide-react';
 import { MainLayout, Header } from '../components/main-layout';
@@ -35,13 +26,10 @@ import {
   Button,
   Badge,
   Avatar,
-  ProgressBar,
-  SectionTitle,
   Input,
   Select,
   Modal,
   Table,
-  EmptyState,
   Alert,
 } from '../components/ui';
 import { usePregnancyStore } from '../lib/stores';
@@ -256,6 +244,77 @@ export default function PregnanciesPage() {
     return dueDate.getMonth() === today.getMonth() && dueDate.getFullYear() === today.getFullYear();
   }).length;
 
+  const pregnancyColumns = [
+    {
+      key: 'mother',
+      header: 'Mother',
+      render: (pregnancy: UiPregnancy) => (
+        <div className="flex items-center gap-3 min-w-[240px]">
+          <Avatar name={pregnancy.motherName} size="sm" />
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-900 dark:text-white truncate">{pregnancy.motherName}</p>
+            <p className="text-xs text-slate-500">
+              {pregnancy.motherAge ?? 'Unknown'} yrs • {pregnancy.bloodType}
+            </p>
+          </div>
+          {pregnancy.isHighRisk && (
+            <Badge variant="warning" size="sm">High Risk</Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (pregnancy: UiPregnancy) => (
+        <Badge
+          variant={
+            pregnancy.status === 'active'
+              ? 'success'
+              : pregnancy.status === 'delivered'
+              ? 'info'
+              : 'default'
+          }
+          size="sm"
+        >
+          {pregnancy.status === 'active'
+            ? 'Active'
+            : pregnancy.status === 'delivered'
+            ? 'Delivered'
+            : 'Terminated'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'week',
+      header: 'Week',
+      render: (pregnancy: UiPregnancy) => (
+        <div>
+          <p className="text-sm font-medium text-slate-900 dark:text-white">Week {pregnancy.currentWeek}</p>
+          <p className="text-xs text-slate-500">{getBabyDevelopmentInfo(pregnancy.currentWeek).trimester}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'edd',
+      header: 'EDD',
+      render: (pregnancy: UiPregnancy) => formatDate(pregnancy.expectedDeliveryDate),
+    },
+    {
+      key: 'contact',
+      header: 'Contact',
+      render: (pregnancy: UiPregnancy) => (
+        <span className="text-sm text-slate-700 dark:text-slate-300">{pregnancy.phone}</span>
+      ),
+    },
+    {
+      key: 'next',
+      header: 'Next visit',
+      render: (pregnancy: UiPregnancy) =>
+        pregnancy.nextAppointment ? formatDate(pregnancy.nextAppointment) : 'Not scheduled',
+    },
+  ];
+
   return (
     <MainLayout>
       <Header
@@ -358,128 +417,20 @@ export default function PregnanciesPage() {
         </div>
       </Card>
 
-      {/* Pregnancy Cards */}
-      {isLoading ? (
-        <Card className="p-6 text-center text-slate-500">Loading pregnancies...</Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filteredPregnancies.map((pregnancy) => {
-          const weeksRemaining = getWeeksRemaining(pregnancy.expectedDeliveryDate);
-          const progress = Math.min((pregnancy.currentWeek / 40) * 100, 100);
-          const devInfo = getBabyDevelopmentInfo(pregnancy.currentWeek);
-
-          return (
-            <Card
-              key={pregnancy.id}
-              hover
-              className={pregnancy.isHighRisk ? 'border-l-4 border-l-amber-500' : ''}
-              onClick={() => {
-                setSelectedPregnancy(pregnancy);
-                setIsModalOpen(true);
-              }}
-            >
-              <div className="flex items-start gap-4">
-                <Avatar name={pregnancy.motherName} size="lg" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-slate-900 dark:text-white truncate">
-                      {pregnancy.motherName}
-                    </h3>
-                    {pregnancy.isHighRisk && (
-                      <Badge variant="warning" size="sm">High Risk</Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-slate-500">
-                    {pregnancy.motherAge ?? 'Unknown'} years • G{pregnancy.gravida ?? '-'}P{pregnancy.para ?? '-'} • {pregnancy.bloodType}
-                  </p>
-                  
-                  {/* Progress */}
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Week {pregnancy.currentWeek} of 40
-                      </span>
-                      <span className="text-sm text-slate-500">
-                        {weeksRemaining} weeks to go
-                      </span>
-                    </div>
-                    <ProgressBar
-                      value={progress}
-                      color={pregnancy.isHighRisk ? 'bg-amber-500' : 'bg-pink-500'}
-                    />
-                  </div>
-
-                  {/* Info Row */}
-                  <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      EDD: {formatDate(pregnancy.expectedDeliveryDate)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-4 h-4" />
-                      {pregnancy.phone}
-                    </span>
-                  </div>
-
-                  {/* Risk Factors */}
-                  {pregnancy.riskFactors.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {pregnancy.riskFactors.map((factor, idx) => (
-                        <span
-                          key={idx}
-                          className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                        >
-                          {factor}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-col gap-2">
-                  <Badge variant={pregnancy.trimester === 3 ? 'info' : 'default'}>
-                    {devInfo.trimester}
-                  </Badge>
-                  <Button variant="ghost" size="sm" icon={Eye}>
-                    View
-                  </Button>
-                </div>
-              </div>
-
-              {/* Next Appointment */}
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  <Stethoscope className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-500">Next visit:</span>
-                  <span className="font-medium text-slate-900 dark:text-white">
-                    {pregnancy.nextAppointment
-                      ? formatDate(pregnancy.nextAppointment)
-                      : 'Not scheduled'}
-                  </span>
-                </div>
-                <Button variant="outline" size="sm" icon={Calendar}>
-                  Schedule
-                </Button>
-              </div>
-            </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {!isLoading && filteredPregnancies.length === 0 && (
-        <EmptyState
-          icon={Heart}
-          title="No pregnancies found"
-          description="Try adjusting your search or filter criteria"
-          action={
-            <Button icon={Plus} variant="primary">
-              Register New Pregnancy
-            </Button>
-          }
+      {/* Pregnancy Table */}
+      <Card className="mb-6">
+        <Table
+          columns={pregnancyColumns}
+          data={filteredPregnancies}
+          keyExtractor={(pregnancy) => pregnancy.id}
+          onRowClick={(pregnancy) => {
+            setSelectedPregnancy(pregnancy);
+            setIsModalOpen(true);
+          }}
+          isLoading={isLoading}
+          emptyMessage="No pregnancies found"
         />
-      )}
+      </Card>
 
       {/* QR Code Video Modal */}
       {isQrModalOpen && (
