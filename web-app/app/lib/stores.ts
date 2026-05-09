@@ -38,7 +38,18 @@ interface AuthStore {
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => ({
+    (set, get) => {
+      apiClient.setRefreshTokenProvider(() => get().refreshToken);
+      apiClient.setOnTokensRefreshed((tokens) => {
+        apiClient.setAccessToken(tokens.accessToken);
+        set({
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken ?? get().refreshToken,
+          isAuthenticated: true,
+        });
+      });
+
+      return {
       user: null,
       accessToken: null,
       refreshToken: null,
@@ -103,7 +114,8 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: false,
         });
       },
-    }),
+      };
+    },
     {
       name: 'auth-storage',
       partialize: (state) => ({
