@@ -9,6 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { format, differenceInYears } from 'date-fns';
+import { useSearchParams } from 'next/navigation';
 import {
   Heart,
   Plus,
@@ -110,6 +111,7 @@ const getAgeFromDob = (dob?: string) => {
 };
 
 export default function PregnanciesPage() {
+  const searchParams = useSearchParams();
   const { pregnancies, isLoading, error, fetchPregnancies, createPregnancy, updatePregnancy } = usePregnancyStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -158,6 +160,13 @@ export default function PregnanciesPage() {
   const [checkupsLoading, setCheckupsLoading] = useState(false);
   const [checkupsError, setCheckupsError] = useState('');
   const [checkups, setCheckups] = useState<PregnancyCheckup[]>([]);
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setPregnancyFormMode('create');
+      setIsPregnancyFormOpen(true);
+    }
+  }, [searchParams]);
 
   const normalizeString = (value: string) => {
     const trimmed = value.trim();

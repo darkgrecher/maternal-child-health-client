@@ -15,6 +15,7 @@ import type {
   Activity,
   EmergencyContact,
   DashboardStats,
+  DashboardResponse,
   ApiResponse,
 } from './types';
 
@@ -565,19 +566,8 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   fetchStats: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Since there's no dashboard endpoint, we'll calculate from other data
-      // For now, we'll set mock data that will be replaced with real API calls
-      const stats: DashboardStats = {
-        totalPatients: 0,
-        activePregnancies: 0,
-        childrenMonitored: 0,
-        upcomingAppointments: 0,
-        overdueVaccinations: 0,
-        highRiskPregnancies: 0,
-        appointmentsToday: 0,
-        newPatientsThisMonth: 0,
-      };
-      set({ stats, isLoading: false });
+      const response = await apiClient.get<ApiResponse<DashboardResponse>>('/dashboard');
+      set({ stats: response.data?.stats ?? null, isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }

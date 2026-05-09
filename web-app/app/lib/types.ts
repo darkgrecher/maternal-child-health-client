@@ -265,6 +265,55 @@ export interface DashboardStats {
   alerts?: Alert[];
 }
 
+export interface DashboardAppointment {
+  id: string;
+  childId: string;
+  childName: string;
+  dateTime: string;
+  type: string;
+  status: string;
+  title: string;
+  location: string;
+}
+
+export interface DashboardActivity {
+  id: string;
+  type: string;
+  title: string;
+  description?: string | null;
+  date: string;
+  childId: string;
+  childName: string;
+}
+
+export interface DashboardHighRiskPregnancy {
+  id: string;
+  motherName: string;
+  currentWeek: number | null;
+  riskFactors: string[];
+  expectedDeliveryDate: string | null;
+  nextCheckupDate: string | null;
+}
+
+export interface DashboardOverdueVaccination {
+  childId: string;
+  childName: string;
+  childAge: string;
+  vaccineId: string;
+  vaccineName: string;
+  scheduledDate: string;
+  daysOverdue: number;
+  parentPhone?: string | null;
+}
+
+export interface DashboardResponse {
+  stats: DashboardStats;
+  todayAppointments: DashboardAppointment[];
+  recentActivities: DashboardActivity[];
+  highRiskPregnancies: DashboardHighRiskPregnancy[];
+  overdueVaccinations: DashboardOverdueVaccination[];
+}
+
 export interface Alert {
   id: string;
   type: 'high_risk' | 'overdue_vaccination' | 'missed_appointment' | 'follow_up_required';

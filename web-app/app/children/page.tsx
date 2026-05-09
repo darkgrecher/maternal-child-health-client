@@ -9,7 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { format, differenceInMonths, differenceInYears } from 'date-fns';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Baby,
   Plus,
@@ -175,6 +175,7 @@ const getChildParentPhone = (child: ChildProfile) =>
 export default function ChildrenPage() {
   const { children, isLoading, error, fetchChildren, createChild, updateChild } = useChildStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGender, setFilterGender] = useState('all');
   const [filterVaccine, setFilterVaccine] = useState('all');
@@ -216,6 +217,13 @@ export default function ChildrenPage() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [qrError, setQrError] = useState<string | null>(null);
   const [isQrLoading, setIsQrLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setChildFormMode('create');
+      setIsChildFormOpen(true);
+    }
+  }, [searchParams]);
 
   const normalizeString = (value: string) => {
     const trimmed = value.trim();

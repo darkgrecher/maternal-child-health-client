@@ -9,6 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { format, isFuture, isToday, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
+import { useSearchParams } from 'next/navigation';
 import {
   Calendar,
   Plus,
@@ -118,6 +119,7 @@ const getStatusBadge = (status: string, dateTime: string) => {
 };
 
 export default function AppointmentsPage() {
+  const searchParams = useSearchParams();
   const { children, isLoading: childrenLoading, error: childrenError, fetchChildren } = useChildStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -148,6 +150,13 @@ export default function AppointmentsPage() {
   useEffect(() => {
     fetchChildren();
   }, [fetchChildren]);
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setEditingAppointment(null);
+      setIsFormModalOpen(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -493,7 +502,7 @@ export default function AppointmentsPage() {
                           onClick={() => setSelectedAppointment(appointment)}
                         >
                           <div className="flex items-center gap-4">
-                            <div className="text-center min-w-[70px]">
+                            <div className="text-center min-w-17.5">
                               <p className="text-lg font-bold text-slate-900 dark:text-white">
                                 {format(new Date(appointment.dateTime), 'h:mm')}
                               </p>
@@ -589,7 +598,7 @@ export default function AppointmentsPage() {
                           onClick={() => setSelectedAppointment(appointment)}
                         >
                           <div className="flex items-center gap-4">
-                            <div className="text-center min-w-[70px]">
+                            <div className="text-center min-w-17.5">
                               <p className="text-sm font-medium text-slate-500">
                                 {format(new Date(appointment.dateTime), 'MMM d')}
                               </p>
@@ -664,7 +673,7 @@ export default function AppointmentsPage() {
               return (
                 <div
                   key={day.toISOString()}
-                  className={`min-h-[200px] rounded-lg border p-2 ${
+                  className={`min-h-50 rounded-lg border p-2 ${
                     isCurrentDay
                       ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/10'
                       : 'border-slate-200 dark:border-slate-700'

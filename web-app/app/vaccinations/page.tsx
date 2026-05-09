@@ -9,6 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { differenceInDays, format, isSameDay, isSameMonth } from 'date-fns';
+import { useSearchParams } from 'next/navigation';
 import {
   Syringe,
   Plus,
@@ -108,6 +109,7 @@ const getRecordKey = (record: UiVaccinationRecord) =>
   record.id ?? `${record.childId}-${record.vaccineId}-${record.scheduledDate}`;
 
 export default function VaccinationsPage() {
+  const searchParams = useSearchParams();
   const { children, isLoading: childrenLoading, error: childrenError, fetchChildren } = useChildStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -128,6 +130,12 @@ export default function VaccinationsPage() {
   const [administrationDate, setAdministrationDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [adminNotes, setAdminNotes] = useState('');
   const [adminError, setAdminError] = useState('');
+
+  useEffect(() => {
+    if (searchParams.get('record') === '1') {
+      setIsManualModalOpen(true);
+    }
+  }, [searchParams]);
 
   const handleCall = (phone?: string) => {
     if (!phone) return;
