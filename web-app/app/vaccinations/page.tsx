@@ -104,6 +104,9 @@ const getAgeLabel = (vaccine: VaccineInfo) => {
   return `${vaccine.scheduledAgeMonths} months`;
 };
 
+const getRecordKey = (record: UiVaccinationRecord) =>
+  record.id ?? `${record.childId}-${record.vaccineId}-${record.scheduledDate}`;
+
 export default function VaccinationsPage() {
   const { children, isLoading: childrenLoading, error: childrenError, fetchChildren } = useChildStore();
   const [searchTerm, setSearchTerm] = useState('');
@@ -498,7 +501,7 @@ export default function VaccinationsPage() {
                     .filter(r => r.status === 'overdue' || r.status === 'missed')
                     .map((record) => (
                       <Card 
-                        key={record.id} 
+                        key={getRecordKey(record)} 
                         className="border-l-4 border-l-red-500"
                         hover
                       >
@@ -564,7 +567,7 @@ export default function VaccinationsPage() {
                   {filteredRecords
                     .filter(r => r.status === 'scheduled')
                     .map((record) => (
-                      <Card key={record.id} hover>
+                      <Card key={getRecordKey(record)} hover>
                         <div className="flex items-center gap-4">
                           <div className="p-3 rounded-xl bg-blue-100">
                             <Syringe className="w-6 h-6 text-blue-500" />
@@ -618,7 +621,7 @@ export default function VaccinationsPage() {
                   {filteredRecords
                     .filter(r => r.status === 'completed')
                     .map((record) => (
-                      <Card key={record.id} className="opacity-75">
+                      <Card key={getRecordKey(record)} className="opacity-75">
                         <div className="flex items-center gap-4">
                           <div className="p-3 rounded-xl bg-emerald-100">
                             <CheckCircle className="w-6 h-6 text-emerald-500" />
