@@ -557,7 +557,7 @@ export const Modal: React.FC<ModalProps> = ({
       />
       <div
         className={clsx(
-          'relative w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl animate-slide-up',
+          'relative w-full max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl animate-slide-up flex flex-col',
           sizes[size]
         )}
       >
@@ -572,7 +572,7 @@ export const Modal: React.FC<ModalProps> = ({
             </svg>
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-6 overflow-y-auto min-h-0">{children}</div>
       </div>
     </div>
   );
