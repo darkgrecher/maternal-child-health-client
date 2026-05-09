@@ -9,6 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { format, differenceInMonths, differenceInYears } from 'date-fns';
+import { useRouter } from 'next/navigation';
 import {
   Baby,
   Plus,
@@ -77,6 +78,11 @@ interface UiChild {
   dateOfBirth: string;
   gender: 'male' | 'female';
   bloodType?: string | null;
+  chdrNumber?: string | null;
+  motherName?: string | null;
+  fatherName?: string | null;
+  emergencyContact?: string | null;
+  address?: string | null;
   parentName: string;
   parentPhone: string;
   birthWeight?: number | null;
@@ -167,18 +173,172 @@ const getChildParentPhone = (child: ChildProfile) =>
   child.emergencyContact || 'Not provided';
 
 export default function ChildrenPage() {
-  const { children, isLoading, error, fetchChildren } = useChildStore();
+  const { children, isLoading, error, fetchChildren, createChild, updateChild } = useChildStore();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGender, setFilterGender] = useState('all');
   const [filterVaccine, setFilterVaccine] = useState('all');
   const [selectedChild, setSelectedChild] = useState<UiChild | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isChildFormOpen, setIsChildFormOpen] = useState(false);
+  const [childFormMode, setChildFormMode] = useState<'create' | 'edit'>('create');
+  const [childFormError, setChildFormError] = useState('');
+  const [isChildSubmitting, setIsChildSubmitting] = useState(false);
+  const [childFormValues, setChildFormValues] = useState({
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    gender: 'female',
+    bloodType: 'unknown',
+    chdrNumber: '',
+    motherName: '',
+    fatherName: '',
+    emergencyContact: '',
+    address: '',
+    birthWeight: '',
+    birthHeight: '',
+  });
+  const [isGrowthModalOpen, setIsGrowthModalOpen] = useState(false);
+  const [growthError, setGrowthError] = useState('');
+  const [isGrowthSubmitting, setIsGrowthSubmitting] = useState(false);
+  const [growthFormValues, setGrowthFormValues] = useState({
+    measurementDate: format(new Date(), 'yyyy-MM-dd'),
+    weight: '',
+    height: '',
+    headCircumference: '',
+    measuredBy: '',
+    location: '',
+    notes: '',
+  });
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [childMetrics, setChildMetrics] = useState<Record<string, ChildMetrics>>({});
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [qrError, setQrError] = useState<string | null>(null);
   const [isQrLoading, setIsQrLoading] = useState(false);
+
+  const normalizeString = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  };
+
+  const toNumber = (value: string) => {
+    if (!value) return undefined;
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
+
+  const toDateInput = (value?: string | null) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return format(date, 'yyyy-MM-dd');
+  };
+
+  const openEditChildForm = (child: UiChild) => {
+    setChildFormMode('edit');
+    setChildFormError('');
+    setChildFormValues({
+      firstName: child.firstName,
+      lastName: child.lastName,
+      dateOfBirth: toDateInput(child.dateOfBirth),
+      gender: child.gender,
+      bloodType: child.bloodType ?? 'unknown',
+      chdrNumber: child.chdrNumber ?? '',
+      motherName: child.motherName ?? '',
+      fatherName: child.fatherName ?? '',
+      emergencyContact: child.emergencyContact ?? '',
+      address: child.address ?? '',
+      birthWeight: child.birthWeight?.toString() ?? '',
+      birthHeight: child.birthHeight?.toString() ?? '',
+    });
+    setIsChildFormOpen(true);
+  };
+
+  const handleChildSubmit = async () => {
+    if (!childFormValues.firstName.trim() || !childFormValues.lastName.trim() || !childFormValues.dateOfBirth) {
+      setChildFormError('Please fill in all required fields.');
+      return;
+    }
+
+    setChildFormError('');
+    setIsChildSubmitting(true);
+
+    const payload = {
+      firstName: childFormValues.firstName.trim(),
+      lastName: childFormValues.lastName.trim(),
+      dateOfBirth: childFormValues.dateOfBirth,
+      gender: childFormValues.gender as 'male' | 'female',
+      bloodType: childFormValues.bloodType || undefined,
+      chdrNumber: normalizeString(childFormValues.chdrNumber),
+      motherName: normalizeString(childFormValues.motherName),
+      fatherName: normalizeString(childFormValues.fatherName),
+      emergencyContact: normalizeString(childFormValues.emergencyContact),
+      address: normalizeString(childFormValues.address),
+      birthWeight: toNumber(childFormValues.birthWeight),
+      birthHeight: toNumber(childFormValues.birthHeight),
+    } as Partial<ChildProfile>;
+
+    try {
+      if (childFormMode === 'create') {
+        await createChild(payload);
+      } else if (selectedChild) {
+        await updateChild(selectedChild.id, payload);
+      }
+      setIsChildFormOpen(false);
+      setIsModalOpen(false);
+      await fetchChildren();
+    } catch (err) {
+      setChildFormError(err instanceof Error ? err.message : 'Unable to save child profile.');
+    } finally {
+      setIsChildSubmitting(false);
+    }
+  };
+
+  const openGrowthModal = (child: UiChild) => {
+    setSelectedChild(child);
+    setGrowthError('');
+    setGrowthFormValues({
+      measurementDate: format(new Date(), 'yyyy-MM-dd'),
+      weight: '',
+      height: '',
+      headCircumference: '',
+      measuredBy: '',
+      location: '',
+      notes: '',
+    });
+    setIsGrowthModalOpen(true);
+  };
+
+  const handleGrowthSubmit = async () => {
+    if (!selectedChild) return;
+    if (!growthFormValues.measurementDate || !growthFormValues.weight || !growthFormValues.height) {
+      setGrowthError('Please fill in the measurement date, weight, and height.');
+      return;
+    }
+
+    setGrowthError('');
+    setIsGrowthSubmitting(true);
+
+    try {
+      await apiClient.post(`/growth/child/${selectedChild.id}`, {
+        measurementDate: growthFormValues.measurementDate,
+        weight: Number(growthFormValues.weight),
+        height: Number(growthFormValues.height),
+        headCircumference: toNumber(growthFormValues.headCircumference),
+        measuredBy: normalizeString(growthFormValues.measuredBy),
+        location: normalizeString(growthFormValues.location),
+        notes: normalizeString(growthFormValues.notes),
+      });
+
+      setIsGrowthModalOpen(false);
+      await fetchChildren();
+    } catch (err) {
+      setGrowthError(err instanceof Error ? err.message : 'Unable to record growth measurement.');
+    } finally {
+      setIsGrowthSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     fetchChildren();
@@ -336,6 +496,11 @@ export default function ChildrenPage() {
           dateOfBirth: child.dateOfBirth,
           gender: child.gender,
           bloodType: child.bloodType ?? 'unknown',
+          chdrNumber: child.chdrNumber ?? null,
+          motherName: child.motherName ?? null,
+          fatherName: child.fatherName ?? null,
+          emergencyContact: child.emergencyContact ?? null,
+          address: child.address ?? null,
           parentName: getChildParentName(child),
           parentPhone: getChildParentPhone(child),
           birthWeight: child.birthWeight,
@@ -377,7 +542,7 @@ export default function ChildrenPage() {
       key: 'child',
       header: 'Child',
       render: (child: UiChild) => (
-        <div className="flex items-center gap-3 min-w-[220px]">
+        <div className="flex items-center gap-3 min-w-55">
           <Avatar name={`${child.firstName} ${child.lastName}`} size="sm" />
           <div className="min-w-0">
             <p className="font-semibold text-slate-900 dark:text-white truncate">
@@ -400,7 +565,7 @@ export default function ChildrenPage() {
       key: 'parent',
       header: 'Parent',
       render: (child: UiChild) => (
-        <div className="min-w-[180px]">
+        <div className="min-w-45">
           <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{child.parentName}</p>
           <p className="text-xs text-slate-500 truncate">{child.parentPhone}</p>
         </div>
@@ -458,7 +623,7 @@ export default function ChildrenPage() {
             >
               <QrCode className="w-5 h-5" />
             </button>
-            <Button icon={Plus} variant="primary">
+            <Button icon={Plus} variant="primary" onClick={() => setIsQrModalOpen(true)}>
               Register Child
             </Button>
           </div>
@@ -612,6 +777,226 @@ export default function ChildrenPage() {
         </div>
       )}
 
+      {/* Create/Edit Child Modal */}
+      <Modal
+        isOpen={isChildFormOpen}
+        onClose={() => setIsChildFormOpen(false)}
+        title={childFormMode === 'create' ? 'Register Child' : 'Edit Child'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {childFormError && (
+            <Alert variant="warning" title="Unable to save child profile">
+              {childFormError}
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="First Name"
+              value={childFormValues.firstName}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, firstName: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Last Name"
+              value={childFormValues.lastName}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, lastName: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Date of Birth"
+              type="date"
+              value={childFormValues.dateOfBirth}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, dateOfBirth: event.target.value }))
+              }
+              required
+            />
+            <Select
+              label="Gender"
+              options={[
+                { value: 'female', label: 'Female' },
+                { value: 'male', label: 'Male' },
+              ]}
+              value={childFormValues.gender}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, gender: event.target.value }))
+              }
+            />
+            <Select
+              label="Blood Type"
+              options={[
+                { value: 'unknown', label: 'Unknown' },
+                { value: 'A+', label: 'A+' },
+                { value: 'A-', label: 'A-' },
+                { value: 'B+', label: 'B+' },
+                { value: 'B-', label: 'B-' },
+                { value: 'AB+', label: 'AB+' },
+                { value: 'AB-', label: 'AB-' },
+                { value: 'O+', label: 'O+' },
+                { value: 'O-', label: 'O-' },
+              ]}
+              value={childFormValues.bloodType}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, bloodType: event.target.value }))
+              }
+            />
+            <Input
+              label="CHDR Number"
+              value={childFormValues.chdrNumber}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, chdrNumber: event.target.value }))
+              }
+            />
+            <Input
+              label="Birth Weight (kg)"
+              type="number"
+              step="0.1"
+              value={childFormValues.birthWeight}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, birthWeight: event.target.value }))
+              }
+            />
+            <Input
+              label="Birth Height (cm)"
+              type="number"
+              step="0.1"
+              value={childFormValues.birthHeight}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, birthHeight: event.target.value }))
+              }
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Mother Name"
+              value={childFormValues.motherName}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, motherName: event.target.value }))
+              }
+            />
+            <Input
+              label="Father Name"
+              value={childFormValues.fatherName}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, fatherName: event.target.value }))
+              }
+            />
+            <Input
+              label="Emergency Contact"
+              value={childFormValues.emergencyContact}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, emergencyContact: event.target.value }))
+              }
+            />
+            <Input
+              label="Address"
+              value={childFormValues.address}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, address: event.target.value }))
+              }
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsChildFormOpen(false)}>
+              Cancel
+            </Button>
+            <Button isLoading={isChildSubmitting} onClick={handleChildSubmit}>
+              {childFormMode === 'create' ? 'Register Child' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Growth Measurement Modal */}
+      <Modal
+        isOpen={isGrowthModalOpen}
+        onClose={() => setIsGrowthModalOpen(false)}
+        title={selectedChild ? `Record Growth - ${selectedChild.firstName} ${selectedChild.lastName}` : 'Record Growth'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {growthError && (
+            <Alert variant="warning" title="Unable to record growth">
+              {growthError}
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Measurement Date"
+              type="date"
+              value={growthFormValues.measurementDate}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, measurementDate: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Weight (kg)"
+              type="number"
+              step="0.1"
+              value={growthFormValues.weight}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, weight: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Height (cm)"
+              type="number"
+              step="0.1"
+              value={growthFormValues.height}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, height: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Head Circumference (cm)"
+              type="number"
+              step="0.1"
+              value={growthFormValues.headCircumference}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, headCircumference: event.target.value }))
+              }
+            />
+            <Input
+              label="Measured By"
+              value={growthFormValues.measuredBy}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, measuredBy: event.target.value }))
+              }
+            />
+            <Input
+              label="Location"
+              value={growthFormValues.location}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, location: event.target.value }))
+              }
+            />
+            <Input
+              label="Notes"
+              value={growthFormValues.notes}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, notes: event.target.value }))
+              }
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsGrowthModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button isLoading={isGrowthSubmitting} onClick={handleGrowthSubmit}>
+              Save Measurement
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Detail Modal */}
       <Modal
         isOpen={isModalOpen}
@@ -680,13 +1065,38 @@ export default function ChildrenPage() {
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button variant="primary" icon={TrendingUp} className="flex-1">
+              <Button
+                variant="primary"
+                icon={TrendingUp}
+                className="flex-1"
+                onClick={() => {
+                  if (!selectedChild) return;
+                  setIsModalOpen(false);
+                  openGrowthModal(selectedChild);
+                }}
+              >
                 Record Growth
               </Button>
-              <Button variant="outline" icon={Syringe} className="flex-1">
+              <Button
+                variant="outline"
+                icon={Syringe}
+                className="flex-1"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  router.push('/vaccinations');
+                }}
+              >
                 Vaccinations
               </Button>
-              <Button variant="ghost" icon={Edit}>
+              <Button
+                variant="ghost"
+                icon={Edit}
+                onClick={() => {
+                  if (!selectedChild) return;
+                  setIsModalOpen(false);
+                  openEditChildForm(selectedChild);
+                }}
+              >
                 Edit
               </Button>
             </div>

@@ -34,16 +34,23 @@ import {
 } from '../components/ui';
 import { usePregnancyStore } from '../lib/stores';
 import apiClient from '../lib/api-client';
-import type { ApiResponse } from '../lib/types';
+import type { ApiResponse, PregnancyCheckup, PregnancyProfile } from '../lib/types';
 import QRCode from 'qrcode';
 
 interface UiPregnancy {
   id: string;
   motherName: string;
+  motherFirstName?: string;
+  motherLastName?: string;
   motherAge?: number;
+  motherDateOfBirth?: string;
   phone: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
   expectedDeliveryDate?: string;
   lastMenstrualPeriod?: string;
+  conceptionDate?: string;
   currentWeek: number;
   trimester: number;
   status: 'active' | 'delivered' | 'terminated';
@@ -55,6 +62,9 @@ interface UiPregnancy {
   lastCheckup?: string;
   nextAppointment?: string;
   midwife?: string;
+  hospitalName?: string;
+  obgynName?: string;
+  obgynContact?: string;
 }
 
 const getBabyDevelopmentInfo = (week: number) => {
@@ -100,7 +110,7 @@ const getAgeFromDob = (dob?: string) => {
 };
 
 export default function PregnanciesPage() {
-  const { pregnancies, isLoading, error, fetchPregnancies } = usePregnancyStore();
+  const { pregnancies, isLoading, error, fetchPregnancies, createPregnancy, updatePregnancy } = usePregnancyStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterRisk, setFilterRisk] = useState('all');
@@ -111,6 +121,194 @@ export default function PregnanciesPage() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [qrError, setQrError] = useState<string | null>(null);
   const [isQrLoading, setIsQrLoading] = useState(false);
+  const [isPregnancyFormOpen, setIsPregnancyFormOpen] = useState(false);
+  const [pregnancyFormMode, setPregnancyFormMode] = useState<'create' | 'edit'>('create');
+  const [pregnancyFormError, setPregnancyFormError] = useState('');
+  const [isPregnancySubmitting, setIsPregnancySubmitting] = useState(false);
+  const [pregnancyFormValues, setPregnancyFormValues] = useState({
+    motherFirstName: '',
+    motherLastName: '',
+    motherDateOfBirth: '',
+    expectedDeliveryDate: '',
+    motherBloodType: 'unknown',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    emergencyContactRelation: '',
+    gravida: '',
+    para: '',
+    hospitalName: '',
+    obgynName: '',
+    obgynContact: '',
+  });
+  const [isCheckupModalOpen, setIsCheckupModalOpen] = useState(false);
+  const [checkupError, setCheckupError] = useState('');
+  const [isCheckupSubmitting, setIsCheckupSubmitting] = useState(false);
+  const [checkupFormValues, setCheckupFormValues] = useState({
+    checkupDate: format(new Date(), 'yyyy-MM-dd'),
+    weekOfPregnancy: '',
+    weight: '',
+    bloodPressureSystolic: '',
+    bloodPressureDiastolic: '',
+    notes: '',
+    nextCheckupDate: '',
+    providerName: '',
+    location: '',
+  });
+  const [isRecordsModalOpen, setIsRecordsModalOpen] = useState(false);
+  const [checkupsLoading, setCheckupsLoading] = useState(false);
+  const [checkupsError, setCheckupsError] = useState('');
+  const [checkups, setCheckups] = useState<PregnancyCheckup[]>([]);
+
+  const normalizeString = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  };
+
+  const toNumber = (value: string) => {
+    if (!value) return undefined;
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
+
+  const toDateInput = (value?: string | null) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return format(date, 'yyyy-MM-dd');
+  };
+
+  const openEditPregnancyForm = (pregnancy: UiPregnancy) => {
+    setPregnancyFormMode('edit');
+    setPregnancyFormError('');
+    setPregnancyFormValues({
+      motherFirstName: pregnancy.motherFirstName ?? pregnancy.motherName.split(' ')[0] ?? '',
+      motherLastName: pregnancy.motherLastName ?? pregnancy.motherName.split(' ').slice(1).join(' ') ?? '',
+      motherDateOfBirth: toDateInput(pregnancy.motherDateOfBirth),
+      expectedDeliveryDate: toDateInput(pregnancy.expectedDeliveryDate),
+      motherBloodType: pregnancy.bloodType ?? 'unknown',
+      emergencyContactName: pregnancy.emergencyContactName ?? '',
+      emergencyContactPhone: pregnancy.emergencyContactPhone ?? '',
+      emergencyContactRelation: pregnancy.emergencyContactRelation ?? '',
+      gravida: pregnancy.gravida?.toString() ?? '',
+      para: pregnancy.para?.toString() ?? '',
+      hospitalName: pregnancy.hospitalName ?? '',
+      obgynName: pregnancy.obgynName ?? '',
+      obgynContact: pregnancy.obgynContact ?? '',
+    });
+    setIsPregnancyFormOpen(true);
+  };
+
+  const handlePregnancySubmit = async () => {
+    if (
+      !pregnancyFormValues.motherFirstName.trim() ||
+      !pregnancyFormValues.motherLastName.trim() ||
+      !pregnancyFormValues.motherDateOfBirth ||
+      !pregnancyFormValues.expectedDeliveryDate
+    ) {
+      setPregnancyFormError('Please fill in all required fields.');
+      return;
+    }
+
+    setPregnancyFormError('');
+    setIsPregnancySubmitting(true);
+
+    const payload = {
+      motherFirstName: pregnancyFormValues.motherFirstName.trim(),
+      motherLastName: pregnancyFormValues.motherLastName.trim(),
+      motherDateOfBirth: pregnancyFormValues.motherDateOfBirth,
+      expectedDeliveryDate: pregnancyFormValues.expectedDeliveryDate,
+      motherBloodType: pregnancyFormValues.motherBloodType || undefined,
+      emergencyContactName: normalizeString(pregnancyFormValues.emergencyContactName),
+      emergencyContactPhone: normalizeString(pregnancyFormValues.emergencyContactPhone),
+      emergencyContactRelation: normalizeString(pregnancyFormValues.emergencyContactRelation),
+      gravida: toNumber(pregnancyFormValues.gravida),
+      para: toNumber(pregnancyFormValues.para),
+      hospitalName: normalizeString(pregnancyFormValues.hospitalName),
+      obgynName: normalizeString(pregnancyFormValues.obgynName),
+      obgynContact: normalizeString(pregnancyFormValues.obgynContact),
+    } as Partial<PregnancyProfile>;
+
+    try {
+      if (pregnancyFormMode === 'create') {
+        await createPregnancy(payload);
+      } else if (selectedPregnancy) {
+        await updatePregnancy(selectedPregnancy.id, payload);
+      }
+      setIsPregnancyFormOpen(false);
+      setIsModalOpen(false);
+      await fetchPregnancies();
+    } catch (err) {
+      setPregnancyFormError(err instanceof Error ? err.message : 'Unable to save pregnancy profile.');
+    } finally {
+      setIsPregnancySubmitting(false);
+    }
+  };
+
+  const openCheckupModal = (pregnancy: UiPregnancy) => {
+    setSelectedPregnancy(pregnancy);
+    setCheckupError('');
+    setCheckupFormValues({
+      checkupDate: format(new Date(), 'yyyy-MM-dd'),
+      weekOfPregnancy: pregnancy.currentWeek?.toString() ?? '',
+      weight: '',
+      bloodPressureSystolic: '',
+      bloodPressureDiastolic: '',
+      notes: '',
+      nextCheckupDate: '',
+      providerName: '',
+      location: '',
+    });
+    setIsCheckupModalOpen(true);
+  };
+
+  const handleCheckupSubmit = async () => {
+    if (!selectedPregnancy) return;
+    if (!checkupFormValues.checkupDate || !checkupFormValues.weekOfPregnancy) {
+      setCheckupError('Please provide the checkup date and week of pregnancy.');
+      return;
+    }
+
+    setCheckupError('');
+    setIsCheckupSubmitting(true);
+
+    try {
+      await apiClient.post(`/pregnancies/${selectedPregnancy.id}/checkups`, {
+        checkupDate: checkupFormValues.checkupDate,
+        weekOfPregnancy: Number(checkupFormValues.weekOfPregnancy),
+        weight: toNumber(checkupFormValues.weight),
+        bloodPressureSystolic: toNumber(checkupFormValues.bloodPressureSystolic),
+        bloodPressureDiastolic: toNumber(checkupFormValues.bloodPressureDiastolic),
+        notes: normalizeString(checkupFormValues.notes),
+        nextCheckupDate: normalizeString(checkupFormValues.nextCheckupDate),
+        providerName: normalizeString(checkupFormValues.providerName),
+        location: normalizeString(checkupFormValues.location),
+      });
+
+      setIsCheckupModalOpen(false);
+      await fetchPregnancies();
+    } catch (err) {
+      setCheckupError(err instanceof Error ? err.message : 'Unable to schedule checkup.');
+    } finally {
+      setIsCheckupSubmitting(false);
+    }
+  };
+
+  const openRecordsModal = async (pregnancy: UiPregnancy) => {
+    setSelectedPregnancy(pregnancy);
+    setCheckups([]);
+    setCheckupsError('');
+    setCheckupsLoading(true);
+    setIsRecordsModalOpen(true);
+
+    try {
+      const data = await apiClient.get<PregnancyCheckup[]>(`/pregnancies/${pregnancy.id}/checkups`);
+      setCheckups(data ?? []);
+    } catch (err) {
+      setCheckupsError(err instanceof Error ? err.message : 'Unable to load checkups.');
+    } finally {
+      setCheckupsLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchPregnancies();
@@ -204,10 +402,17 @@ export default function PregnanciesPage() {
         return {
           id: pregnancy.id,
           motherName,
+          motherFirstName: pregnancy.motherFirstName,
+          motherLastName: pregnancy.motherLastName,
           motherAge: getAgeFromDob(pregnancy.motherDateOfBirth),
+          motherDateOfBirth: pregnancy.motherDateOfBirth,
           phone: pregnancy.emergencyContactPhone || pregnancy.obgynContact || pregnancy.midwifeContact || 'Not provided',
+          emergencyContactName: pregnancy.emergencyContactName,
+          emergencyContactPhone: pregnancy.emergencyContactPhone,
+          emergencyContactRelation: pregnancy.emergencyContactRelation,
           expectedDeliveryDate: pregnancy.expectedDeliveryDate,
           lastMenstrualPeriod: pregnancy.lastMenstrualPeriod,
+          conceptionDate: pregnancy.conceptionDate,
           currentWeek,
           trimester,
           status: normalizedStatus,
@@ -219,6 +424,9 @@ export default function PregnanciesPage() {
           lastCheckup: latestCheckup?.checkupDate,
           nextAppointment: latestCheckup?.nextCheckupDate,
           midwife: pregnancy.midwifeName || 'Assigned Midwife',
+          hospitalName: pregnancy.hospitalName,
+          obgynName: pregnancy.obgynName,
+          obgynContact: pregnancy.obgynContact,
         };
       }),
     [pregnancies]
@@ -249,7 +457,7 @@ export default function PregnanciesPage() {
       key: 'mother',
       header: 'Mother',
       render: (pregnancy: UiPregnancy) => (
-        <div className="flex items-center gap-3 min-w-[240px]">
+        <div className="flex items-center gap-3 min-w-60">
           <Avatar name={pregnancy.motherName} size="sm" />
           <div className="min-w-0">
             <p className="font-semibold text-slate-900 dark:text-white truncate">{pregnancy.motherName}</p>
@@ -329,7 +537,7 @@ export default function PregnanciesPage() {
             >
               <QrCode className="w-5 h-5" />
             </button>
-            <Button icon={Plus} variant="primary">
+            <Button icon={Plus} variant="primary" onClick={() => setIsQrModalOpen(true)}>
               Register Pregnancy
             </Button>
           </div>
@@ -484,6 +692,291 @@ export default function PregnanciesPage() {
         </div>
       )}
 
+      {/* Create/Edit Pregnancy Modal */}
+      <Modal
+        isOpen={isPregnancyFormOpen}
+        onClose={() => setIsPregnancyFormOpen(false)}
+        title={pregnancyFormMode === 'create' ? 'Register Pregnancy' : 'Edit Pregnancy'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {pregnancyFormError && (
+            <Alert variant="warning" title="Unable to save pregnancy profile">
+              {pregnancyFormError}
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Mother First Name"
+              value={pregnancyFormValues.motherFirstName}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, motherFirstName: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Mother Last Name"
+              value={pregnancyFormValues.motherLastName}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, motherLastName: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Mother Date of Birth"
+              type="date"
+              value={pregnancyFormValues.motherDateOfBirth}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, motherDateOfBirth: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Expected Delivery Date"
+              type="date"
+              value={pregnancyFormValues.expectedDeliveryDate}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, expectedDeliveryDate: event.target.value }))
+              }
+              required
+            />
+            <Select
+              label="Blood Type"
+              options={[
+                { value: 'unknown', label: 'Unknown' },
+                { value: 'A+', label: 'A+' },
+                { value: 'A-', label: 'A-' },
+                { value: 'B+', label: 'B+' },
+                { value: 'B-', label: 'B-' },
+                { value: 'AB+', label: 'AB+' },
+                { value: 'AB-', label: 'AB-' },
+                { value: 'O+', label: 'O+' },
+                { value: 'O-', label: 'O-' },
+              ]}
+              value={pregnancyFormValues.motherBloodType}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, motherBloodType: event.target.value }))
+              }
+            />
+            <Input
+              label="Gravida"
+              type="number"
+              value={pregnancyFormValues.gravida}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, gravida: event.target.value }))
+              }
+            />
+            <Input
+              label="Para"
+              type="number"
+              value={pregnancyFormValues.para}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, para: event.target.value }))
+              }
+            />
+            <Input
+              label="Hospital Name"
+              value={pregnancyFormValues.hospitalName}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, hospitalName: event.target.value }))
+              }
+            />
+            <Input
+              label="OB/GYN Name"
+              value={pregnancyFormValues.obgynName}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, obgynName: event.target.value }))
+              }
+            />
+            <Input
+              label="OB/GYN Contact"
+              value={pregnancyFormValues.obgynContact}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, obgynContact: event.target.value }))
+              }
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="Emergency Contact Name"
+              value={pregnancyFormValues.emergencyContactName}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, emergencyContactName: event.target.value }))
+              }
+            />
+            <Input
+              label="Emergency Contact Phone"
+              value={pregnancyFormValues.emergencyContactPhone}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, emergencyContactPhone: event.target.value }))
+              }
+            />
+            <Input
+              label="Emergency Contact Relation"
+              value={pregnancyFormValues.emergencyContactRelation}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, emergencyContactRelation: event.target.value }))
+              }
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsPregnancyFormOpen(false)}>
+              Cancel
+            </Button>
+            <Button isLoading={isPregnancySubmitting} onClick={handlePregnancySubmit}>
+              {pregnancyFormMode === 'create' ? 'Register Pregnancy' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Schedule Checkup Modal */}
+      <Modal
+        isOpen={isCheckupModalOpen}
+        onClose={() => setIsCheckupModalOpen(false)}
+        title={selectedPregnancy ? `Schedule Checkup - ${selectedPregnancy.motherName}` : 'Schedule Checkup'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {checkupError && (
+            <Alert variant="warning" title="Unable to schedule checkup">
+              {checkupError}
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Checkup Date"
+              type="date"
+              value={checkupFormValues.checkupDate}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, checkupDate: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Week of Pregnancy"
+              type="number"
+              value={checkupFormValues.weekOfPregnancy}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, weekOfPregnancy: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Weight (kg)"
+              type="number"
+              step="0.1"
+              value={checkupFormValues.weight}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, weight: event.target.value }))
+              }
+            />
+            <Input
+              label="BP Systolic"
+              type="number"
+              value={checkupFormValues.bloodPressureSystolic}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, bloodPressureSystolic: event.target.value }))
+              }
+            />
+            <Input
+              label="BP Diastolic"
+              type="number"
+              value={checkupFormValues.bloodPressureDiastolic}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, bloodPressureDiastolic: event.target.value }))
+              }
+            />
+            <Input
+              label="Next Checkup Date"
+              type="date"
+              value={checkupFormValues.nextCheckupDate}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, nextCheckupDate: event.target.value }))
+              }
+            />
+            <Input
+              label="Provider Name"
+              value={checkupFormValues.providerName}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, providerName: event.target.value }))
+              }
+            />
+            <Input
+              label="Location"
+              value={checkupFormValues.location}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, location: event.target.value }))
+              }
+            />
+            <Input
+              label="Notes"
+              value={checkupFormValues.notes}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, notes: event.target.value }))
+              }
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsCheckupModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button isLoading={isCheckupSubmitting} onClick={handleCheckupSubmit}>
+              Save Checkup
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Checkup Records Modal */}
+      <Modal
+        isOpen={isRecordsModalOpen}
+        onClose={() => setIsRecordsModalOpen(false)}
+        title={selectedPregnancy ? `Checkups - ${selectedPregnancy.motherName}` : 'Checkups'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {checkupsError && (
+            <Alert variant="warning" title="Unable to load checkups">
+              {checkupsError}
+            </Alert>
+          )}
+          <Table
+            columns={[
+              {
+                key: 'date',
+                header: 'Date',
+                render: (item: PregnancyCheckup) => formatDate(item.checkupDate, 'MMM d, yyyy'),
+              },
+              {
+                key: 'week',
+                header: 'Week',
+                render: (item: PregnancyCheckup) => item.weekOfPregnancy ?? '--',
+              },
+              {
+                key: 'weight',
+                header: 'Weight',
+                render: (item: PregnancyCheckup) => (item.weight ? `${item.weight} kg` : '--'),
+              },
+              {
+                key: 'bp',
+                header: 'BP',
+                render: (item: PregnancyCheckup) => item.bloodPressure ?? '--',
+              },
+              {
+                key: 'notes',
+                header: 'Notes',
+                render: (item: PregnancyCheckup) => item.notes || '--',
+              },
+            ]}
+            data={checkups}
+            keyExtractor={(item) => item.id}
+            isLoading={checkupsLoading}
+            emptyMessage="No checkups recorded"
+          />
+        </div>
+      </Modal>
+
       {/* Detail Modal */}
       <Modal
         isOpen={isModalOpen}
@@ -544,13 +1037,39 @@ export default function PregnanciesPage() {
             )}
 
             <div className="flex gap-3 pt-4">
-              <Button variant="primary" icon={Calendar} className="flex-1">
+              <Button
+                variant="primary"
+                icon={Calendar}
+                className="flex-1"
+                onClick={() => {
+                  if (!selectedPregnancy) return;
+                  setIsModalOpen(false);
+                  openCheckupModal(selectedPregnancy);
+                }}
+              >
                 Schedule Checkup
               </Button>
-              <Button variant="outline" icon={FileText} className="flex-1">
+              <Button
+                variant="outline"
+                icon={FileText}
+                className="flex-1"
+                onClick={() => {
+                  if (!selectedPregnancy) return;
+                  setIsModalOpen(false);
+                  openRecordsModal(selectedPregnancy);
+                }}
+              >
                 View Records
               </Button>
-              <Button variant="ghost" icon={Edit}>
+              <Button
+                variant="ghost"
+                icon={Edit}
+                onClick={() => {
+                  if (!selectedPregnancy) return;
+                  setIsModalOpen(false);
+                  openEditPregnancyForm(selectedPregnancy);
+                }}
+              >
                 Edit
               </Button>
             </div>
