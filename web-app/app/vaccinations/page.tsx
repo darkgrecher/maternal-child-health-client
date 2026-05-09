@@ -110,6 +110,11 @@ export default function VaccinationsPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedRecord, setSelectedRecord] = useState<UiVaccinationRecord | null>(null);
   const [isAdministerModalOpen, setIsAdministerModalOpen] = useState(false);
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [manualChildId, setManualChildId] = useState('');
+  const [manualVaccineId, setManualVaccineId] = useState('');
+  const [manualError, setManualError] = useState('');
+  const [manualSubmitting, setManualSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'records' | 'schedule'>('records');
   const [records, setRecords] = useState<UiVaccinationRecord[]>([]);
   const [vaccineCatalog, setVaccineCatalog] = useState<VaccineInfo[]>([]);
@@ -120,6 +125,13 @@ export default function VaccinationsPage() {
   const [administrationDate, setAdministrationDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [adminNotes, setAdminNotes] = useState('');
   const [adminError, setAdminError] = useState('');
+
+  const handleCall = (phone?: string) => {
+    if (!phone) return;
+    const digits = phone.replace(/\D+/g, '');
+    if (!digits) return;
+    window.open(`tel:${digits}`, '_self');
+  };
 
   useEffect(() => {
     fetchChildren();
@@ -230,6 +242,21 @@ export default function VaccinationsPage() {
     setAdminError('');
   }, [selectedRecord]);
 
+  useEffect(() => {
+    if (!isManualModalOpen) return;
+    setManualError('');
+    setAdministeredBy('');
+    setBatchNumber('');
+    setAdministrationDate(format(new Date(), 'yyyy-MM-dd'));
+    setAdminNotes('');
+    if (!manualChildId && children.length > 0) {
+      setManualChildId(children[0].id);
+    }
+    if (!manualVaccineId && vaccineCatalog.length > 0) {
+      setManualVaccineId(vaccineCatalog[0].id);
+    }
+  }, [isManualModalOpen, children, vaccineCatalog, manualChildId, manualVaccineId]);
+
   const handleAdminister = async () => {
     if (!selectedRecord) return;
 
@@ -267,6 +294,36 @@ export default function VaccinationsPage() {
       setIsAdministerModalOpen(false);
     } catch (error) {
       setAdminError((error as Error).message || 'Failed to record vaccination');
+    }
+  };
+
+  const handleManualAdminister = async () => {
+    if (!manualChildId || !manualVaccineId) {
+      setManualError('Please select a child and a vaccine.');
+      return;
+    }
+
+    setManualError('');
+    setManualSubmitting(true);
+
+    try {
+      await apiClient.post<ApiResponse<VaccinationRecord>>(
+        `/vaccines/child/${manualChildId}/administer/${manualVaccineId}`,
+        {
+          administeredBy: administeredBy || undefined,
+          batchNumber: batchNumber || undefined,
+          administeredDate: administrationDate || undefined,
+          notes: adminNotes || undefined,
+          status: 'completed',
+        }
+      );
+
+      setIsManualModalOpen(false);
+      fetchChildren();
+    } catch (error) {
+      setManualError((error as Error).message || 'Failed to record vaccination');
+    } finally {
+      setManualSubmitting(false);
     }
   };
 
@@ -318,7 +375,7 @@ export default function VaccinationsPage() {
         title="Vaccination Management"
         subtitle="Sri Lanka National Immunization Schedule"
         actions={
-          <Button icon={Plus} variant="primary">
+          <Button icon={Plus} variant="primary" onClick={() => setIsManualModalOpen(true)}>
             Record Vaccination
           </Button>
         }
@@ -473,6 +530,7 @@ export default function VaccinationsPage() {
                               size="sm" 
                               icon={Phone}
                               className="border-red-300 text-red-600"
+                              onClick={() => handleCall(record.parentPhone)}
                             >
                               Call
                             </Button>
@@ -580,7 +638,15 @@ export default function VaccinationsPage() {
                               {record.administeredBy && ` by ${record.administeredBy}`}
                             </p>
                           </div>
-                          <Button variant="ghost" size="sm" icon={FileText}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={FileText}
+                            onClick={() => {
+                              setSelectedRecord(record);
+                              setIsAdministerModalOpen(true);
+                            }}
+                          >
                             View Record
                           </Button>
                         </div>
@@ -656,6 +722,108 @@ export default function VaccinationsPage() {
           </div>
         </Card>
       )}
+
+      {/* Manual Record Modal */}
+      <Modal
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+        title="Record Vaccination"
+        size="md"
+      >
+        {children.length === 0 || vaccineCatalog.length === 0 ? (
+          <Alert variant="warning" title="Unable to record" className="mt-2">
+            {children.length === 0
+              ? 'Please register a child before recording vaccinations.'
+              : 'Vaccine catalog is unavailable right now.'}
+          </Alert>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Child
+              </label>
+              <Select
+                options={children.map((child) => ({
+                  value: child.id,
+                  label: `${child.firstName} ${child.lastName}`.trim(),
+                }))}
+                value={manualChildId}
+                onChange={(e) => setManualChildId(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Vaccine
+              </label>
+              <Select
+                options={sortedCatalog.map((vaccine) => ({
+                  value: vaccine.id,
+                  label: `${vaccine.name} (${vaccine.shortName})`,
+                }))}
+                value={manualVaccineId}
+                onChange={(e) => setManualVaccineId(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Input
+              label="Administered By"
+              placeholder="Enter your name"
+              value={administeredBy}
+              onChange={(e) => setAdministeredBy(e.target.value)}
+            />
+            <Input
+              label="Batch Number"
+              placeholder="Enter vaccine batch number"
+              value={batchNumber}
+              onChange={(e) => setBatchNumber(e.target.value)}
+            />
+            <Input
+              label="Administration Date"
+              type="date"
+              value={administrationDate}
+              onChange={(e) => setAdministrationDate(e.target.value)}
+            />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Notes
+              </label>
+              <textarea
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
+                rows={3}
+                placeholder="Any observations or notes..."
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+              />
+            </div>
+
+            {manualError && (
+              <Alert variant="warning" title="Unable to save" icon={AlertCircle}>
+                {manualError}
+              </Alert>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="primary"
+                icon={Check}
+                className="flex-1"
+                onClick={handleManualAdminister}
+                disabled={manualSubmitting}
+              >
+                Confirm Administration
+              </Button>
+              <Button
+                variant="ghost"
+                icon={X}
+                onClick={() => setIsManualModalOpen(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Administer Modal */}
       <Modal

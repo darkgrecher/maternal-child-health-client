@@ -6,21 +6,21 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import {
   Activity,
   Search,
-  Filter,
   Heart,
   Baby,
   Syringe,
   TrendingUp,
   Calendar,
-  FileText,
   User,
   Clock,
   ChevronRight,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 import { MainLayout, Header } from '../components/main-layout';
 import {
@@ -28,130 +28,60 @@ import {
   Button,
   Badge,
   Avatar,
-  SectionTitle,
   Input,
   Select,
   EmptyState,
+  Modal,
+  Alert,
 } from '../components/ui';
+import apiClient from '../lib/api-client';
+import { useChildStore } from '../lib/stores';
+import type { ApiResponse, ChildProfile } from '../lib/types';
 
-// Mock activities data
-const mockActivities = [
-  {
-    id: '1',
-    type: 'vaccination',
-    title: 'BCG Vaccination Completed',
-    description: 'Administered BCG vaccine at birth',
-    patient: 'Baby Nethara',
-    parentName: 'Kumari Perera',
-    dateTime: '2026-01-28T09:30:00',
-    icon: Syringe,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-100',
-  },
-  {
-    id: '2',
-    type: 'prenatal',
-    title: 'Prenatal Checkup - Week 24',
-    description: 'Regular checkup completed. Blood pressure normal.',
-    patient: 'Kumari Perera',
-    dateTime: '2026-01-28T10:00:00',
-    icon: Heart,
-    color: 'text-pink-500',
-    bgColor: 'bg-pink-100',
-  },
-  {
-    id: '3',
-    type: 'growth',
-    title: 'Growth Measurement Recorded',
-    description: 'Weight: 6.2kg, Height: 62cm',
-    patient: 'Kavindu Fernando',
-    parentName: 'Sithumi Fernando',
-    dateTime: '2026-01-28T11:15:00',
-    icon: TrendingUp,
-    color: 'text-emerald-500',
-    bgColor: 'bg-emerald-100',
-  },
-  {
-    id: '4',
-    type: 'appointment',
-    title: 'New Appointment Scheduled',
-    description: 'Prenatal checkup scheduled for Feb 5, 2026',
-    patient: 'Dilhani Fernando',
-    dateTime: '2026-01-28T14:00:00',
-    icon: Calendar,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-100',
-  },
-  {
-    id: '5',
-    type: 'registration',
-    title: 'New Pregnancy Registered',
-    description: 'EDD: August 15, 2026 - First pregnancy',
-    patient: 'Nethmi Silva',
-    dateTime: '2026-01-27T15:30:00',
-    icon: Heart,
-    color: 'text-pink-500',
-    bgColor: 'bg-pink-100',
-  },
-  {
-    id: '6',
-    type: 'vaccination',
-    title: 'DTP-HepB-Hib Dose 1',
-    description: 'Pentavalent vaccine administered',
-    patient: 'Isuri Bandara',
-    parentName: 'Malini Bandara',
-    dateTime: '2026-01-27T10:00:00',
-    icon: Syringe,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-100',
-  },
-  {
-    id: '7',
-    type: 'delivery',
-    title: 'Baby Delivered',
-    description: 'Normal delivery - Baby girl, 3.2kg',
-    patient: 'Rashmi Jayawardena',
-    dateTime: '2026-01-26T08:45:00',
-    icon: Baby,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-100',
-  },
-  {
-    id: '8',
-    type: 'checkup',
-    title: 'High Risk Follow-up',
-    description: 'Gestational diabetes under control',
-    patient: 'Chamari Wickramasinghe',
-    dateTime: '2026-01-26T11:00:00',
-    icon: Activity,
-    color: 'text-amber-500',
-    bgColor: 'bg-amber-100',
-  },
-  {
-    id: '9',
-    type: 'growth',
-    title: 'Growth Concern Flagged',
-    description: 'Weight below 5th percentile - Follow-up required',
-    patient: 'Tharindu Perera',
-    parentName: 'Amaya Perera',
-    dateTime: '2026-01-25T14:30:00',
-    icon: TrendingUp,
-    color: 'text-red-500',
-    bgColor: 'bg-red-100',
-  },
-  {
-    id: '10',
-    type: 'registration',
-    title: 'New Child Registered',
-    description: 'Birth weight: 3.1kg, Normal delivery',
-    patient: 'Baby Nipun',
-    parentName: 'Kumari Bandara',
-    dateTime: '2026-01-25T09:00:00',
-    icon: Baby,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-100',
-  },
-];
+interface ApiActivity {
+  id: string;
+  childId: string;
+  type: string;
+  title: string;
+  description?: string | null;
+  date: string;
+  icon?: string | null;
+  child?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+interface UiActivity {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  childName: string;
+  parentName: string;
+  dateTime: string;
+  icon: typeof Activity;
+  color: string;
+  bgColor: string;
+}
+
+const getActivityTypeConfig = (type: string) => {
+  switch (type) {
+    case 'vaccination':
+      return { icon: Syringe, color: 'text-blue-500', bgColor: 'bg-blue-100', label: 'Vaccination' };
+    case 'growth':
+      return { icon: TrendingUp, color: 'text-emerald-500', bgColor: 'bg-emerald-100', label: 'Growth' };
+    case 'milestone':
+      return { icon: Baby, color: 'text-purple-500', bgColor: 'bg-purple-100', label: 'Milestone' };
+    case 'appointment':
+      return { icon: Calendar, color: 'text-indigo-500', bgColor: 'bg-indigo-100', label: 'Appointment' };
+    case 'checkup':
+      return { icon: Heart, color: 'text-pink-500', bgColor: 'bg-pink-100', label: 'Checkup' };
+    default:
+      return { icon: Activity, color: 'text-amber-500', bgColor: 'bg-amber-100', label: type };
+  }
+};
 
 const getRelativeTime = (dateTime: string) => {
   const now = new Date();
@@ -170,12 +100,89 @@ const getRelativeTime = (dateTime: string) => {
 };
 
 export default function ActivitiesPage() {
+  const { children, isLoading: childrenLoading, error: childrenError, fetchChildren } = useChildStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [activities, setActivities] = useState<ApiActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [activitiesError, setActivitiesError] = useState('');
+  const [selectedActivity, setSelectedActivity] = useState<UiActivity | null>(null);
 
-  const filteredActivities = mockActivities.filter((activity) => {
+  useEffect(() => {
+    fetchChildren();
+  }, [fetchChildren]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadActivities = async () => {
+      setActivitiesLoading(true);
+      setActivitiesError('');
+
+      try {
+        const response = await apiClient.get<ApiResponse<ApiActivity[]>>('/activity');
+        if (!isCancelled) {
+          setActivities(response.data ?? []);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setActivitiesError((error as Error).message || 'Failed to load activities');
+        }
+      } finally {
+        if (!isCancelled) {
+          setActivitiesLoading(false);
+        }
+      }
+    };
+
+    loadActivities();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  const childLookup = useMemo(() => {
+    return new Map(children.map((child) => [child.id, child]));
+  }, [children]);
+
+  const getChildName = (activity: ApiActivity) => {
+    if (activity.child) {
+      return `${activity.child.firstName} ${activity.child.lastName}`.trim();
+    }
+    const child = childLookup.get(activity.childId);
+    if (!child) return 'Unknown Child';
+    return `${child.firstName} ${child.lastName}`.trim();
+  };
+
+  const getParentName = (child?: ChildProfile) =>
+    child?.motherName || child?.fatherName || 'Not provided';
+
+  const uiActivities = useMemo<UiActivity[]>(() => {
+    return activities.map((activity) => {
+      const child = childLookup.get(activity.childId);
+      const childName = getChildName(activity);
+      const parentName = getParentName(child);
+      const config = getActivityTypeConfig(activity.type);
+
+      return {
+        id: activity.id,
+        type: activity.type,
+        title: activity.title,
+        description: activity.description || 'No additional details provided.',
+        childName,
+        parentName,
+        dateTime: activity.date,
+        icon: config.icon,
+        color: config.color,
+        bgColor: config.bgColor,
+      };
+    });
+  }, [activities, childLookup]);
+
+  const filteredActivities = uiActivities.filter((activity) => {
     const matchesSearch = activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      activity.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.childName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'all' || activity.type === filterType;
     return matchesSearch && matchesType;
@@ -189,7 +196,10 @@ export default function ActivitiesPage() {
     }
     groups[date].push(activity);
     return groups;
-  }, {} as Record<string, typeof mockActivities>);
+  }, {} as Record<string, UiActivity[]>);
+
+  const errorMessage = activitiesError || childrenError || '';
+  const isLoading = activitiesLoading || childrenLoading;
 
   return (
     <MainLayout>
@@ -197,6 +207,75 @@ export default function ActivitiesPage() {
         title="Activity Log"
         subtitle="Recent activities and events"
       />
+
+      {errorMessage && (
+        <Alert variant="warning" title="Unable to load activities" icon={AlertCircle} className="mt-4">
+          {errorMessage}
+        </Alert>
+      )}
+
+      {/* Activity Detail Modal */}
+      <Modal
+        isOpen={!!selectedActivity}
+        onClose={() => setSelectedActivity(null)}
+        title="Activity Details"
+        size="md"
+      >
+        {selectedActivity && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-xl ${selectedActivity.bgColor}`}>
+                <selectedActivity.icon className={`w-5 h-5 ${selectedActivity.color}`} />
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">
+                  {getActivityTypeConfig(selectedActivity.type).label}
+                </p>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  {selectedActivity.title}
+                </h3>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800">
+              <div className="flex items-center gap-3 mb-2">
+                <Avatar name={selectedActivity.childName} />
+                <div>
+                  <p className="font-medium text-slate-900 dark:text-white">
+                    {selectedActivity.childName}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Parent: {selectedActivity.parentName}
+                  </p>
+                </div>
+              </div>
+              <div className="text-sm text-slate-500 space-y-1">
+                <p>
+                  <Calendar className="inline-block w-4 h-4 mr-2" />
+                  {format(new Date(selectedActivity.dateTime), 'MMMM d, yyyy')}
+                </p>
+                <p>
+                  <Clock className="inline-block w-4 h-4 mr-2" />
+                  {format(new Date(selectedActivity.dateTime), 'h:mm a')}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Details</h4>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                {selectedActivity.description}
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <Button variant="ghost" icon={X} onClick={() => setSelectedActivity(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Stats Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -206,7 +285,7 @@ export default function ActivitiesPage() {
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-900 dark:text-white">
-              {mockActivities.filter(a => a.type === 'prenatal' || a.type === 'checkup').length}
+              {uiActivities.filter((activity) => activity.type === 'checkup').length}
             </p>
             <p className="text-sm text-slate-500">Checkups</p>
           </div>
@@ -217,7 +296,7 @@ export default function ActivitiesPage() {
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-900 dark:text-white">
-              {mockActivities.filter(a => a.type === 'vaccination').length}
+              {uiActivities.filter((activity) => activity.type === 'vaccination').length}
             </p>
             <p className="text-sm text-slate-500">Vaccinations</p>
           </div>
@@ -228,7 +307,7 @@ export default function ActivitiesPage() {
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-900 dark:text-white">
-              {mockActivities.filter(a => a.type === 'growth').length}
+              {uiActivities.filter((activity) => activity.type === 'growth').length}
             </p>
             <p className="text-sm text-slate-500">Growth Records</p>
           </div>
@@ -239,9 +318,9 @@ export default function ActivitiesPage() {
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-900 dark:text-white">
-              {mockActivities.filter(a => a.type === 'registration').length}
+              {uiActivities.filter((activity) => activity.type === 'milestone').length}
             </p>
-            <p className="text-sm text-slate-500">New Registrations</p>
+            <p className="text-sm text-slate-500">Milestones</p>
           </div>
         </Card>
       </div>
@@ -261,11 +340,10 @@ export default function ActivitiesPage() {
             options={[
               { value: 'all', label: 'All Activities' },
               { value: 'vaccination', label: 'Vaccinations' },
-              { value: 'prenatal', label: 'Prenatal' },
               { value: 'growth', label: 'Growth' },
+              { value: 'milestone', label: 'Milestones' },
               { value: 'appointment', label: 'Appointments' },
-              { value: 'registration', label: 'Registrations' },
-              { value: 'delivery', label: 'Deliveries' },
+              { value: 'checkup', label: 'Checkups' },
             ]}
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
@@ -275,63 +353,81 @@ export default function ActivitiesPage() {
       </Card>
 
       {/* Activity Timeline */}
-      <div className="space-y-6">
-        {Object.entries(groupedActivities).map(([date, activities]) => (
-          <div key={date}>
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-              <span className="text-sm font-medium text-slate-500">
-                {format(new Date(date), 'EEEE, MMMM d, yyyy')}
-              </span>
-              <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-            </div>
-            
-            <div className="space-y-3">
-              {activities.map((activity) => (
-                <Card key={activity.id} hover className="relative">
-                  {/* Timeline connector */}
-                  <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700 -z-10" />
-                  
-                  <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-xl ${activity.bgColor} relative z-10`}>
-                      <activity.icon className={`w-5 h-5 ${activity.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-slate-900 dark:text-white">
-                          {activity.title}
-                        </h3>
-                      </div>
-                      <p className="text-sm text-slate-500 mb-2">
-                        {activity.description}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          {activity.patient}
-                          {activity.parentName && ` (${activity.parentName})`}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {getRelativeTime(activity.dateTime)}
-                        </span>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" icon={ChevronRight} />
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredActivities.length === 0 && (
+      {isLoading ? (
+        <Card className="p-6 text-center text-slate-500">Loading activities...</Card>
+      ) : filteredActivities.length === 0 ? (
         <EmptyState
           icon={Activity}
           title="No activities found"
           description="Try adjusting your search or filter criteria"
         />
+      ) : (
+        <div className="space-y-6">
+          {Object.entries(groupedActivities).map(([date, activities]) => (
+            <div key={date}>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                <span className="text-sm font-medium text-slate-500">
+                  {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+                </span>
+                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+              </div>
+              
+              <div className="space-y-3">
+                {activities.map((activity) => (
+                  <Card
+                    key={activity.id}
+                    hover
+                    className="relative"
+                    onClick={() => setSelectedActivity(activity)}
+                  >
+                    {/* Timeline connector */}
+                    <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700 -z-10" />
+                    
+                    <div className="flex items-start gap-4">
+                      <div className={`p-3 rounded-xl ${activity.bgColor} relative z-10`}>
+                        <activity.icon className={`w-5 h-5 ${activity.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-slate-900 dark:text-white">
+                            {activity.title}
+                          </h3>
+                          <Badge variant="default" size="sm">
+                            {getActivityTypeConfig(activity.type).label}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-slate-500 mb-2">
+                          {activity.description}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {activity.childName}
+                            {activity.parentName && ` (${activity.parentName})`}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {getRelativeTime(activity.dateTime)}
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={ChevronRight}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedActivity(activity);
+                        }}
+                      />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </MainLayout>
   );
