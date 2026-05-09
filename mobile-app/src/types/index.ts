@@ -529,6 +529,7 @@ export type RootStackParamList = {
   AddChild: undefined;
   CreatePregnancy: { previousPregnancyId?: string } | undefined;
   PregnancyDashboard: undefined;
+  QrScan: { profileType: 'child' | 'pregnancy' };
 };
 
 export type TabParamList = {

@@ -210,6 +210,9 @@ const PregnancyDashboardScreen: React.FC = () => {
 
   const pregnancyProgress = calculatePregnancyProgress();
   const babyInfo = getBabyDevelopmentInfo(pregnancyProgress.weeks);
+  const midwifeName = displayPregnancy?.midwifeName || displayPregnancy?.midwife?.name;
+  const midwifePhone = displayPregnancy?.midwifeContact || displayPregnancy?.midwife?.phone;
+  const hasMidwifeInfo = Boolean(midwifeName || midwifePhone);
 
   // Get trimester
   const getTrimester = (weeks: number): string => {
@@ -283,6 +286,12 @@ const PregnancyDashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('Settings')}
             >
               <Ionicons name="settings-outline" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerIconButton}
+              onPress={() => navigation.navigate('QrScan', { profileType: 'pregnancy' })}
+            >
+              <Ionicons name="qr-code-outline" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerIconButton}
@@ -365,6 +374,19 @@ const PregnancyDashboardScreen: React.FC = () => {
               <Text style={[styles.heroWeekText, { color: '#6B3A5B' }]}>
                 {t('pregnancy.youAreInWeek', 'You are in week')} {pregnancyProgress.weeks}
               </Text>
+              {hasMidwifeInfo && (
+                <View style={[styles.midwifeInlineBox, { backgroundColor: colors.secondaryLight }]}>
+                  <Text style={[styles.midwifeInlineTitle, { color: colors.textPrimary }]}>
+                    {t('pregnancy.assignedMidwife', 'Assigned Midwife')}
+                  </Text>
+                  <Text style={[styles.midwifeInlineText, { color: colors.textSecondary }]}>
+                    {t('home.midwife', 'Midwife')}: {midwifeName || t('home.notProvided', 'Not provided')}
+                  </Text>
+                  <Text style={[styles.midwifeInlineText, { color: colors.textSecondary }]}>
+                    {t('home.contact', 'Contact')}: {midwifePhone || t('home.notProvided', 'Not provided')}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </Card>
@@ -590,8 +612,8 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   heroVideo: {
-    width: 160,
-    height: 160,
+    width: 140,
+    height: 140,
     borderRadius: BORDER_RADIUS.md,
   },
   heroTextContainer: {
@@ -607,6 +629,19 @@ const styles = StyleSheet.create({
   heroWeekText: {
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.medium,
+  },
+  midwifeInlineBox: {
+    marginTop: SPACING.sm,
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  midwifeInlineTitle: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.semibold,
+    marginBottom: 2,
+  },
+  midwifeInlineText: {
+    fontSize: FONT_SIZE.xs,
   },
   loadingText: {
     marginTop: SPACING.md,

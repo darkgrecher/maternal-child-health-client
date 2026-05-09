@@ -156,6 +156,10 @@ const FeedingScreen: React.FC = () => {
         subtitle={t('feeding.subtitle')}
         icon="restaurant-outline"
         iconColor={colors.warning}
+        leadingRightIcon="qr-code-outline"
+        onLeadingRightPress={() => {
+          navigation.navigate('QrScan', { profileType: 'child' });
+        }}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
           // TODO: Navigate to notifications

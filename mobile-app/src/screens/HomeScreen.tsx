@@ -656,6 +656,12 @@ const HomeScreen: React.FC = () => {
             </View>
           </View>
           <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.headerIconButton}
+              onPress={() => navigation.navigate('QrScan', { profileType: 'child' })}
+            >
+              <Ionicons name="qr-code-outline" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.headerIconButton}>
               <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
               <View style={[styles.notificationBadge, { backgroundColor: colors.primary }]}>
@@ -731,6 +737,16 @@ const HomeScreen: React.FC = () => {
               <View style={styles.chdrBadge}>
                 <Text style={styles.chdrText}>{t('home.chdrNumber')} {profile.chdrNumber}</Text>
               </View>
+              {profile.assignedMidwife && (
+                <View style={styles.midwifeInfo}>
+                  <Text style={styles.midwifeName}>
+                    {t('home.midwife', 'Midwife')}: {profile.assignedMidwife.name || t('home.notProvided', 'Not provided')}
+                  </Text>
+                  <Text style={styles.midwifeContact}>
+                    {t('home.contact', 'Contact')}: {profile.assignedMidwife.phone || t('home.notProvided', 'Not provided')}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
           
@@ -1334,6 +1350,19 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.xs,
     color: COLORS.info,
     fontWeight: FONT_WEIGHT.medium,
+  },
+  midwifeInfo: {
+    marginTop: SPACING.xs,
+    gap: 2,
+  },
+  midwifeName: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHT.medium,
+  },
+  midwifeContact: {
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.textSecondary,
   },
 
   // Stats Row

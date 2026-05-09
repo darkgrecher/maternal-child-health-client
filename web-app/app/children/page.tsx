@@ -9,6 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { format, differenceInMonths, differenceInYears } from 'date-fns';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Baby,
   Plus,
@@ -16,7 +17,6 @@ import {
   Calendar,
   Syringe,
   TrendingUp,
-  User,
   Edit,
   Scale,
   Ruler,
@@ -30,16 +30,16 @@ import {
   Button,
   Badge,
   Avatar,
-  ProgressBar,
   Input,
   Select,
   Modal,
-  EmptyState,
   Alert,
+  Table,
 } from '../components/ui';
 import apiClient from '../lib/api-client';
 import { useChildStore } from '../lib/stores';
 import type { ApiResponse, ChildProfile } from '../lib/types';
+import QRCode from 'qrcode';
 
 interface VaccineScheduleResponse {
   statistics?: {
@@ -78,6 +78,11 @@ interface UiChild {
   dateOfBirth: string;
   gender: 'male' | 'female';
   bloodType?: string | null;
+  chdrNumber?: string | null;
+  motherName?: string | null;
+  fatherName?: string | null;
+  emergencyContact?: string | null;
+  address?: string | null;
   parentName: string;
   parentPhone: string;
   birthWeight?: number | null;
@@ -168,18 +173,260 @@ const getChildParentPhone = (child: ChildProfile) =>
   child.emergencyContact || 'Not provided';
 
 export default function ChildrenPage() {
-  const { children, isLoading, error, fetchChildren } = useChildStore();
+  const { children, isLoading, error, fetchChildren, createChild, updateChild } = useChildStore();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGender, setFilterGender] = useState('all');
   const [filterVaccine, setFilterVaccine] = useState('all');
   const [selectedChild, setSelectedChild] = useState<UiChild | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isChildFormOpen, setIsChildFormOpen] = useState(false);
+  const [childFormMode, setChildFormMode] = useState<'create' | 'edit'>('create');
+  const [childFormError, setChildFormError] = useState('');
+  const [isChildSubmitting, setIsChildSubmitting] = useState(false);
+  const [childFormValues, setChildFormValues] = useState({
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    gender: 'female',
+    bloodType: 'unknown',
+    chdrNumber: '',
+    motherName: '',
+    fatherName: '',
+    emergencyContact: '',
+    address: '',
+    birthWeight: '',
+    birthHeight: '',
+  });
+  const [isGrowthModalOpen, setIsGrowthModalOpen] = useState(false);
+  const [growthError, setGrowthError] = useState('');
+  const [isGrowthSubmitting, setIsGrowthSubmitting] = useState(false);
+  const [growthFormValues, setGrowthFormValues] = useState({
+    measurementDate: format(new Date(), 'yyyy-MM-dd'),
+    weight: '',
+    height: '',
+    headCircumference: '',
+    measuredBy: '',
+    location: '',
+    notes: '',
+  });
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [childMetrics, setChildMetrics] = useState<Record<string, ChildMetrics>>({});
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
+  const [isQrLoading, setIsQrLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setChildFormMode('create');
+      setIsChildFormOpen(true);
+    }
+  }, [searchParams]);
+
+  const normalizeString = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  };
+
+  const toNumber = (value: string) => {
+    if (!value) return undefined;
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
+
+  const toDateInput = (value?: string | null) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return format(date, 'yyyy-MM-dd');
+  };
+
+  const openEditChildForm = (child: UiChild) => {
+    setChildFormMode('edit');
+    setChildFormError('');
+    setChildFormValues({
+      firstName: child.firstName,
+      lastName: child.lastName,
+      dateOfBirth: toDateInput(child.dateOfBirth),
+      gender: child.gender,
+      bloodType: child.bloodType ?? 'unknown',
+      chdrNumber: child.chdrNumber ?? '',
+      motherName: child.motherName ?? '',
+      fatherName: child.fatherName ?? '',
+      emergencyContact: child.emergencyContact ?? '',
+      address: child.address ?? '',
+      birthWeight: child.birthWeight?.toString() ?? '',
+      birthHeight: child.birthHeight?.toString() ?? '',
+    });
+    setIsChildFormOpen(true);
+  };
+
+  const handleChildSubmit = async () => {
+    if (!childFormValues.firstName.trim() || !childFormValues.lastName.trim() || !childFormValues.dateOfBirth) {
+      setChildFormError('Please fill in all required fields.');
+      return;
+    }
+
+    setChildFormError('');
+    setIsChildSubmitting(true);
+
+    const payload = {
+      firstName: childFormValues.firstName.trim(),
+      lastName: childFormValues.lastName.trim(),
+      dateOfBirth: childFormValues.dateOfBirth,
+      gender: childFormValues.gender as 'male' | 'female',
+      bloodType: childFormValues.bloodType || undefined,
+      chdrNumber: normalizeString(childFormValues.chdrNumber),
+      motherName: normalizeString(childFormValues.motherName),
+      fatherName: normalizeString(childFormValues.fatherName),
+      emergencyContact: normalizeString(childFormValues.emergencyContact),
+      address: normalizeString(childFormValues.address),
+      birthWeight: toNumber(childFormValues.birthWeight),
+      birthHeight: toNumber(childFormValues.birthHeight),
+    } as Partial<ChildProfile>;
+
+    try {
+      if (childFormMode === 'create') {
+        await createChild(payload);
+      } else if (selectedChild) {
+        await updateChild(selectedChild.id, payload);
+      }
+      setIsChildFormOpen(false);
+      setIsModalOpen(false);
+      await fetchChildren();
+    } catch (err) {
+      setChildFormError(err instanceof Error ? err.message : 'Unable to save child profile.');
+    } finally {
+      setIsChildSubmitting(false);
+    }
+  };
+
+  const openGrowthModal = (child: UiChild) => {
+    setSelectedChild(child);
+    setGrowthError('');
+    setGrowthFormValues({
+      measurementDate: format(new Date(), 'yyyy-MM-dd'),
+      weight: '',
+      height: '',
+      headCircumference: '',
+      measuredBy: '',
+      location: '',
+      notes: '',
+    });
+    setIsGrowthModalOpen(true);
+  };
+
+  const handleGrowthSubmit = async () => {
+    if (!selectedChild) return;
+    if (!growthFormValues.measurementDate || !growthFormValues.weight || !growthFormValues.height) {
+      setGrowthError('Please fill in the measurement date, weight, and height.');
+      return;
+    }
+
+    setGrowthError('');
+    setIsGrowthSubmitting(true);
+
+    try {
+      await apiClient.post(`/growth/child/${selectedChild.id}`, {
+        measurementDate: growthFormValues.measurementDate,
+        weight: Number(growthFormValues.weight),
+        height: Number(growthFormValues.height),
+        headCircumference: toNumber(growthFormValues.headCircumference),
+        measuredBy: normalizeString(growthFormValues.measuredBy),
+        location: normalizeString(growthFormValues.location),
+        notes: normalizeString(growthFormValues.notes),
+      });
+
+      setIsGrowthModalOpen(false);
+      await fetchChildren();
+    } catch (err) {
+      setGrowthError(err instanceof Error ? err.message : 'Unable to record growth measurement.');
+    } finally {
+      setIsGrowthSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     fetchChildren();
   }, [fetchChildren]);
+
+  useEffect(() => {
+    if (!isQrModalOpen) {
+      setQrImageUrl(null);
+      setQrError(null);
+      setQrCode(null);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadQrCode = async () => {
+      setIsQrLoading(true);
+      setQrError(null);
+
+      try {
+        const response = await apiClient.post<ApiResponse<{ qrPayload: string; code: string }>>('/midwife-links/qr', {
+          profileType: 'child',
+        });
+        const qrPayload = response.data?.qrPayload;
+        const code = response.data?.code ?? null;
+        if (!qrPayload) {
+          throw new Error('QR code payload unavailable');
+        }
+
+        const dataUrl = await QRCode.toDataURL(qrPayload, { width: 320, margin: 1 });
+        if (!isCancelled) {
+          setQrImageUrl(dataUrl);
+          setQrCode(code);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          const message = error instanceof Error ? error.message : 'Failed to generate QR code';
+          setQrError(message);
+          setQrImageUrl(null);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsQrLoading(false);
+        }
+      }
+    };
+
+    loadQrCode();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isQrModalOpen]);
+
+  useEffect(() => {
+    if (!isQrModalOpen || !qrCode) return;
+
+    let isCancelled = false;
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await apiClient.get<ApiResponse<{ isActive: boolean; lastUsedAt?: string | null }>>(
+          `/midwife-links/status/${qrCode}`
+        );
+        const lastUsedAt = response.data?.lastUsedAt ?? null;
+        const isActive = response.data?.isActive ?? true;
+        if (!isCancelled && (lastUsedAt || !isActive)) {
+          setIsQrModalOpen(false);
+          setQrCode(null);
+          await fetchChildren();
+        }
+      } catch {
+        // Ignore polling errors while modal is open.
+      }
+    }, 3000);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [isQrModalOpen, qrCode, fetchChildren]);
 
   useEffect(() => {
     if (children.length === 0) {
@@ -257,6 +504,11 @@ export default function ChildrenPage() {
           dateOfBirth: child.dateOfBirth,
           gender: child.gender,
           bloodType: child.bloodType ?? 'unknown',
+          chdrNumber: child.chdrNumber ?? null,
+          motherName: child.motherName ?? null,
+          fatherName: child.fatherName ?? null,
+          emergencyContact: child.emergencyContact ?? null,
+          address: child.address ?? null,
           parentName: getChildParentName(child),
           parentPhone: getChildParentPhone(child),
           birthWeight: child.birthWeight,
@@ -293,6 +545,78 @@ export default function ChildrenPage() {
   }).length;
   const growthChecksDue = childCards.filter((child) => isGrowthCheckDue(child.lastCheckup)).length;
 
+  const childColumns = [
+    {
+      key: 'child',
+      header: 'Child',
+      render: (child: UiChild) => (
+        <div className="flex items-center gap-3 min-w-55">
+          <Avatar name={`${child.firstName} ${child.lastName}`} size="sm" />
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-900 dark:text-white truncate">
+              {child.firstName} {child.lastName}
+            </p>
+            <p className="text-xs text-slate-500">{child.bloodType ?? 'unknown'}</p>
+          </div>
+          <Badge variant={child.gender === 'male' ? 'info' : 'default'} size="sm">
+            {child.gender === 'male' ? 'Male' : 'Female'}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      key: 'age',
+      header: 'Age',
+      render: (child: UiChild) => calculateAge(child.dateOfBirth),
+    },
+    {
+      key: 'parent',
+      header: 'Parent',
+      render: (child: UiChild) => (
+        <div className="min-w-45">
+          <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{child.parentName}</p>
+          <p className="text-xs text-slate-500 truncate">{child.parentPhone}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'vaccines',
+      header: 'Vaccines',
+      render: (child: UiChild) => (
+        <div>
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">{child.vaccineCompletion}%</p>
+          {child.overdueVaccines > 0 ? (
+            <p className="text-xs text-red-500 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {child.overdueVaccines} overdue
+            </p>
+          ) : (
+            <p className="text-xs text-slate-500">On track</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'growth',
+      header: 'Growth',
+      render: (child: UiChild) => (
+        <div className="text-xs text-slate-600 dark:text-slate-300">
+          {child.currentWeight ?? '--'} kg / {child.currentHeight ?? '--'} cm
+        </div>
+      ),
+    },
+    {
+      key: 'next',
+      header: 'Next visit',
+      render: (child: UiChild) => formatShortDate(child.nextAppointment),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (child: UiChild) => getGrowthStatusBadge(child.growthStatus),
+    },
+  ];
+
   return (
     <MainLayout>
       <Header
@@ -307,7 +631,7 @@ export default function ChildrenPage() {
             >
               <QrCode className="w-5 h-5" />
             </button>
-            <Button icon={Plus} variant="primary">
+            <Button icon={Plus} variant="primary" onClick={() => setIsQrModalOpen(true)}>
               Register Child
             </Button>
           </div>
@@ -394,120 +718,20 @@ export default function ChildrenPage() {
         </div>
       </Card>
 
-      {/* Children Cards */}
-      {isLoading ? (
-        <Card className="p-6 text-center text-slate-500">Loading children...</Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredChildren.map((child) => {
-          const age = calculateAge(child.dateOfBirth);
-          const hasOverdue = child.overdueVaccines > 0;
-
-          return (
-            <Card
-              key={child.id}
-              hover
-              className={hasOverdue ? 'border-l-4 border-l-red-500' : ''}
-              onClick={() => {
-                setSelectedChild(child);
-                setIsModalOpen(true);
-              }}
-            >
-              <div className="flex items-start gap-4">
-                <Avatar name={`${child.firstName} ${child.lastName}`} size="lg" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-slate-900 dark:text-white truncate">
-                      {child.firstName} {child.lastName}
-                    </h3>
-                    <Badge variant={child.gender === 'male' ? 'info' : 'default'} size="sm">
-                      {child.gender === 'male' ? '♂' : '♀'}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-slate-500 mb-2">
-                    {age} • {child.bloodType ?? 'unknown'}
-                  </p>
-                  
-                  {/* Parent Info */}
-                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
-                    <User className="w-4 h-4" />
-                    <span className="truncate">{child.parentName}</span>
-                  </div>
-
-                  {/* Vaccine Progress */}
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-slate-500">Vaccination</span>
-                      <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        {child.vaccineCompletion}%
-                      </span>
-                    </div>
-                    <ProgressBar
-                      value={child.vaccineCompletion}
-                      color={hasOverdue ? 'bg-red-500' : 'bg-emerald-500'}
-                      size="sm"
-                    />
-                    {hasOverdue && (
-                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {child.overdueVaccines} overdue
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Growth Status */}
-                  <div className="flex items-center justify-between">
-                    {getGrowthStatusBadge(child.growthStatus)}
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <Scale className="w-3 h-3" />
-                        {child.currentWeight ?? '--'} kg
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Ruler className="w-3 h-3" />
-                        {child.currentHeight ?? '--'} cm
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Next Appointment */}
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-500">Next:</span>
-                  <span className="font-medium text-slate-900 dark:text-white">
-                    {formatShortDate(child.nextAppointment)}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" icon={TrendingUp}>
-                    Growth
-                  </Button>
-                  <Button variant="ghost" size="sm" icon={Syringe}>
-                    Vaccines
-                  </Button>
-                </div>
-              </div>
-            </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {!isLoading && filteredChildren.length === 0 && (
-        <EmptyState
-          icon={Baby}
-          title="No children found"
-          description="Try adjusting your search or filter criteria"
-          action={
-            <Button icon={Plus} variant="primary">
-              Register New Child
-            </Button>
-          }
+      {/* Children Table */}
+      <Card className="mb-6">
+        <Table
+          columns={childColumns}
+          data={filteredChildren}
+          keyExtractor={(child) => child.id}
+          onRowClick={(child) => {
+            setSelectedChild(child);
+            setIsModalOpen(true);
+          }}
+          isLoading={isLoading}
+          emptyMessage="No children found"
         />
-      )}
+      </Card>
 
       {/* QR Code Video Modal */}
       {isQrModalOpen && (
@@ -534,14 +758,25 @@ export default function ChildrenPage() {
               </button>
             </div>
             <div className="p-5">
-              <video
-                src="/Baby_Animation_with_Static_QR_Code%20(online-video-cutter.com).mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full rounded-xl"
-              />
+              <div className="flex flex-col items-center gap-4">
+                {isQrLoading && (
+                  <div className="w-full rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-10 text-center text-sm text-slate-500">
+                    Generating QR code...
+                  </div>
+                )}
+                {qrError && (
+                  <Alert variant="warning" title="Unable to generate QR code" className="w-full">
+                    {qrError}
+                  </Alert>
+                )}
+                {qrImageUrl && !isQrLoading && (
+                  <img
+                    src={qrImageUrl}
+                    alt="Midwife QR code"
+                    className="w-full max-w-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white"
+                  />
+                )}
+              </div>
               <p className="text-center text-sm text-slate-500 mt-4">
                 Scan the QR code with your mobile device to quickly add a new child profile
               </p>
@@ -549,6 +784,226 @@ export default function ChildrenPage() {
           </div>
         </div>
       )}
+
+      {/* Create/Edit Child Modal */}
+      <Modal
+        isOpen={isChildFormOpen}
+        onClose={() => setIsChildFormOpen(false)}
+        title={childFormMode === 'create' ? 'Register Child' : 'Edit Child'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {childFormError && (
+            <Alert variant="warning" title="Unable to save child profile">
+              {childFormError}
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="First Name"
+              value={childFormValues.firstName}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, firstName: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Last Name"
+              value={childFormValues.lastName}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, lastName: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Date of Birth"
+              type="date"
+              value={childFormValues.dateOfBirth}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, dateOfBirth: event.target.value }))
+              }
+              required
+            />
+            <Select
+              label="Gender"
+              options={[
+                { value: 'female', label: 'Female' },
+                { value: 'male', label: 'Male' },
+              ]}
+              value={childFormValues.gender}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, gender: event.target.value }))
+              }
+            />
+            <Select
+              label="Blood Type"
+              options={[
+                { value: 'unknown', label: 'Unknown' },
+                { value: 'A+', label: 'A+' },
+                { value: 'A-', label: 'A-' },
+                { value: 'B+', label: 'B+' },
+                { value: 'B-', label: 'B-' },
+                { value: 'AB+', label: 'AB+' },
+                { value: 'AB-', label: 'AB-' },
+                { value: 'O+', label: 'O+' },
+                { value: 'O-', label: 'O-' },
+              ]}
+              value={childFormValues.bloodType}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, bloodType: event.target.value }))
+              }
+            />
+            <Input
+              label="CHDR Number"
+              value={childFormValues.chdrNumber}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, chdrNumber: event.target.value }))
+              }
+            />
+            <Input
+              label="Birth Weight (kg)"
+              type="number"
+              step="0.1"
+              value={childFormValues.birthWeight}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, birthWeight: event.target.value }))
+              }
+            />
+            <Input
+              label="Birth Height (cm)"
+              type="number"
+              step="0.1"
+              value={childFormValues.birthHeight}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, birthHeight: event.target.value }))
+              }
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Mother Name"
+              value={childFormValues.motherName}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, motherName: event.target.value }))
+              }
+            />
+            <Input
+              label="Father Name"
+              value={childFormValues.fatherName}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, fatherName: event.target.value }))
+              }
+            />
+            <Input
+              label="Emergency Contact"
+              value={childFormValues.emergencyContact}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, emergencyContact: event.target.value }))
+              }
+            />
+            <Input
+              label="Address"
+              value={childFormValues.address}
+              onChange={(event) =>
+                setChildFormValues((prev) => ({ ...prev, address: event.target.value }))
+              }
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsChildFormOpen(false)}>
+              Cancel
+            </Button>
+            <Button isLoading={isChildSubmitting} onClick={handleChildSubmit}>
+              {childFormMode === 'create' ? 'Register Child' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Growth Measurement Modal */}
+      <Modal
+        isOpen={isGrowthModalOpen}
+        onClose={() => setIsGrowthModalOpen(false)}
+        title={selectedChild ? `Record Growth - ${selectedChild.firstName} ${selectedChild.lastName}` : 'Record Growth'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {growthError && (
+            <Alert variant="warning" title="Unable to record growth">
+              {growthError}
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Measurement Date"
+              type="date"
+              value={growthFormValues.measurementDate}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, measurementDate: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Weight (kg)"
+              type="number"
+              step="0.1"
+              value={growthFormValues.weight}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, weight: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Height (cm)"
+              type="number"
+              step="0.1"
+              value={growthFormValues.height}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, height: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Head Circumference (cm)"
+              type="number"
+              step="0.1"
+              value={growthFormValues.headCircumference}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, headCircumference: event.target.value }))
+              }
+            />
+            <Input
+              label="Measured By"
+              value={growthFormValues.measuredBy}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, measuredBy: event.target.value }))
+              }
+            />
+            <Input
+              label="Location"
+              value={growthFormValues.location}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, location: event.target.value }))
+              }
+            />
+            <Input
+              label="Notes"
+              value={growthFormValues.notes}
+              onChange={(event) =>
+                setGrowthFormValues((prev) => ({ ...prev, notes: event.target.value }))
+              }
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsGrowthModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button isLoading={isGrowthSubmitting} onClick={handleGrowthSubmit}>
+              Save Measurement
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Detail Modal */}
       <Modal
@@ -618,13 +1073,38 @@ export default function ChildrenPage() {
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button variant="primary" icon={TrendingUp} className="flex-1">
+              <Button
+                variant="primary"
+                icon={TrendingUp}
+                className="flex-1"
+                onClick={() => {
+                  if (!selectedChild) return;
+                  setIsModalOpen(false);
+                  openGrowthModal(selectedChild);
+                }}
+              >
                 Record Growth
               </Button>
-              <Button variant="outline" icon={Syringe} className="flex-1">
+              <Button
+                variant="outline"
+                icon={Syringe}
+                className="flex-1"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  router.push('/vaccinations');
+                }}
+              >
                 Vaccinations
               </Button>
-              <Button variant="ghost" icon={Edit}>
+              <Button
+                variant="ghost"
+                icon={Edit}
+                onClick={() => {
+                  if (!selectedChild) return;
+                  setIsModalOpen(false);
+                  openEditChildForm(selectedChild);
+                }}
+              >
                 Edit
               </Button>
             </div>

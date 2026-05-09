@@ -530,7 +530,7 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -547,6 +547,7 @@ export const Modal: React.FC<ModalProps> = ({
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
+    '2xl': 'max-w-4xl',
   };
 
   return (
@@ -557,7 +558,7 @@ export const Modal: React.FC<ModalProps> = ({
       />
       <div
         className={clsx(
-          'relative w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl animate-slide-up',
+          'relative w-full max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl animate-slide-up flex flex-col',
           sizes[size]
         )}
       >
@@ -572,7 +573,7 @@ export const Modal: React.FC<ModalProps> = ({
             </svg>
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-6 overflow-y-auto min-h-0">{children}</div>
       </div>
     </div>
   );

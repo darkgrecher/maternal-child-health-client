@@ -28,6 +28,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { Avatar } from './ui';
+import { NotificationsPanel } from './notifications-panel';
 
 interface NavItem {
   name: string;
@@ -58,17 +59,15 @@ export const Sidebar: React.FC = () => {
   const { logout: storeLogout, user: storeUser } = useAuthStore();
 
   const isAdmin = storeUser?.role === 'admin';
-  const visibleNavItems = isAdmin
-    ? [
-        navItems[0],
-        {
-          name: 'Admin Portal',
-          href: 'http://localhost:3001/admin',
-          icon: Shield,
-          external: true,
-        },
-        ...navItems.slice(1),
-      ]
+  const adminPortalItem: NavItem = {
+    name: 'Admin Portal',
+    href: 'http://localhost:3001/admin',
+    icon: Shield,
+    external: true,
+  };
+
+  const visibleNavItems: NavItem[] = isAdmin
+    ? [navItems[0], adminPortalItem, ...navItems.slice(1)]
     : navItems;
 
   const displayName = storeUser?.name || 'User';
@@ -266,6 +265,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
   return (
     <header className="flex items-center justify-between mb-8">
       <div>
@@ -284,10 +285,20 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
         </div>
 
         {/* Notifications */}
-        <button className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-          <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-pink-500 rounded-full" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setIsNotificationsOpen((prev) => !prev)}
+            className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Open notifications"
+          >
+            <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-pink-500 rounded-full" />
+          </button>
+          <NotificationsPanel
+            isOpen={isNotificationsOpen}
+            onClose={() => setIsNotificationsOpen(false)}
+          />
+        </div>
 
         {actions}
       </div>

@@ -26,6 +26,8 @@ interface HeaderProps {
   iconColor?: string;
   transparent?: boolean;
   // Support for multiple right icons (notification, settings, profile)
+  leadingRightIcon?: IconName;
+  onLeadingRightPress?: () => void;
   secondaryRightIcon?: IconName;
   onSecondaryRightPress?: () => void;
   tertiaryRightIcon?: IconName;
@@ -47,6 +49,8 @@ export const Header: React.FC<HeaderProps> = ({
   icon,
   iconColor,
   transparent = false,
+  leadingRightIcon,
+  onLeadingRightPress,
   secondaryRightIcon,
   onSecondaryRightPress,
   tertiaryRightIcon,
@@ -97,6 +101,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right side - Action buttons */}
         <View style={styles.rightSection}>
           <View style={styles.rightButtonsContainer}>
+            {leadingRightIcon && (
+              <TouchableOpacity onPress={onLeadingRightPress} style={styles.rightButton}>
+                <Ionicons name={leadingRightIcon} size={24} color={colors.textPrimary} />
+              </TouchableOpacity>
+            )}
             {tertiaryRightIcon && (
               <TouchableOpacity onPress={onTertiaryRightPress} style={styles.rightButton}>
                 <Ionicons name={tertiaryRightIcon} size={24} color={colors.textPrimary} />

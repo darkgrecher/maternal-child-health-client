@@ -9,24 +9,16 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { format, differenceInYears } from 'date-fns';
+import { useSearchParams } from 'next/navigation';
 import {
   Heart,
   Plus,
   Search,
-  Filter,
-  ChevronRight,
   Calendar,
   AlertTriangle,
-  User,
-  Phone,
-  MapPin,
   FileText,
   Edit,
-  Trash2,
-  Eye,
   Baby,
-  Activity,
-  Stethoscope,
   QrCode,
 } from 'lucide-react';
 import { MainLayout, Header } from '../components/main-layout';
@@ -35,24 +27,31 @@ import {
   Button,
   Badge,
   Avatar,
-  ProgressBar,
-  SectionTitle,
   Input,
   Select,
   Modal,
   Table,
-  EmptyState,
   Alert,
 } from '../components/ui';
 import { usePregnancyStore } from '../lib/stores';
+import apiClient from '../lib/api-client';
+import type { ApiResponse, PregnancyCheckup, PregnancyProfile } from '../lib/types';
+import QRCode from 'qrcode';
 
 interface UiPregnancy {
   id: string;
   motherName: string;
+  motherFirstName?: string;
+  motherLastName?: string;
   motherAge?: number;
+  motherDateOfBirth?: string;
   phone: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
   expectedDeliveryDate?: string;
   lastMenstrualPeriod?: string;
+  conceptionDate?: string;
   currentWeek: number;
   trimester: number;
   status: 'active' | 'delivered' | 'terminated';
@@ -64,6 +63,9 @@ interface UiPregnancy {
   lastCheckup?: string;
   nextAppointment?: string;
   midwife?: string;
+  hospitalName?: string;
+  obgynName?: string;
+  obgynContact?: string;
 }
 
 const getBabyDevelopmentInfo = (week: number) => {
@@ -109,17 +111,293 @@ const getAgeFromDob = (dob?: string) => {
 };
 
 export default function PregnanciesPage() {
-  const { pregnancies, isLoading, error, fetchPregnancies } = usePregnancyStore();
+  const searchParams = useSearchParams();
+  const { pregnancies, isLoading, error, fetchPregnancies, createPregnancy, updatePregnancy } = usePregnancyStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterRisk, setFilterRisk] = useState('all');
   const [selectedPregnancy, setSelectedPregnancy] = useState<UiPregnancy | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
+  const [isQrLoading, setIsQrLoading] = useState(false);
+  const [isPregnancyFormOpen, setIsPregnancyFormOpen] = useState(false);
+  const [pregnancyFormMode, setPregnancyFormMode] = useState<'create' | 'edit'>('create');
+  const [pregnancyFormError, setPregnancyFormError] = useState('');
+  const [isPregnancySubmitting, setIsPregnancySubmitting] = useState(false);
+  const [pregnancyFormValues, setPregnancyFormValues] = useState({
+    motherFirstName: '',
+    motherLastName: '',
+    motherDateOfBirth: '',
+    expectedDeliveryDate: '',
+    motherBloodType: 'unknown',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    emergencyContactRelation: '',
+    gravida: '',
+    para: '',
+    hospitalName: '',
+    obgynName: '',
+    obgynContact: '',
+  });
+  const [isCheckupModalOpen, setIsCheckupModalOpen] = useState(false);
+  const [checkupError, setCheckupError] = useState('');
+  const [isCheckupSubmitting, setIsCheckupSubmitting] = useState(false);
+  const [checkupFormValues, setCheckupFormValues] = useState({
+    checkupDate: format(new Date(), 'yyyy-MM-dd'),
+    weekOfPregnancy: '',
+    weight: '',
+    bloodPressureSystolic: '',
+    bloodPressureDiastolic: '',
+    notes: '',
+    nextCheckupDate: '',
+    providerName: '',
+    location: '',
+  });
+  const [isRecordsModalOpen, setIsRecordsModalOpen] = useState(false);
+  const [checkupsLoading, setCheckupsLoading] = useState(false);
+  const [checkupsError, setCheckupsError] = useState('');
+  const [checkups, setCheckups] = useState<PregnancyCheckup[]>([]);
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setPregnancyFormMode('create');
+      setIsPregnancyFormOpen(true);
+    }
+  }, [searchParams]);
+
+  const normalizeString = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  };
+
+  const toNumber = (value: string) => {
+    if (!value) return undefined;
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
+
+  const toDateInput = (value?: string | null) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return format(date, 'yyyy-MM-dd');
+  };
+
+  const openEditPregnancyForm = (pregnancy: UiPregnancy) => {
+    setPregnancyFormMode('edit');
+    setPregnancyFormError('');
+    setPregnancyFormValues({
+      motherFirstName: pregnancy.motherFirstName ?? pregnancy.motherName.split(' ')[0] ?? '',
+      motherLastName: pregnancy.motherLastName ?? pregnancy.motherName.split(' ').slice(1).join(' ') ?? '',
+      motherDateOfBirth: toDateInput(pregnancy.motherDateOfBirth),
+      expectedDeliveryDate: toDateInput(pregnancy.expectedDeliveryDate),
+      motherBloodType: pregnancy.bloodType ?? 'unknown',
+      emergencyContactName: pregnancy.emergencyContactName ?? '',
+      emergencyContactPhone: pregnancy.emergencyContactPhone ?? '',
+      emergencyContactRelation: pregnancy.emergencyContactRelation ?? '',
+      gravida: pregnancy.gravida?.toString() ?? '',
+      para: pregnancy.para?.toString() ?? '',
+      hospitalName: pregnancy.hospitalName ?? '',
+      obgynName: pregnancy.obgynName ?? '',
+      obgynContact: pregnancy.obgynContact ?? '',
+    });
+    setIsPregnancyFormOpen(true);
+  };
+
+  const handlePregnancySubmit = async () => {
+    if (
+      !pregnancyFormValues.motherFirstName.trim() ||
+      !pregnancyFormValues.motherLastName.trim() ||
+      !pregnancyFormValues.motherDateOfBirth ||
+      !pregnancyFormValues.expectedDeliveryDate
+    ) {
+      setPregnancyFormError('Please fill in all required fields.');
+      return;
+    }
+
+    setPregnancyFormError('');
+    setIsPregnancySubmitting(true);
+
+    const payload = {
+      motherFirstName: pregnancyFormValues.motherFirstName.trim(),
+      motherLastName: pregnancyFormValues.motherLastName.trim(),
+      motherDateOfBirth: pregnancyFormValues.motherDateOfBirth,
+      expectedDeliveryDate: pregnancyFormValues.expectedDeliveryDate,
+      motherBloodType: pregnancyFormValues.motherBloodType || undefined,
+      emergencyContactName: normalizeString(pregnancyFormValues.emergencyContactName),
+      emergencyContactPhone: normalizeString(pregnancyFormValues.emergencyContactPhone),
+      emergencyContactRelation: normalizeString(pregnancyFormValues.emergencyContactRelation),
+      gravida: toNumber(pregnancyFormValues.gravida),
+      para: toNumber(pregnancyFormValues.para),
+      hospitalName: normalizeString(pregnancyFormValues.hospitalName),
+      obgynName: normalizeString(pregnancyFormValues.obgynName),
+      obgynContact: normalizeString(pregnancyFormValues.obgynContact),
+    } as Partial<PregnancyProfile>;
+
+    try {
+      if (pregnancyFormMode === 'create') {
+        await createPregnancy(payload);
+      } else if (selectedPregnancy) {
+        await updatePregnancy(selectedPregnancy.id, payload);
+      }
+      setIsPregnancyFormOpen(false);
+      setIsModalOpen(false);
+      await fetchPregnancies();
+    } catch (err) {
+      setPregnancyFormError(err instanceof Error ? err.message : 'Unable to save pregnancy profile.');
+    } finally {
+      setIsPregnancySubmitting(false);
+    }
+  };
+
+  const openCheckupModal = (pregnancy: UiPregnancy) => {
+    setSelectedPregnancy(pregnancy);
+    setCheckupError('');
+    setCheckupFormValues({
+      checkupDate: format(new Date(), 'yyyy-MM-dd'),
+      weekOfPregnancy: pregnancy.currentWeek?.toString() ?? '',
+      weight: '',
+      bloodPressureSystolic: '',
+      bloodPressureDiastolic: '',
+      notes: '',
+      nextCheckupDate: '',
+      providerName: '',
+      location: '',
+    });
+    setIsCheckupModalOpen(true);
+  };
+
+  const handleCheckupSubmit = async () => {
+    if (!selectedPregnancy) return;
+    if (!checkupFormValues.checkupDate || !checkupFormValues.weekOfPregnancy) {
+      setCheckupError('Please provide the checkup date and week of pregnancy.');
+      return;
+    }
+
+    setCheckupError('');
+    setIsCheckupSubmitting(true);
+
+    try {
+      await apiClient.post(`/pregnancies/${selectedPregnancy.id}/checkups`, {
+        checkupDate: checkupFormValues.checkupDate,
+        weekOfPregnancy: Number(checkupFormValues.weekOfPregnancy),
+        weight: toNumber(checkupFormValues.weight),
+        bloodPressureSystolic: toNumber(checkupFormValues.bloodPressureSystolic),
+        bloodPressureDiastolic: toNumber(checkupFormValues.bloodPressureDiastolic),
+        notes: normalizeString(checkupFormValues.notes),
+        nextCheckupDate: normalizeString(checkupFormValues.nextCheckupDate),
+        providerName: normalizeString(checkupFormValues.providerName),
+        location: normalizeString(checkupFormValues.location),
+      });
+
+      setIsCheckupModalOpen(false);
+      await fetchPregnancies();
+    } catch (err) {
+      setCheckupError(err instanceof Error ? err.message : 'Unable to schedule checkup.');
+    } finally {
+      setIsCheckupSubmitting(false);
+    }
+  };
+
+  const openRecordsModal = async (pregnancy: UiPregnancy) => {
+    setSelectedPregnancy(pregnancy);
+    setCheckups([]);
+    setCheckupsError('');
+    setCheckupsLoading(true);
+    setIsRecordsModalOpen(true);
+
+    try {
+      const data = await apiClient.get<PregnancyCheckup[]>(`/pregnancies/${pregnancy.id}/checkups`);
+      setCheckups(data ?? []);
+    } catch (err) {
+      setCheckupsError(err instanceof Error ? err.message : 'Unable to load checkups.');
+    } finally {
+      setCheckupsLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchPregnancies();
   }, [fetchPregnancies]);
+
+  useEffect(() => {
+    if (!isQrModalOpen) {
+      setQrImageUrl(null);
+      setQrError(null);
+      setQrCode(null);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadQrCode = async () => {
+      setIsQrLoading(true);
+      setQrError(null);
+
+      try {
+        const response = await apiClient.post<ApiResponse<{ qrPayload: string; code: string }>>('/midwife-links/qr', {
+          profileType: 'pregnancy',
+        });
+        const qrPayload = response.data?.qrPayload;
+        const code = response.data?.code ?? null;
+        if (!qrPayload) {
+          throw new Error('QR code payload unavailable');
+        }
+
+        const dataUrl = await QRCode.toDataURL(qrPayload, { width: 320, margin: 1 });
+        if (!isCancelled) {
+          setQrImageUrl(dataUrl);
+          setQrCode(code);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          const message = error instanceof Error ? error.message : 'Failed to generate QR code';
+          setQrError(message);
+          setQrImageUrl(null);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsQrLoading(false);
+        }
+      }
+    };
+
+    loadQrCode();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isQrModalOpen]);
+
+  useEffect(() => {
+    if (!isQrModalOpen || !qrCode) return;
+
+    let isCancelled = false;
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await apiClient.get<ApiResponse<{ isActive: boolean; lastUsedAt?: string | null }>>(
+          `/midwife-links/status/${qrCode}`
+        );
+        const lastUsedAt = response.data?.lastUsedAt ?? null;
+        const isActive = response.data?.isActive ?? true;
+        if (!isCancelled && (lastUsedAt || !isActive)) {
+          setIsQrModalOpen(false);
+          setQrCode(null);
+          await fetchPregnancies();
+        }
+      } catch {
+        // Ignore polling errors while modal is open.
+      }
+    }, 3000);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [isQrModalOpen, qrCode, fetchPregnancies]);
 
   const pregnanciesView = useMemo<UiPregnancy[]>(
     () =>
@@ -133,10 +411,17 @@ export default function PregnanciesPage() {
         return {
           id: pregnancy.id,
           motherName,
+          motherFirstName: pregnancy.motherFirstName,
+          motherLastName: pregnancy.motherLastName,
           motherAge: getAgeFromDob(pregnancy.motherDateOfBirth),
+          motherDateOfBirth: pregnancy.motherDateOfBirth,
           phone: pregnancy.emergencyContactPhone || pregnancy.obgynContact || pregnancy.midwifeContact || 'Not provided',
+          emergencyContactName: pregnancy.emergencyContactName,
+          emergencyContactPhone: pregnancy.emergencyContactPhone,
+          emergencyContactRelation: pregnancy.emergencyContactRelation,
           expectedDeliveryDate: pregnancy.expectedDeliveryDate,
           lastMenstrualPeriod: pregnancy.lastMenstrualPeriod,
+          conceptionDate: pregnancy.conceptionDate,
           currentWeek,
           trimester,
           status: normalizedStatus,
@@ -148,6 +433,9 @@ export default function PregnanciesPage() {
           lastCheckup: latestCheckup?.checkupDate,
           nextAppointment: latestCheckup?.nextCheckupDate,
           midwife: pregnancy.midwifeName || 'Assigned Midwife',
+          hospitalName: pregnancy.hospitalName,
+          obgynName: pregnancy.obgynName,
+          obgynContact: pregnancy.obgynContact,
         };
       }),
     [pregnancies]
@@ -173,6 +461,77 @@ export default function PregnanciesPage() {
     return dueDate.getMonth() === today.getMonth() && dueDate.getFullYear() === today.getFullYear();
   }).length;
 
+  const pregnancyColumns = [
+    {
+      key: 'mother',
+      header: 'Mother',
+      render: (pregnancy: UiPregnancy) => (
+        <div className="flex items-center gap-3 min-w-60">
+          <Avatar name={pregnancy.motherName} size="sm" />
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-900 dark:text-white truncate">{pregnancy.motherName}</p>
+            <p className="text-xs text-slate-500">
+              {pregnancy.motherAge ?? 'Unknown'} yrs • {pregnancy.bloodType}
+            </p>
+          </div>
+          {pregnancy.isHighRisk && (
+            <Badge variant="warning" size="sm">High Risk</Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (pregnancy: UiPregnancy) => (
+        <Badge
+          variant={
+            pregnancy.status === 'active'
+              ? 'success'
+              : pregnancy.status === 'delivered'
+              ? 'info'
+              : 'default'
+          }
+          size="sm"
+        >
+          {pregnancy.status === 'active'
+            ? 'Active'
+            : pregnancy.status === 'delivered'
+            ? 'Delivered'
+            : 'Terminated'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'week',
+      header: 'Week',
+      render: (pregnancy: UiPregnancy) => (
+        <div>
+          <p className="text-sm font-medium text-slate-900 dark:text-white">Week {pregnancy.currentWeek}</p>
+          <p className="text-xs text-slate-500">{getBabyDevelopmentInfo(pregnancy.currentWeek).trimester}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'edd',
+      header: 'EDD',
+      render: (pregnancy: UiPregnancy) => formatDate(pregnancy.expectedDeliveryDate),
+    },
+    {
+      key: 'contact',
+      header: 'Contact',
+      render: (pregnancy: UiPregnancy) => (
+        <span className="text-sm text-slate-700 dark:text-slate-300">{pregnancy.phone}</span>
+      ),
+    },
+    {
+      key: 'next',
+      header: 'Next visit',
+      render: (pregnancy: UiPregnancy) =>
+        pregnancy.nextAppointment ? formatDate(pregnancy.nextAppointment) : 'Not scheduled',
+    },
+  ];
+
   return (
     <MainLayout>
       <Header
@@ -187,7 +546,7 @@ export default function PregnanciesPage() {
             >
               <QrCode className="w-5 h-5" />
             </button>
-            <Button icon={Plus} variant="primary">
+            <Button icon={Plus} variant="primary" onClick={() => setIsQrModalOpen(true)}>
               Register Pregnancy
             </Button>
           </div>
@@ -275,128 +634,20 @@ export default function PregnanciesPage() {
         </div>
       </Card>
 
-      {/* Pregnancy Cards */}
-      {isLoading ? (
-        <Card className="p-6 text-center text-slate-500">Loading pregnancies...</Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filteredPregnancies.map((pregnancy) => {
-          const weeksRemaining = getWeeksRemaining(pregnancy.expectedDeliveryDate);
-          const progress = Math.min((pregnancy.currentWeek / 40) * 100, 100);
-          const devInfo = getBabyDevelopmentInfo(pregnancy.currentWeek);
-
-          return (
-            <Card
-              key={pregnancy.id}
-              hover
-              className={pregnancy.isHighRisk ? 'border-l-4 border-l-amber-500' : ''}
-              onClick={() => {
-                setSelectedPregnancy(pregnancy);
-                setIsModalOpen(true);
-              }}
-            >
-              <div className="flex items-start gap-4">
-                <Avatar name={pregnancy.motherName} size="lg" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-slate-900 dark:text-white truncate">
-                      {pregnancy.motherName}
-                    </h3>
-                    {pregnancy.isHighRisk && (
-                      <Badge variant="warning" size="sm">High Risk</Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-slate-500">
-                    {pregnancy.motherAge ?? 'Unknown'} years • G{pregnancy.gravida ?? '-'}P{pregnancy.para ?? '-'} • {pregnancy.bloodType}
-                  </p>
-                  
-                  {/* Progress */}
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Week {pregnancy.currentWeek} of 40
-                      </span>
-                      <span className="text-sm text-slate-500">
-                        {weeksRemaining} weeks to go
-                      </span>
-                    </div>
-                    <ProgressBar
-                      value={progress}
-                      color={pregnancy.isHighRisk ? 'bg-amber-500' : 'bg-pink-500'}
-                    />
-                  </div>
-
-                  {/* Info Row */}
-                  <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      EDD: {formatDate(pregnancy.expectedDeliveryDate)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-4 h-4" />
-                      {pregnancy.phone}
-                    </span>
-                  </div>
-
-                  {/* Risk Factors */}
-                  {pregnancy.riskFactors.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {pregnancy.riskFactors.map((factor, idx) => (
-                        <span
-                          key={idx}
-                          className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                        >
-                          {factor}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-col gap-2">
-                  <Badge variant={pregnancy.trimester === 3 ? 'info' : 'default'}>
-                    {devInfo.trimester}
-                  </Badge>
-                  <Button variant="ghost" size="sm" icon={Eye}>
-                    View
-                  </Button>
-                </div>
-              </div>
-
-              {/* Next Appointment */}
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  <Stethoscope className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-500">Next visit:</span>
-                  <span className="font-medium text-slate-900 dark:text-white">
-                    {pregnancy.nextAppointment
-                      ? formatDate(pregnancy.nextAppointment)
-                      : 'Not scheduled'}
-                  </span>
-                </div>
-                <Button variant="outline" size="sm" icon={Calendar}>
-                  Schedule
-                </Button>
-              </div>
-            </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {!isLoading && filteredPregnancies.length === 0 && (
-        <EmptyState
-          icon={Heart}
-          title="No pregnancies found"
-          description="Try adjusting your search or filter criteria"
-          action={
-            <Button icon={Plus} variant="primary">
-              Register New Pregnancy
-            </Button>
-          }
+      {/* Pregnancy Table */}
+      <Card className="mb-6">
+        <Table
+          columns={pregnancyColumns}
+          data={filteredPregnancies}
+          keyExtractor={(pregnancy) => pregnancy.id}
+          onRowClick={(pregnancy) => {
+            setSelectedPregnancy(pregnancy);
+            setIsModalOpen(true);
+          }}
+          isLoading={isLoading}
+          emptyMessage="No pregnancies found"
         />
-      )}
+      </Card>
 
       {/* QR Code Video Modal */}
       {isQrModalOpen && (
@@ -423,14 +674,25 @@ export default function PregnanciesPage() {
               </button>
             </div>
             <div className="p-5">
-              <video
-                src="/Baby_Animation_with_Static_QR_Code%20(online-video-cutter.com).mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full rounded-xl"
-              />
+              <div className="flex flex-col items-center gap-4">
+                {isQrLoading && (
+                  <div className="w-full rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-10 text-center text-sm text-slate-500">
+                    Generating QR code...
+                  </div>
+                )}
+                {qrError && (
+                  <Alert variant="warning" title="Unable to generate QR code" className="w-full">
+                    {qrError}
+                  </Alert>
+                )}
+                {qrImageUrl && !isQrLoading && (
+                  <img
+                    src={qrImageUrl}
+                    alt="Midwife QR code"
+                    className="w-full max-w-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white"
+                  />
+                )}
+              </div>
               <p className="text-center text-sm text-slate-500 mt-4">
                 Scan the QR code with your mobile device to quickly add a new pregnancy profile
               </p>
@@ -438,6 +700,291 @@ export default function PregnanciesPage() {
           </div>
         </div>
       )}
+
+      {/* Create/Edit Pregnancy Modal */}
+      <Modal
+        isOpen={isPregnancyFormOpen}
+        onClose={() => setIsPregnancyFormOpen(false)}
+        title={pregnancyFormMode === 'create' ? 'Register Pregnancy' : 'Edit Pregnancy'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {pregnancyFormError && (
+            <Alert variant="warning" title="Unable to save pregnancy profile">
+              {pregnancyFormError}
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Mother First Name"
+              value={pregnancyFormValues.motherFirstName}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, motherFirstName: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Mother Last Name"
+              value={pregnancyFormValues.motherLastName}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, motherLastName: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Mother Date of Birth"
+              type="date"
+              value={pregnancyFormValues.motherDateOfBirth}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, motherDateOfBirth: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Expected Delivery Date"
+              type="date"
+              value={pregnancyFormValues.expectedDeliveryDate}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, expectedDeliveryDate: event.target.value }))
+              }
+              required
+            />
+            <Select
+              label="Blood Type"
+              options={[
+                { value: 'unknown', label: 'Unknown' },
+                { value: 'A+', label: 'A+' },
+                { value: 'A-', label: 'A-' },
+                { value: 'B+', label: 'B+' },
+                { value: 'B-', label: 'B-' },
+                { value: 'AB+', label: 'AB+' },
+                { value: 'AB-', label: 'AB-' },
+                { value: 'O+', label: 'O+' },
+                { value: 'O-', label: 'O-' },
+              ]}
+              value={pregnancyFormValues.motherBloodType}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, motherBloodType: event.target.value }))
+              }
+            />
+            <Input
+              label="Gravida"
+              type="number"
+              value={pregnancyFormValues.gravida}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, gravida: event.target.value }))
+              }
+            />
+            <Input
+              label="Para"
+              type="number"
+              value={pregnancyFormValues.para}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, para: event.target.value }))
+              }
+            />
+            <Input
+              label="Hospital Name"
+              value={pregnancyFormValues.hospitalName}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, hospitalName: event.target.value }))
+              }
+            />
+            <Input
+              label="OB/GYN Name"
+              value={pregnancyFormValues.obgynName}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, obgynName: event.target.value }))
+              }
+            />
+            <Input
+              label="OB/GYN Contact"
+              value={pregnancyFormValues.obgynContact}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, obgynContact: event.target.value }))
+              }
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="Emergency Contact Name"
+              value={pregnancyFormValues.emergencyContactName}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, emergencyContactName: event.target.value }))
+              }
+            />
+            <Input
+              label="Emergency Contact Phone"
+              value={pregnancyFormValues.emergencyContactPhone}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, emergencyContactPhone: event.target.value }))
+              }
+            />
+            <Input
+              label="Emergency Contact Relation"
+              value={pregnancyFormValues.emergencyContactRelation}
+              onChange={(event) =>
+                setPregnancyFormValues((prev) => ({ ...prev, emergencyContactRelation: event.target.value }))
+              }
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsPregnancyFormOpen(false)}>
+              Cancel
+            </Button>
+            <Button isLoading={isPregnancySubmitting} onClick={handlePregnancySubmit}>
+              {pregnancyFormMode === 'create' ? 'Register Pregnancy' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Schedule Checkup Modal */}
+      <Modal
+        isOpen={isCheckupModalOpen}
+        onClose={() => setIsCheckupModalOpen(false)}
+        title={selectedPregnancy ? `Schedule Checkup - ${selectedPregnancy.motherName}` : 'Schedule Checkup'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {checkupError && (
+            <Alert variant="warning" title="Unable to schedule checkup">
+              {checkupError}
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Checkup Date"
+              type="date"
+              value={checkupFormValues.checkupDate}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, checkupDate: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Week of Pregnancy"
+              type="number"
+              value={checkupFormValues.weekOfPregnancy}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, weekOfPregnancy: event.target.value }))
+              }
+              required
+            />
+            <Input
+              label="Weight (kg)"
+              type="number"
+              step="0.1"
+              value={checkupFormValues.weight}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, weight: event.target.value }))
+              }
+            />
+            <Input
+              label="BP Systolic"
+              type="number"
+              value={checkupFormValues.bloodPressureSystolic}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, bloodPressureSystolic: event.target.value }))
+              }
+            />
+            <Input
+              label="BP Diastolic"
+              type="number"
+              value={checkupFormValues.bloodPressureDiastolic}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, bloodPressureDiastolic: event.target.value }))
+              }
+            />
+            <Input
+              label="Next Checkup Date"
+              type="date"
+              value={checkupFormValues.nextCheckupDate}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, nextCheckupDate: event.target.value }))
+              }
+            />
+            <Input
+              label="Provider Name"
+              value={checkupFormValues.providerName}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, providerName: event.target.value }))
+              }
+            />
+            <Input
+              label="Location"
+              value={checkupFormValues.location}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, location: event.target.value }))
+              }
+            />
+            <Input
+              label="Notes"
+              value={checkupFormValues.notes}
+              onChange={(event) =>
+                setCheckupFormValues((prev) => ({ ...prev, notes: event.target.value }))
+              }
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsCheckupModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button isLoading={isCheckupSubmitting} onClick={handleCheckupSubmit}>
+              Save Checkup
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Checkup Records Modal */}
+      <Modal
+        isOpen={isRecordsModalOpen}
+        onClose={() => setIsRecordsModalOpen(false)}
+        title={selectedPregnancy ? `Checkups - ${selectedPregnancy.motherName}` : 'Checkups'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {checkupsError && (
+            <Alert variant="warning" title="Unable to load checkups">
+              {checkupsError}
+            </Alert>
+          )}
+          <Table
+            columns={[
+              {
+                key: 'date',
+                header: 'Date',
+                render: (item: PregnancyCheckup) => formatDate(item.checkupDate, 'MMM d, yyyy'),
+              },
+              {
+                key: 'week',
+                header: 'Week',
+                render: (item: PregnancyCheckup) => item.weekOfPregnancy ?? '--',
+              },
+              {
+                key: 'weight',
+                header: 'Weight',
+                render: (item: PregnancyCheckup) => (item.weight ? `${item.weight} kg` : '--'),
+              },
+              {
+                key: 'bp',
+                header: 'BP',
+                render: (item: PregnancyCheckup) => item.bloodPressure ?? '--',
+              },
+              {
+                key: 'notes',
+                header: 'Notes',
+                render: (item: PregnancyCheckup) => item.notes || '--',
+              },
+            ]}
+            data={checkups}
+            keyExtractor={(item) => item.id}
+            isLoading={checkupsLoading}
+            emptyMessage="No checkups recorded"
+          />
+        </div>
+      </Modal>
 
       {/* Detail Modal */}
       <Modal
@@ -499,13 +1046,39 @@ export default function PregnanciesPage() {
             )}
 
             <div className="flex gap-3 pt-4">
-              <Button variant="primary" icon={Calendar} className="flex-1">
+              <Button
+                variant="primary"
+                icon={Calendar}
+                className="flex-1"
+                onClick={() => {
+                  if (!selectedPregnancy) return;
+                  setIsModalOpen(false);
+                  openCheckupModal(selectedPregnancy);
+                }}
+              >
                 Schedule Checkup
               </Button>
-              <Button variant="outline" icon={FileText} className="flex-1">
+              <Button
+                variant="outline"
+                icon={FileText}
+                className="flex-1"
+                onClick={() => {
+                  if (!selectedPregnancy) return;
+                  setIsModalOpen(false);
+                  openRecordsModal(selectedPregnancy);
+                }}
+              >
                 View Records
               </Button>
-              <Button variant="ghost" icon={Edit}>
+              <Button
+                variant="ghost"
+                icon={Edit}
+                onClick={() => {
+                  if (!selectedPregnancy) return;
+                  setIsModalOpen(false);
+                  openEditPregnancyForm(selectedPregnancy);
+                }}
+              >
                 Edit
               </Button>
             </div>

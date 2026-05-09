@@ -9,14 +9,62 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
+  name?: string | null;
   role: 'midwife' | 'admin' | 'supervisor';
   employeeId?: string;
   district?: string;
   area?: string;
   phone?: string;
+  licenseNumber?: string;
+  facilityName?: string;
+  region?: string;
+  picture?: string | null;
+  lastLoginAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface MidwifeNotificationPreferences {
+  appointments: boolean;
+  vaccinations: boolean;
+  highRisk: boolean;
+  dailyDigest: boolean;
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+}
+
+export interface MidwifePreferences {
+  theme: 'light' | 'dark' | 'system';
+  language: string;
+  dateFormat: string;
+  notifications: MidwifeNotificationPreferences;
+}
+
+export interface MidwifeProfile {
+  id: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  role: 'midwife' | 'admin' | 'supervisor';
+  licenseNumber: string | null;
+  facilityName: string | null;
+  region: string | null;
+  picture: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface MidwifeStats {
+  patientsManaged: number;
+  appointmentsThisMonth: number;
+  vaccinationsAdministered: number;
+}
+
+export interface MidwifeSettingsResponse {
+  profile: MidwifeProfile;
+  preferences: MidwifePreferences;
+  stats: MidwifeStats;
 }
 
 // ============================================================================
@@ -263,6 +311,55 @@ export interface DashboardStats {
   weekAppointments?: number;
   recentActivities?: Activity[];
   alerts?: Alert[];
+}
+
+export interface DashboardAppointment {
+  id: string;
+  childId: string;
+  childName: string;
+  dateTime: string;
+  type: string;
+  status: string;
+  title: string;
+  location: string;
+}
+
+export interface DashboardActivity {
+  id: string;
+  type: string;
+  title: string;
+  description?: string | null;
+  date: string;
+  childId: string;
+  childName: string;
+}
+
+export interface DashboardHighRiskPregnancy {
+  id: string;
+  motherName: string;
+  currentWeek: number | null;
+  riskFactors: string[];
+  expectedDeliveryDate: string | null;
+  nextCheckupDate: string | null;
+}
+
+export interface DashboardOverdueVaccination {
+  childId: string;
+  childName: string;
+  childAge: string;
+  vaccineId: string;
+  vaccineName: string;
+  scheduledDate: string;
+  daysOverdue: number;
+  parentPhone?: string | null;
+}
+
+export interface DashboardResponse {
+  stats: DashboardStats;
+  todayAppointments: DashboardAppointment[];
+  recentActivities: DashboardActivity[];
+  highRiskPregnancies: DashboardHighRiskPregnancy[];
+  overdueVaccinations: DashboardOverdueVaccination[];
 }
 
 export interface Alert {

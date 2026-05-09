@@ -115,6 +115,10 @@ const ProfileScreen: React.FC = () => {
         subtitle={t('profile.subtitle')}
         icon="person-circle-outline"
         iconColor={colors.primary}
+        leadingRightIcon="qr-code-outline"
+        onLeadingRightPress={() => {
+          navigation.navigate('QrScan', { profileType: 'child' });
+        }}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
           // TODO: Navigate to notifications

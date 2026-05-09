@@ -6,3 +6,4 @@ export * from './childService';
 export * from './vaccineService';
 export * from './growthService';
 export * from './appointmentService';
+export * from './midwifeLinkService';

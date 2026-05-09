@@ -8,9 +8,24 @@ interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;
 }
 
+interface RefreshTokenResponse {
+  success: boolean;
+  data?: {
+    accessToken: string;
+    refreshToken?: string | null;
+    expiresIn?: number;
+  };
+}
+
+type RefreshTokenProvider = () => string | null;
+type TokensRefreshedHandler = (tokens: { accessToken: string; refreshToken?: string | null }) => void;
+
 class ApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
+  private refreshTokenProvider: RefreshTokenProvider | null = null;
+  private onTokensRefreshed: TokensRefreshedHandler | null = null;
+  private refreshInFlight: Promise<string | null> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -20,12 +35,15 @@ class ApiClient {
     this.accessToken = token;
   }
 
-  async request<T>(
-    endpoint: string,
-    options: RequestOptions = {}
-  ): Promise<T> {
-    const { requiresAuth = true, ...fetchOptions } = options;
+  setRefreshTokenProvider(provider: RefreshTokenProvider | null) {
+    this.refreshTokenProvider = provider;
+  }
 
+  setOnTokensRefreshed(handler: TokensRefreshedHandler | null) {
+    this.onTokensRefreshed = handler;
+  }
+
+  private buildHeaders(fetchOptions: RequestInit, requiresAuth: boolean): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...(fetchOptions.headers || {}),
@@ -35,6 +53,68 @@ class ApiClient {
       (headers as Record<string, string>)['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
+    return headers;
+  }
+
+  private async refreshAccessToken(): Promise<string | null> {
+    if (this.refreshInFlight) {
+      return this.refreshInFlight;
+    }
+
+    const refreshToken = this.refreshTokenProvider?.();
+    if (!refreshToken) {
+      return null;
+    }
+
+    this.refreshInFlight = (async () => {
+      try {
+        const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        const data: RefreshTokenResponse | null = await response.json().catch(() => null);
+        if (!response.ok) {
+          return null;
+        }
+
+        const accessToken = data?.data?.accessToken;
+        if (!accessToken) {
+          return null;
+        }
+
+        const nextRefreshToken = data?.data?.refreshToken ?? refreshToken;
+        this.setAccessToken(accessToken);
+        this.onTokensRefreshed?.({ accessToken, refreshToken: nextRefreshToken });
+        return accessToken;
+      } catch (error) {
+        console.error('Token refresh failed:', error);
+        return null;
+      } finally {
+        this.refreshInFlight = null;
+      }
+    })();
+
+    return this.refreshInFlight;
+  }
+
+  async request<T>(
+    endpoint: string,
+    options: RequestOptions = {}
+  ): Promise<T> {
+    return this.requestWithRetry<T>(endpoint, options, false);
+  }
+
+  private async requestWithRetry<T>(
+    endpoint: string,
+    options: RequestOptions,
+    didRetry: boolean
+  ): Promise<T> {
+    const { requiresAuth = true, ...fetchOptions } = options;
+    const headers = this.buildHeaders(fetchOptions, requiresAuth);
     const url = `${this.baseUrl}${endpoint}`;
 
     try {
@@ -42,6 +122,13 @@ class ApiClient {
         ...fetchOptions,
         headers,
       });
+
+      if (response.status === 401 && requiresAuth && !didRetry) {
+        const refreshedToken = await this.refreshAccessToken();
+        if (refreshedToken) {
+          return this.requestWithRetry<T>(endpoint, options, true);
+        }
+      }
 
       return this.handleResponse<T>(response);
     } catch (error) {
