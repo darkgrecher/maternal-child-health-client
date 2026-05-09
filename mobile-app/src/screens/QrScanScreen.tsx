@@ -103,7 +103,7 @@ const QrScanScreen: React.FC = () => {
           onPress: () =>
             navigation.reset({
               index: 0,
-              routes: [{ name: 'Main' }],
+              routes: [{ name: profileType === 'pregnancy' ? 'PregnancyMain' : 'Main' }],
             }),
         }]
       );
