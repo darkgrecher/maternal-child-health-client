@@ -374,63 +374,72 @@ export default function SettingsPage() {
 
   return (
     <MainLayout>
-      <Header
-        title="Settings"
-        subtitle="Manage your preferences"
-        actions={
-          <Button
-            icon={Save}
-            onClick={handleSave}
-            isLoading={isSaving}
-            disabled={isSaving || isLoading}
-          >
-            Save Changes
-          </Button>
-        }
-      />
+      <div className="max-w-6xl mx-auto">
+        <div className="sticky top-0 z-30 -mx-4 mb-8 border-b border-slate-200/70 bg-slate-50/90 px-4 pb-4 pt-4 backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/90 lg:-mx-8 lg:px-8">
+          <Header
+            title="Settings"
+            subtitle="Manage your preferences"
+            actions={
+              <Button
+                icon={Save}
+                onClick={handleSave}
+                isLoading={isSaving}
+                disabled={isSaving || isLoading}
+              >
+                Save Changes
+              </Button>
+            }
+          />
+        </div>
 
-      {loadError && (
-        <Alert variant="error" icon={AlertCircle} className="mb-6">
-          {loadError}
-        </Alert>
-      )}
+        {loadError && (
+          <Alert variant="error" icon={AlertCircle} className="mb-6">
+            {loadError}
+          </Alert>
+        )}
 
-      {saveError && (
-        <Alert variant="error" icon={AlertCircle} className="mb-6">
-          {saveError}
-        </Alert>
-      )}
+        {saveError && (
+          <Alert variant="error" icon={AlertCircle} className="mb-6">
+            {saveError}
+          </Alert>
+        )}
 
-      {saved && (
-        <Alert variant="success" icon={Check} className="mb-6">
-          Settings saved successfully!
-        </Alert>
-      )}
+        {saved && (
+          <Alert variant="success" icon={Check} className="mb-6">
+            Settings saved successfully!
+          </Alert>
+        )}
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="space-y-8">
           <div>
             <SectionTitle>Profile</SectionTitle>
             <Card>
-              <div className="flex flex-col sm:flex-row items-start gap-6">
-                <div className="relative">
-                  <Avatar name={activeProfile.name || 'Midwife'} src={activeProfile.picture ?? undefined} size="xl" />
-                  <button
-                    className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-lg hover:bg-primary-dark transition-colors"
-                    onClick={handleAvatarClick}
-                    aria-label="Upload profile photo"
-                  >
-                    <Camera className="w-4 h-4" />
-                  </button>
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAvatarChange}
-                  />
+              <div className="grid gap-6 sm:grid-cols-[160px,1fr]">
+                <div className="flex flex-col items-center gap-3 sm:items-start">
+                  <div className="relative">
+                    <Avatar
+                      name={activeProfile.name || 'Midwife'}
+                      src={activeProfile.picture ?? undefined}
+                      size="xl"
+                    />
+                    <button
+                      className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-lg hover:bg-primary-dark transition-colors"
+                      onClick={handleAvatarClick}
+                      aria-label="Upload profile photo"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                  </div>
                 </div>
-                <div className="flex-1 space-y-4">
+                <div className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <Input
                       label="Full Name"
@@ -465,7 +474,7 @@ export default function SettingsPage() {
 
           <div>
             <SectionTitle>Notifications</SectionTitle>
-            <div className="space-y-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <SettingCard
                 icon={Bell}
                 title="Appointment Reminders"
@@ -494,36 +503,6 @@ export default function SettingsPage() {
                 <ToggleSwitch
                   enabled={preferences.notifications.highRisk}
                   onChange={(enabled) => handleNotificationChange('highRisk', enabled)}
-                />
-              </SettingCard>
-              <SettingCard
-                icon={Mail}
-                title="Daily Digest"
-                description="Receive a daily summary email"
-              >
-                <ToggleSwitch
-                  enabled={preferences.notifications.dailyDigest}
-                  onChange={(enabled) => handleNotificationChange('dailyDigest', enabled)}
-                />
-              </SettingCard>
-              <SettingCard
-                icon={Mail}
-                title="Email Notifications"
-                description="Send notifications to your email"
-              >
-                <ToggleSwitch
-                  enabled={preferences.notifications.emailNotifications}
-                  onChange={(enabled) => handleNotificationChange('emailNotifications', enabled)}
-                />
-              </SettingCard>
-              <SettingCard
-                icon={Phone}
-                title="SMS Notifications"
-                description="Send critical updates via SMS"
-              >
-                <ToggleSwitch
-                  enabled={preferences.notifications.smsNotifications}
-                  onChange={(enabled) => handleNotificationChange('smsNotifications', enabled)}
                 />
               </SettingCard>
             </div>
@@ -614,20 +593,13 @@ export default function SettingsPage() {
 
           <div>
             <SectionTitle>Security</SectionTitle>
-            <div className="space-y-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <SettingCard
                 icon={Lock}
                 title="Change Password"
                 description="Update your account password"
                 onClick={() => setShowPasswordForm((prev) => !prev)}
               />
-              <SettingCard
-                icon={Shield}
-                title="Two-Factor Authentication"
-                description="Add an extra layer of security"
-              >
-                <Badge variant="default">Enabled</Badge>
-              </SettingCard>
             </div>
             {showPasswordForm && (
               <Card className="mt-4">
@@ -697,7 +669,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 lg:sticky lg:top-24 h-fit">
           <Card>
             <div className="text-center mb-4">
               <Avatar
@@ -780,33 +752,6 @@ export default function SettingsPage() {
             </div>
           </Card>
 
-          <Card>
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Help & Support</h3>
-            <div className="space-y-2">
-              <Button
-                variant="secondary"
-                className="w-full justify-start"
-                onClick={() => window.open('https://health.gov.lk', '_blank')}
-              >
-                User Guide
-              </Button>
-              <Button
-                variant="secondary"
-                className="w-full justify-start"
-                onClick={() => (window.location.href = 'mailto:support@health.gov.lk')}
-              >
-                Contact Support
-              </Button>
-              <Button
-                variant="secondary"
-                className="w-full justify-start"
-                onClick={() => (window.location.href = 'mailto:issues@health.gov.lk')}
-              >
-                Report an Issue
-              </Button>
-            </div>
-          </Card>
-
           <Button variant="outline" className="w-full" icon={LogOut} onClick={handleLogout}>
             Sign Out
           </Button>
@@ -816,6 +761,7 @@ export default function SettingsPage() {
             <p>© 2026 Ministry of Health, Sri Lanka</p>
           </div>
         </div>
+      </div>
       </div>
     </MainLayout>
   );
