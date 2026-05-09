@@ -59,17 +59,15 @@ export const Sidebar: React.FC = () => {
   const { logout: storeLogout, user: storeUser } = useAuthStore();
 
   const isAdmin = storeUser?.role === 'admin';
-  const visibleNavItems = isAdmin
-    ? [
-        navItems[0],
-        {
-          name: 'Admin Portal',
-          href: 'http://localhost:3001/admin',
-          icon: Shield,
-          external: true,
-        },
-        ...navItems.slice(1),
-      ]
+  const adminPortalItem: NavItem = {
+    name: 'Admin Portal',
+    href: 'http://localhost:3001/admin',
+    icon: Shield,
+    external: true,
+  };
+
+  const visibleNavItems: NavItem[] = isAdmin
+    ? [navItems[0], adminPortalItem, ...navItems.slice(1)]
     : navItems;
 
   const displayName = storeUser?.name || 'User';
