@@ -7,8 +7,8 @@
 
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { differenceInDays, format, isSameDay, isSameMonth } from 'date-fns';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { differenceInDays, format, isSameMonth } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import {
   Syringe,
@@ -18,7 +18,6 @@ import {
   CheckCircle,
   Clock,
   Phone,
-  FileText,
   Check,
   X,
   AlertCircle,
@@ -32,6 +31,7 @@ import {
   SectionTitle,
   Input,
   Select,
+  Table,
   Modal,
   EmptyState,
   Alert,
@@ -59,6 +59,22 @@ interface UiVaccinationRecord {
   daysOverdue: number;
   administeredDate?: string | null;
   administeredBy?: string | null;
+  location?: string | null;
+  batchNumber?: string | null;
+  notes?: string | null;
+}
+
+interface ChildVaccinationSummary {
+  childId: string;
+  childName: string;
+  childAge: string;
+  parentName: string;
+  parentPhone: string;
+  completionPercentage: number;
+  overdueCount: number;
+  nextVaccineName: string | null;
+  nextVaccineDate: string | null;
+  nextVaccineStatus: 'overdue' | 'scheduled' | 'completed' | 'missed' | null;
 }
 
 const getStatusBadge = (status: string) => {
@@ -111,8 +127,7 @@ const getRecordKey = (record: UiVaccinationRecord) =>
 export default function VaccinationsPage() {
   const searchParams = useSearchParams();
   const { children, isLoading: childrenLoading, error: childrenError, fetchChildren } = useChildStore();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [childSearchTerm, setChildSearchTerm] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<UiVaccinationRecord | null>(null);
   const [isAdministerModalOpen, setIsAdministerModalOpen] = useState(false);
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
@@ -121,7 +136,28 @@ export default function VaccinationsPage() {
   const [manualError, setManualError] = useState('');
   const [manualSubmitting, setManualSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'records' | 'schedule'>('records');
-  const [records, setRecords] = useState<UiVaccinationRecord[]>([]);
+  const [childSummaries, setChildSummaries] = useState<ChildVaccinationSummary[]>([]);
+  const [overdueRecords, setOverdueRecords] = useState<UiVaccinationRecord[]>([]);
+  const [upcomingRecords, setUpcomingRecords] = useState<UiVaccinationRecord[]>([]);
+  const [overdueTotal, setOverdueTotal] = useState(0);
+  const [upcomingTotal, setUpcomingTotal] = useState(0);
+  const [completedThisMonthTotal, setCompletedThisMonthTotal] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isChildDetailOpen, setIsChildDetailOpen] = useState(false);
+  const [childDetailSummary, setChildDetailSummary] = useState<ChildVaccinationSummary | null>(null);
+  const [childDetailRecords, setChildDetailRecords] = useState<UiVaccinationRecord[]>([]);
+  const [childDetailLoading, setChildDetailLoading] = useState(false);
+  const [childDetailError, setChildDetailError] = useState('');
+  const [editingRecord, setEditingRecord] = useState<UiVaccinationRecord | null>(null);
+  const [editStatus, setEditStatus] = useState<UiVaccinationRecord['status']>('scheduled');
+  const [editScheduledDate, setEditScheduledDate] = useState('');
+  const [editAdministeredDate, setEditAdministeredDate] = useState('');
+  const [editAdministeredBy, setEditAdministeredBy] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editBatchNumber, setEditBatchNumber] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [editError, setEditError] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
   const [vaccineCatalog, setVaccineCatalog] = useState<VaccineInfo[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [recordsError, setRecordsError] = useState('');
@@ -173,39 +209,57 @@ export default function VaccinationsPage() {
 
   useEffect(() => {
     if (children.length === 0) {
-      setRecords([]);
+      setChildSummaries([]);
+      setOverdueRecords([]);
+      setUpcomingRecords([]);
+      setOverdueTotal(0);
+      setUpcomingTotal(0);
+      setCompletedThisMonthTotal(0);
+      setRecordsLoading(false);
+      setRecordsError('');
       return;
     }
 
     let isCancelled = false;
 
-    const loadRecords = async () => {
+    const loadSummaries = async () => {
       setRecordsLoading(true);
       setRecordsError('');
 
       try {
-        const recordsByChild = await Promise.all(
+        const responses = await Promise.all(
           children.map(async (child) => {
             const response = await apiClient.get<ApiResponse<VaccinationScheduleResponse>>(
               `/vaccines/child/${child.id}`
             );
-            return { child, schedule: response.data?.schedule ?? [] };
+            return { child, data: response.data };
           })
         );
 
         if (isCancelled) return;
 
         const today = new Date();
-        const mapped = recordsByChild.flatMap(({ child, schedule }) =>
-          schedule.map((record) => {
+        const upcomingWindowDays = 30;
+        const allOverdue: UiVaccinationRecord[] = [];
+        const allUpcoming: UiVaccinationRecord[] = [];
+        let completedThisMonth = 0;
+
+        const summaries: ChildVaccinationSummary[] = responses.map(({ child, data }) => {
+          const schedule = data?.schedule ?? [];
+          const stats = data?.statistics;
+          const nextVaccine = data?.nextVaccine ?? null;
+
+          schedule.forEach((record) => {
             const scheduledDate = new Date(record.scheduledDate);
-            const normalizedStatus = record.status === 'pending' ? 'scheduled' : record.status;
+            const normalizedStatus = record.status === 'pending'
+              ? (scheduledDate < today ? 'overdue' : 'scheduled')
+              : record.status;
             const isOverdue = normalizedStatus === 'overdue' || normalizedStatus === 'missed';
             const daysOverdue = isOverdue
               ? Math.max(0, differenceInDays(today, scheduledDate))
               : 0;
 
-            return {
+            const uiRecord: UiVaccinationRecord = {
               id: record.id,
               childId: child.id,
               childName: `${child.firstName} ${child.lastName}`.trim(),
@@ -220,15 +274,69 @@ export default function VaccinationsPage() {
               daysOverdue,
               administeredDate: record.administeredDate ?? null,
               administeredBy: record.administeredBy ?? null,
-            } as UiVaccinationRecord;
-          })
+            };
+
+            if (uiRecord.status === 'overdue' || uiRecord.status === 'missed') {
+              allOverdue.push(uiRecord);
+            }
+
+            const daysUntil = differenceInDays(scheduledDate, today);
+            if (uiRecord.status === 'scheduled' && daysUntil >= 0 && daysUntil <= upcomingWindowDays) {
+              allUpcoming.push(uiRecord);
+            }
+
+            if (uiRecord.status === 'completed') {
+              const completedDate = new Date(uiRecord.administeredDate || uiRecord.scheduledDate);
+              if (isSameMonth(completedDate, today)) {
+                completedThisMonth += 1;
+              }
+            }
+          });
+
+          const nextVaccineName = nextVaccine?.vaccine?.name ?? null;
+          const nextVaccineDate = nextVaccine?.scheduledDate ?? null;
+          const nextVaccineStatus = nextVaccine?.status
+            ? (nextVaccine.status === 'pending'
+              ? (nextVaccine.scheduledDate && new Date(nextVaccine.scheduledDate) < today ? 'overdue' : 'scheduled')
+              : nextVaccine.status)
+            : null;
+
+          return {
+            childId: child.id,
+            childName: `${child.firstName} ${child.lastName}`.trim(),
+            childAge: calculateAge(child.dateOfBirth),
+            parentName: getParentName(child),
+            parentPhone: getParentPhone(child),
+            completionPercentage: stats?.completionPercentage ?? 0,
+            overdueCount: stats?.overdue ?? 0,
+            nextVaccineName,
+            nextVaccineDate,
+            nextVaccineStatus: nextVaccineStatus === 'missed' || nextVaccineStatus === 'overdue'
+              ? 'overdue'
+              : nextVaccineStatus,
+          } as ChildVaccinationSummary;
+        });
+
+        allOverdue.sort((a, b) => b.daysOverdue - a.daysOverdue);
+        allUpcoming.sort((a, b) =>
+          new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()
         );
 
-        setRecords(mapped);
+        setChildSummaries(summaries);
+        setOverdueTotal(allOverdue.length);
+        setUpcomingTotal(allUpcoming.length);
+        setCompletedThisMonthTotal(completedThisMonth);
+        setOverdueRecords(allOverdue.slice(0, 8));
+        setUpcomingRecords(allUpcoming.slice(0, 8));
       } catch (error) {
         if (!isCancelled) {
-          setRecordsError((error as Error).message || 'Failed to load vaccination records');
-          setRecords([]);
+          setRecordsError((error as Error).message || 'Failed to load vaccination overview');
+          setChildSummaries([]);
+          setOverdueRecords([]);
+          setUpcomingRecords([]);
+          setOverdueTotal(0);
+          setUpcomingTotal(0);
+          setCompletedThisMonthTotal(0);
         }
       } finally {
         if (!isCancelled) {
@@ -237,12 +345,12 @@ export default function VaccinationsPage() {
       }
     };
 
-    loadRecords();
+    loadSummaries();
 
     return () => {
       isCancelled = true;
     };
-  }, [children]);
+  }, [children, refreshKey]);
 
   useEffect(() => {
     if (!selectedRecord) return;
@@ -254,19 +362,107 @@ export default function VaccinationsPage() {
   }, [selectedRecord]);
 
   useEffect(() => {
+    if (!editingRecord) return;
+    setEditError('');
+    setEditSubmitting(false);
+    setEditStatus(editingRecord.status);
+    setEditScheduledDate(editingRecord.scheduledDate
+      ? format(new Date(editingRecord.scheduledDate), 'yyyy-MM-dd')
+      : '');
+    setEditAdministeredDate(editingRecord.administeredDate
+      ? format(new Date(editingRecord.administeredDate), 'yyyy-MM-dd')
+      : '');
+    setEditAdministeredBy(editingRecord.administeredBy ?? '');
+    setEditLocation(editingRecord.location ?? '');
+    setEditBatchNumber(editingRecord.batchNumber ?? '');
+    setEditNotes(editingRecord.notes ?? '');
+  }, [editingRecord]);
+
+  useEffect(() => {
     if (!isManualModalOpen) return;
     setManualError('');
     setAdministeredBy('');
     setBatchNumber('');
     setAdministrationDate(format(new Date(), 'yyyy-MM-dd'));
     setAdminNotes('');
-    if (!manualChildId && children.length > 0) {
-      setManualChildId(children[0].id);
+    if (!manualChildId) {
+      if (children.length > 0) {
+        setManualChildId(children[0].id);
+      }
     }
     if (!manualVaccineId && vaccineCatalog.length > 0) {
       setManualVaccineId(vaccineCatalog[0].id);
     }
   }, [isManualModalOpen, children, vaccineCatalog, manualChildId, manualVaccineId]);
+
+  const loadChildDetails = useCallback(async (childId: string) => {
+    setChildDetailLoading(true);
+    setChildDetailError('');
+
+    try {
+      const response = await apiClient.get<ApiResponse<VaccinationScheduleResponse>>(
+        `/vaccines/child/${childId}`
+      );
+
+      const childFromStore = children.find((child) => child.id === childId);
+      const childName = childFromStore
+        ? `${childFromStore.firstName} ${childFromStore.lastName}`.trim()
+        : `${response.data?.child?.firstName ?? ''} ${response.data?.child?.lastName ?? ''}`.trim() || 'Unknown';
+      const childAge = childFromStore
+        ? calculateAge(childFromStore.dateOfBirth)
+        : response.data?.child?.dateOfBirth
+          ? calculateAge(response.data.child.dateOfBirth)
+          : 'Unknown';
+      const parentName = childFromStore ? getParentName(childFromStore) : 'Not provided';
+      const parentPhone = childFromStore ? getParentPhone(childFromStore) : 'Not provided';
+
+      const today = new Date();
+      const schedule = response.data?.schedule ?? [];
+      const mapped = schedule.map((record) => {
+        const scheduledDate = new Date(record.scheduledDate);
+        const normalizedStatus = record.status === 'pending'
+          ? (scheduledDate < today ? 'overdue' : 'scheduled')
+          : record.status;
+        const isOverdue = normalizedStatus === 'overdue' || normalizedStatus === 'missed';
+        const daysOverdue = isOverdue
+          ? Math.max(0, differenceInDays(today, scheduledDate))
+          : 0;
+
+        return {
+          id: record.id,
+          childId,
+          childName,
+          childAge,
+          parentName,
+          parentPhone,
+          vaccineId: record.vaccineId,
+          vaccine: record.vaccine?.name || 'Unknown Vaccine',
+          shortName: record.vaccine?.shortName || 'N/A',
+          scheduledDate: record.scheduledDate,
+          status: normalizedStatus === 'completed' ? 'completed' : normalizedStatus,
+          daysOverdue,
+          administeredDate: record.administeredDate ?? null,
+          administeredBy: record.administeredBy ?? null,
+          location: record.location ?? null,
+          batchNumber: record.batchNumber ?? null,
+          notes: record.notes ?? null,
+        } as UiVaccinationRecord;
+      });
+
+      setChildDetailRecords(mapped);
+    } catch (error) {
+      setChildDetailError((error as Error).message || 'Failed to load child vaccination records');
+      setChildDetailRecords([]);
+    } finally {
+      setChildDetailLoading(false);
+    }
+  }, [children]);
+
+  const handleOpenChildDetail = useCallback((child: ChildVaccinationSummary) => {
+    setChildDetailSummary(child);
+    setIsChildDetailOpen(true);
+    loadChildDetails(child.childId);
+  }, [loadChildDetails]);
 
   const handleAdminister = async () => {
     if (!selectedRecord) return;
@@ -274,7 +470,7 @@ export default function VaccinationsPage() {
     setAdminError('');
 
     try {
-      const response = await apiClient.post<ApiResponse<VaccinationRecord>>(
+      await apiClient.post<ApiResponse<VaccinationRecord>>(
         `/vaccines/child/${selectedRecord.childId}/administer/${selectedRecord.vaccineId}`,
         {
           administeredBy: administeredBy || undefined,
@@ -285,24 +481,11 @@ export default function VaccinationsPage() {
         }
       );
 
-      const updated = response.data;
-      if (updated) {
-        setRecords((prev) =>
-          prev.map((record) =>
-            record.childId === selectedRecord.childId && record.vaccineId === selectedRecord.vaccineId
-              ? {
-                  ...record,
-                  status: 'completed',
-                  administeredDate: updated.administeredDate ?? record.administeredDate,
-                  administeredBy: updated.administeredBy ?? record.administeredBy,
-                  daysOverdue: 0,
-                }
-              : record
-          )
-        );
-      }
-
       setIsAdministerModalOpen(false);
+      setRefreshKey((prev) => prev + 1);
+      if (childDetailSummary && selectedRecord.childId === childDetailSummary.childId) {
+        await loadChildDetails(childDetailSummary.childId);
+      }
     } catch (error) {
       setAdminError((error as Error).message || 'Failed to record vaccination');
     }
@@ -330,7 +513,10 @@ export default function VaccinationsPage() {
       );
 
       setIsManualModalOpen(false);
-      fetchChildren();
+      setRefreshKey((prev) => prev + 1);
+      if (childDetailSummary && manualChildId === childDetailSummary.childId) {
+        await loadChildDetails(childDetailSummary.childId);
+      }
     } catch (error) {
       setManualError((error as Error).message || 'Failed to record vaccination');
     } finally {
@@ -338,32 +524,54 @@ export default function VaccinationsPage() {
     }
   };
 
-  const filteredRecords = useMemo(() => {
-    return records.filter((record) => {
-      const matchesSearch = record.childName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.vaccine.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = filterStatus === 'all' || record.status === filterStatus;
-      return matchesSearch && matchesStatus;
-    });
-  }, [records, searchTerm, filterStatus]);
+  const handleUpdateRecord = async () => {
+    if (!editingRecord?.id) {
+      setEditError('This record cannot be edited until it has been recorded.');
+      return;
+    }
 
-  const overdueCount = records.filter((record) => record.status === 'overdue' || record.status === 'missed').length;
-  const overdueChildCount = new Set(
-    records
-      .filter((record) => record.status === 'overdue' || record.status === 'missed')
-      .map((record) => record.childId)
-  ).size;
-  const scheduledCount = records.filter((record) => record.status === 'scheduled').length;
-  const completedTodayCount = records.filter((record) => {
-    if (record.status !== 'completed') return false;
-    const date = new Date(record.administeredDate || record.scheduledDate);
-    return isSameDay(date, new Date());
-  }).length;
-  const completedThisMonthCount = records.filter((record) => {
-    if (record.status !== 'completed') return false;
-    const date = new Date(record.administeredDate || record.scheduledDate);
-    return isSameMonth(date, new Date());
-  }).length;
+    setEditSubmitting(true);
+    setEditError('');
+
+    try {
+      await apiClient.patch<ApiResponse<VaccinationRecord>>(
+        `/vaccines/records/${editingRecord.id}`,
+        {
+          status: editStatus,
+          scheduledDate: editScheduledDate || undefined,
+          administeredDate: editAdministeredDate || undefined,
+          administeredBy: editAdministeredBy || undefined,
+          location: editLocation || undefined,
+          batchNumber: editBatchNumber || undefined,
+          notes: editNotes || undefined,
+        }
+      );
+
+      setEditingRecord(null);
+      setRefreshKey((prev) => prev + 1);
+      if (childDetailSummary) {
+        await loadChildDetails(childDetailSummary.childId);
+      }
+    } catch (error) {
+      setEditError((error as Error).message || 'Failed to update vaccination record');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const filteredChildren = useMemo(() => {
+    const term = childSearchTerm.trim().toLowerCase();
+    if (!term) return childSummaries;
+    return childSummaries.filter((child) => {
+      const name = child.childName.toLowerCase();
+      const parentName = child.parentName.toLowerCase();
+      return name.includes(term) || parentName.includes(term);
+    });
+  }, [childSummaries, childSearchTerm]);
+
+  const overdueCount = overdueTotal;
+  const scheduledCount = upcomingTotal;
+  const completedThisMonthCount = completedThisMonthTotal;
 
   const sortedCatalog = useMemo(
     () =>
@@ -379,6 +587,151 @@ export default function VaccinationsPage() {
 
   const isLoading = childrenLoading || recordsLoading;
   const errorMessage = recordsError || childrenError || '';
+
+  const childColumns = useMemo(
+    () => [
+      {
+        key: 'child',
+        header: 'Child',
+        render: (child: ChildVaccinationSummary) => (
+          <div className="flex items-center gap-3 min-w-55">
+            <Avatar name={child.childName} size="sm" />
+            <div className="min-w-0">
+              <p className="font-semibold text-slate-900 dark:text-white truncate">
+                {child.childName}
+              </p>
+              <p className="text-xs text-slate-500">{child.childAge}</p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'next',
+        header: 'Next vaccine',
+        render: (child: ChildVaccinationSummary) => (
+          <div className="min-w-45">
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-slate-700 dark:text-slate-300 truncate">
+                {child.nextVaccineName ?? 'All done'}
+              </p>
+              {child.nextVaccineStatus
+                ? getStatusBadge(child.nextVaccineStatus)
+                : <Badge variant="success">Complete</Badge>}
+            </div>
+            <p className="text-xs text-slate-500 truncate">
+              {child.nextVaccineDate
+                ? format(new Date(child.nextVaccineDate), 'MMM d, yyyy')
+                : '—'}
+            </p>
+          </div>
+        ),
+      },
+      {
+        key: 'overdue',
+        header: 'Overdue',
+        render: (child: ChildVaccinationSummary) => (
+          <div className="text-sm">
+            {child.overdueCount > 0 ? (
+              <Badge variant="error" size="sm">{child.overdueCount} overdue</Badge>
+            ) : (
+              <Badge variant="success" size="sm">On track</Badge>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'completion',
+        header: 'Completion',
+        className: 'text-right',
+        render: (child: ChildVaccinationSummary) => (
+          <Badge variant={child.completionPercentage === 100 ? 'success' : 'info'} size="sm">
+            {child.completionPercentage}%
+          </Badge>
+        ),
+      },
+    ],
+    []
+  );
+
+  const childDetailColumns = useMemo(
+    () => [
+      {
+        key: 'vaccine',
+        header: 'Vaccine',
+        render: (record: UiVaccinationRecord) => (
+          <div className="min-w-45">
+            <p className="font-semibold text-slate-900 dark:text-white">{record.vaccine}</p>
+            <p className="text-xs text-slate-500">{record.shortName}</p>
+          </div>
+        ),
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        render: (record: UiVaccinationRecord) => getStatusBadge(record.status),
+      },
+      {
+        key: 'due',
+        header: 'Due',
+        render: (record: UiVaccinationRecord) => (
+          <div className="text-xs text-slate-600 dark:text-slate-300">
+            <p>{format(new Date(record.scheduledDate), 'MMM d, yyyy')}</p>
+            {record.status === 'overdue' && (
+              <p className="text-red-500">{record.daysOverdue} days overdue</p>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'administered',
+        header: 'Administered',
+        render: (record: UiVaccinationRecord) => (
+          <div className="text-xs text-slate-600 dark:text-slate-300">
+            {record.administeredDate ? (
+              <>
+                <p>{format(new Date(record.administeredDate), 'MMM d, yyyy')}</p>
+                {record.administeredBy && (
+                  <p className="text-slate-500">by {record.administeredBy}</p>
+                )}
+              </>
+            ) : (
+              <p className="text-slate-400">—</p>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'actions',
+        header: '',
+        className: 'text-right',
+        render: (record: UiVaccinationRecord) => (
+          <div className="flex items-center justify-end gap-2">
+            {record.id ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingRecord(record)}
+              >
+                Edit
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setSelectedRecord(record);
+                  setIsAdministerModalOpen(true);
+                }}
+              >
+                Record
+              </Button>
+            )}
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
     <MainLayout>
@@ -396,8 +749,8 @@ export default function VaccinationsPage() {
       {overdueCount > 0 && (
         <Alert variant="error" title="Overdue Vaccinations" icon={AlertTriangle}>
           <span>
-            There are <strong>{overdueChildCount} children</strong> with overdue vaccinations. 
-            Immediate follow-up is required.
+            There are <strong>{overdueCount} overdue vaccinations</strong> across your roster.
+            Prioritize follow-up with the most overdue children.
           </span>
         </Alert>
       )}
@@ -410,6 +763,15 @@ export default function VaccinationsPage() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 my-6">
+        <Card className="flex items-center gap-4 p-4">
+          <div className="p-3 rounded-xl bg-blue-100">
+            <Syringe className="w-6 h-6 text-blue-500" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">{children.length}</p>
+            <p className="text-sm text-slate-500">Children</p>
+          </div>
+        </Card>
         <Card className="flex items-center gap-4 p-4">
           <div className="p-3 rounded-xl bg-red-100">
             <AlertTriangle className="w-6 h-6 text-red-500" />
@@ -425,7 +787,7 @@ export default function VaccinationsPage() {
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-900 dark:text-white">{scheduledCount}</p>
-            <p className="text-sm text-slate-500">Upcoming</p>
+            <p className="text-sm text-slate-500">Next 30 Days</p>
           </div>
         </Card>
         <Card className="flex items-center gap-4 p-4">
@@ -433,17 +795,8 @@ export default function VaccinationsPage() {
             <CheckCircle className="w-6 h-6 text-emerald-500" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">{completedTodayCount}</p>
-            <p className="text-sm text-slate-500">Completed Today</p>
-          </div>
-        </Card>
-        <Card className="flex items-center gap-4 p-4">
-          <div className="p-3 rounded-xl bg-purple-100">
-            <Syringe className="w-6 h-6 text-purple-500" />
-          </div>
-          <div>
             <p className="text-2xl font-bold text-slate-900 dark:text-white">{completedThisMonthCount}</p>
-            <p className="text-sm text-slate-500">This Month</p>
+            <p className="text-sm text-slate-500">Completed This Month</p>
           </div>
         </Card>
       </div>
@@ -454,7 +807,7 @@ export default function VaccinationsPage() {
           variant={activeTab === 'records' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('records')}
         >
-          Vaccination Records
+          Vaccination Overview
         </Button>
         <Button
           variant={activeTab === 'schedule' ? 'primary' : 'ghost'}
@@ -466,50 +819,45 @@ export default function VaccinationsPage() {
 
       {activeTab === 'records' ? (
         <>
-          {/* Filters */}
           <Card className="mb-6">
-            <div className="flex flex-col sm:flex-row items-center gap-3">
-              <div className="flex-1 w-full">
-                <Input
-                  placeholder="Search by child name or vaccine..."
-                  icon={Search}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Select
-                options={[
-                  { value: 'all', label: 'All Status' },
-                  { value: 'overdue', label: 'Overdue' },
-                  { value: 'scheduled', label: 'Scheduled' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'missed', label: 'Missed' },
-                ]}
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full sm:w-44"
+            <SectionTitle
+              title="Vaccination Overview"
+              subtitle="Track next doses and overdue children at a glance"
+            />
+            <div className="mt-4">
+              <Input
+                placeholder="Search children by name or parent..."
+                icon={Search}
+                value={childSearchTerm}
+                onChange={(e) => setChildSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="mt-4">
+              <Table
+                columns={childColumns}
+                data={filteredChildren}
+                keyExtractor={(child) => child.childId}
+                onRowClick={handleOpenChildDetail}
+                isLoading={isLoading}
+                emptyMessage="No children found"
               />
             </div>
           </Card>
 
-          {/* Vaccination Records */}
           {isLoading ? (
-            <Card className="p-6 text-center text-slate-500">Loading vaccination records...</Card>
+            <Card className="p-6 text-center text-slate-500">Loading vaccination overview...</Card>
           ) : (
-            <div className="space-y-4">
-            {/* Overdue Section */}
-            {filteredRecords.filter(r => r.status === 'overdue' || r.status === 'missed').length > 0 && (
-              <div>
-                <SectionTitle 
-                  title="Overdue Vaccinations" 
-                  subtitle="Requires immediate follow-up"
-                />
-                <div className="space-y-3">
-                  {filteredRecords
-                    .filter(r => r.status === 'overdue' || r.status === 'missed')
-                    .map((record) => (
-                      <Card 
-                        key={getRecordKey(record)} 
+            <div className="space-y-6">
+              {overdueTotal > 0 ? (
+                <div>
+                  <SectionTitle
+                    title="Overdue Vaccinations"
+                    subtitle={`${overdueTotal} overdue across your roster`}
+                  />
+                  <div className="space-y-3">
+                    {overdueRecords.map((record) => (
+                      <Card
+                        key={getRecordKey(record)}
                         className="border-l-4 border-l-red-500"
                         hover
                       >
@@ -536,18 +884,18 @@ export default function VaccinationsPage() {
                               <p className="text-sm text-slate-500">{record.parentName}</p>
                               <p className="text-sm text-slate-700 dark:text-slate-300">{record.parentPhone}</p>
                             </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
                               icon={Phone}
                               className="border-red-300 text-red-600"
                               onClick={() => handleCall(record.parentPhone)}
                             >
                               Call
                             </Button>
-                            <Button 
-                              variant="primary" 
-                              size="sm" 
+                            <Button
+                              variant="primary"
+                              size="sm"
                               icon={Syringe}
                               onClick={() => {
                                 setSelectedRecord(record);
@@ -560,25 +908,33 @@ export default function VaccinationsPage() {
                         </div>
                       </Card>
                     ))}
+                  </div>
+                  {overdueTotal > overdueRecords.length && (
+                    <p className="text-xs text-slate-500 mt-2">
+                      Showing top {overdueRecords.length} most overdue vaccinations.
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
-
-            {/* Scheduled Section */}
-            {filteredRecords.filter(r => r.status === 'scheduled').length > 0 && (
-              <div className="mt-8">
-                <SectionTitle 
-                  title="Upcoming Vaccinations" 
-                  subtitle="Scheduled for administration"
+              ) : (
+                <EmptyState
+                  icon={Syringe}
+                  title="No overdue vaccinations"
+                  description="All tracked children are up to date."
                 />
-                <div className="space-y-3">
-                  {filteredRecords
-                    .filter(r => r.status === 'scheduled')
-                    .map((record) => (
+              )}
+
+              {upcomingTotal > 0 ? (
+                <div>
+                  <SectionTitle
+                    title="Due in the Next 30 Days"
+                    subtitle={`${upcomingTotal} upcoming vaccinations`}
+                  />
+                  <div className="space-y-3">
+                    {upcomingRecords.map((record) => (
                       <Card key={getRecordKey(record)} hover>
                         <div className="flex items-center gap-4">
                           <div className="p-3 rounded-xl bg-blue-100">
-                            <Syringe className="w-6 h-6 text-blue-500" />
+                            <Clock className="w-6 h-6 text-blue-500" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
@@ -591,7 +947,7 @@ export default function VaccinationsPage() {
                               {record.vaccine} • {record.childAge}
                             </p>
                             <p className="text-xs text-blue-500 mt-1">
-                              Scheduled: {format(new Date(record.scheduledDate), 'MMMM d, yyyy')}
+                              Due: {format(new Date(record.scheduledDate), 'MMMM d, yyyy')}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -599,9 +955,9 @@ export default function VaccinationsPage() {
                               <p className="text-sm text-slate-500">{record.parentName}</p>
                               <p className="text-sm text-slate-700 dark:text-slate-300">{record.parentPhone}</p>
                             </div>
-                            <Button 
-                              variant="primary" 
-                              size="sm" 
+                            <Button
+                              variant="primary"
+                              size="sm"
                               icon={Syringe}
                               onClick={() => {
                                 setSelectedRecord(record);
@@ -614,66 +970,21 @@ export default function VaccinationsPage() {
                         </div>
                       </Card>
                     ))}
+                  </div>
+                  {upcomingTotal > upcomingRecords.length && (
+                    <p className="text-xs text-slate-500 mt-2">
+                      Showing the next {upcomingRecords.length} scheduled vaccinations.
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
-
-            {/* Completed Section */}
-            {filteredRecords.filter(r => r.status === 'completed').length > 0 && (
-              <div className="mt-8">
-                <SectionTitle 
-                  title="Recently Completed" 
-                  subtitle="Administered vaccinations"
+              ) : (
+                <EmptyState
+                  icon={Clock}
+                  title="No upcoming vaccinations"
+                  description="No scheduled doses in the next 30 days."
                 />
-                <div className="space-y-3">
-                  {filteredRecords
-                    .filter(r => r.status === 'completed')
-                    .map((record) => (
-                      <Card key={getRecordKey(record)} className="opacity-75">
-                        <div className="flex items-center gap-4">
-                          <div className="p-3 rounded-xl bg-emerald-100">
-                            <CheckCircle className="w-6 h-6 text-emerald-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-slate-900 dark:text-white">
-                                {record.childName}
-                              </h3>
-                              {getStatusBadge(record.status)}
-                            </div>
-                            <p className="text-sm text-slate-500">
-                              {record.vaccine} • {record.childAge}
-                            </p>
-                            <p className="text-xs text-emerald-500 mt-1">
-                              Administered: {format(new Date(record.administeredDate || record.scheduledDate), 'MMMM d, yyyy')}
-                              {record.administeredBy && ` by ${record.administeredBy}`}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={FileText}
-                            onClick={() => {
-                              setSelectedRecord(record);
-                              setIsAdministerModalOpen(true);
-                            }}
-                          >
-                            View Record
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
-                </div>
-              </div>
-            )}
-            {filteredRecords.length === 0 && (
-              <EmptyState
-                icon={Syringe}
-                title="No vaccinations found"
-                description="Try adjusting your search or filter criteria"
-              />
-            )}
-          </div>
+              )}
+            </div>
           )}
         </>
       ) : (
@@ -733,6 +1044,163 @@ export default function VaccinationsPage() {
           </div>
         </Card>
       )}
+
+      {/* Child Detail Modal */}
+      <Modal
+        isOpen={isChildDetailOpen}
+        onClose={() => {
+          setIsChildDetailOpen(false);
+          setChildDetailSummary(null);
+          setChildDetailRecords([]);
+          setChildDetailError('');
+          setEditingRecord(null);
+        }}
+        title={childDetailSummary ? `Vaccinations: ${childDetailSummary.childName}` : 'Vaccination Details'}
+        size="2xl"
+      >
+        {childDetailError && (
+          <Alert variant="warning" title="Unable to load child records" className="mb-4">
+            {childDetailError}
+          </Alert>
+        )}
+        {childDetailLoading ? (
+          <div className="py-8 text-center text-slate-500">Loading child vaccinations...</div>
+        ) : (
+          <div className="space-y-4">
+            {childDetailSummary && (
+              <Card className="p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                      {childDetailSummary.childName}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {childDetailSummary.childAge} • {childDetailSummary.parentName}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {childDetailSummary.overdueCount > 0 ? (
+                      <Badge variant="error">{childDetailSummary.overdueCount} overdue</Badge>
+                    ) : (
+                      <Badge variant="success">On track</Badge>
+                    )}
+                    <Badge variant="info">{childDetailSummary.completionPercentage}% complete</Badge>
+                  </div>
+                </div>
+                <div className="mt-3 text-sm text-slate-500">
+                  Next vaccine: {childDetailSummary.nextVaccineName ?? 'All done'}
+                  {childDetailSummary.nextVaccineDate && (
+                    <span> • {format(new Date(childDetailSummary.nextVaccineDate), 'MMM d, yyyy')}</span>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            <Table
+              columns={childDetailColumns}
+              data={childDetailRecords}
+              keyExtractor={getRecordKey}
+              isLoading={childDetailLoading}
+              emptyMessage="No vaccination records found"
+            />
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit Record Modal */}
+      <Modal
+        isOpen={!!editingRecord}
+        onClose={() => setEditingRecord(null)}
+        title="Edit Vaccination Record"
+        size="md"
+      >
+        {editingRecord && (
+          <div className="space-y-4">
+            <div className="rounded-lg bg-slate-50 dark:bg-slate-800 p-4">
+              <p className="font-semibold text-slate-900 dark:text-white">
+                {editingRecord.childName}
+              </p>
+              <p className="text-sm text-slate-500">{editingRecord.vaccine}</p>
+            </div>
+
+            <Select
+              label="Status"
+              options={[
+                { value: 'scheduled', label: 'Scheduled' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'overdue', label: 'Overdue' },
+                { value: 'missed', label: 'Missed' },
+              ]}
+              value={editStatus}
+              onChange={(e) => setEditStatus(e.target.value as UiVaccinationRecord['status'])}
+            />
+            <Input
+              label="Scheduled Date"
+              type="date"
+              value={editScheduledDate}
+              onChange={(e) => setEditScheduledDate(e.target.value)}
+            />
+            <Input
+              label="Administered Date"
+              type="date"
+              value={editAdministeredDate}
+              onChange={(e) => setEditAdministeredDate(e.target.value)}
+            />
+            <Input
+              label="Administered By"
+              value={editAdministeredBy}
+              onChange={(e) => setEditAdministeredBy(e.target.value)}
+            />
+            <Input
+              label="Location"
+              value={editLocation}
+              onChange={(e) => setEditLocation(e.target.value)}
+            />
+            <Input
+              label="Batch Number"
+              value={editBatchNumber}
+              onChange={(e) => setEditBatchNumber(e.target.value)}
+            />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Notes
+              </label>
+              <textarea
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
+                rows={3}
+                placeholder="Add notes..."
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+              />
+            </div>
+
+            {editError && (
+              <Alert variant="warning" title="Unable to save" icon={AlertCircle}>
+                {editError}
+              </Alert>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="primary"
+                icon={Check}
+                className="flex-1"
+                onClick={handleUpdateRecord}
+                disabled={editSubmitting}
+              >
+                Save Changes
+              </Button>
+              <Button
+                variant="ghost"
+                icon={X}
+                onClick={() => setEditingRecord(null)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Manual Record Modal */}
       <Modal
