@@ -50,6 +50,15 @@ export interface ChildApiResponse {
   fatherName: string | null;
   emergencyContact: string | null;
   address: string | null;
+  assignedMidwife?: {
+    id: string;
+    name: string | null;
+    role: string;
+    phone?: string | null;
+    email?: string | null;
+    clinic?: string | null;
+    address?: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -77,6 +86,17 @@ const mapToChildProfile = (data: ChildApiResponse): ChildProfile => ({
   fatherName: data.fatherName || '',
   emergencyContact: data.emergencyContact || '',
   address: data.address || undefined,
+  assignedMidwife: data.assignedMidwife
+    ? {
+        id: data.assignedMidwife.id,
+        name: data.assignedMidwife.name || undefined,
+        role: 'midwife',
+        phone: data.assignedMidwife.phone || undefined,
+        email: data.assignedMidwife.email || undefined,
+        clinic: data.assignedMidwife.clinic || undefined,
+        address: data.assignedMidwife.address || undefined,
+      }
+    : undefined,
   createdAt: data.createdAt,
   updatedAt: data.updatedAt,
   syncStatus: 'synced',

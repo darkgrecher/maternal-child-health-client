@@ -96,9 +96,16 @@ const QrScanScreen: React.FC = () => {
       await Promise.all([fetchChildren(), fetchPregnancies()]);
 
       Alert.alert(
-        t('qr.linkedTitle', 'Midwife Linked'),
-        t('qr.linkedMessage', 'Your profile has been linked to the midwife successfully.'),
-        [{ text: t('common.ok', 'OK'), onPress: () => navigation.goBack() }]
+        t('qr.registeredTitle', 'Registered successfully'),
+        '',
+        [{
+          text: t('common.ok', 'OK'),
+          onPress: () =>
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Main' }],
+            }),
+        }]
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : t('qr.linkFailed', 'Failed to link midwife.');

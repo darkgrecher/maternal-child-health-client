@@ -178,6 +178,7 @@ export default function ChildrenPage() {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [childMetrics, setChildMetrics] = useState<Record<string, ChildMetrics>>({});
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrCode, setQrCode] = useState<string | null>(null);
   const [qrError, setQrError] = useState<string | null>(null);
   const [isQrLoading, setIsQrLoading] = useState(false);
 
@@ -189,6 +190,7 @@ export default function ChildrenPage() {
     if (!isQrModalOpen) {
       setQrImageUrl(null);
       setQrError(null);
+      setQrCode(null);
       return;
     }
 
@@ -199,10 +201,11 @@ export default function ChildrenPage() {
       setQrError(null);
 
       try {
-        const response = await apiClient.post<ApiResponse<{ qrPayload: string }>>('/midwife-links/qr', {
+        const response = await apiClient.post<ApiResponse<{ qrPayload: string; code: string }>>('/midwife-links/qr', {
           profileType: 'child',
         });
         const qrPayload = response.data?.qrPayload;
+        const code = response.data?.code ?? null;
         if (!qrPayload) {
           throw new Error('QR code payload unavailable');
         }
@@ -210,6 +213,7 @@ export default function ChildrenPage() {
         const dataUrl = await QRCode.toDataURL(qrPayload, { width: 320, margin: 1 });
         if (!isCancelled) {
           setQrImageUrl(dataUrl);
+          setQrCode(code);
         }
       } catch (error) {
         if (!isCancelled) {
@@ -230,6 +234,33 @@ export default function ChildrenPage() {
       isCancelled = true;
     };
   }, [isQrModalOpen]);
+
+  useEffect(() => {
+    if (!isQrModalOpen || !qrCode) return;
+
+    let isCancelled = false;
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await apiClient.get<ApiResponse<{ isActive: boolean; lastUsedAt?: string | null }>>(
+          `/midwife-links/status/${qrCode}`
+        );
+        const lastUsedAt = response.data?.lastUsedAt ?? null;
+        const isActive = response.data?.isActive ?? true;
+        if (!isCancelled && (lastUsedAt || !isActive)) {
+          setIsQrModalOpen(false);
+          setQrCode(null);
+          await fetchChildren();
+        }
+      } catch {
+        // Ignore polling errors while modal is open.
+      }
+    }, 3000);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [isQrModalOpen, qrCode, fetchChildren]);
 
   useEffect(() => {
     if (children.length === 0) {
