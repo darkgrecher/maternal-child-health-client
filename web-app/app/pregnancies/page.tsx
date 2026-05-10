@@ -127,7 +127,7 @@ export default function PregnanciesPage() {
   const [pregnancyFormMode, setPregnancyFormMode] = useState<'create' | 'edit'>('create');
   const [pregnancyFormError, setPregnancyFormError] = useState('');
   const [isPregnancySubmitting, setIsPregnancySubmitting] = useState(false);
-  const [pregnancyFormValues, setPregnancyFormValues] = useState({
+  const defaultPregnancyFormValues = {
     motherFirstName: '',
     motherLastName: '',
     motherDateOfBirth: '',
@@ -141,7 +141,8 @@ export default function PregnanciesPage() {
     hospitalName: '',
     obgynName: '',
     obgynContact: '',
-  });
+  };
+  const [pregnancyFormValues, setPregnancyFormValues] = useState(defaultPregnancyFormValues);
   const [isCheckupModalOpen, setIsCheckupModalOpen] = useState(false);
   const [checkupError, setCheckupError] = useState('');
   const [isCheckupSubmitting, setIsCheckupSubmitting] = useState(false);
@@ -161,10 +162,16 @@ export default function PregnanciesPage() {
   const [checkupsError, setCheckupsError] = useState('');
   const [checkups, setCheckups] = useState<PregnancyCheckup[]>([]);
 
+  const openCreatePregnancyForm = () => {
+    setPregnancyFormMode('create');
+    setPregnancyFormError('');
+    setPregnancyFormValues(defaultPregnancyFormValues);
+    setIsPregnancyFormOpen(true);
+  };
+
   useEffect(() => {
     if (searchParams.get('new') === '1') {
-      setPregnancyFormMode('create');
-      setIsPregnancyFormOpen(true);
+      openCreatePregnancyForm();
     }
   }, [searchParams]);
 
@@ -546,7 +553,7 @@ export default function PregnanciesPage() {
             >
               <QrCode className="w-5 h-5" />
             </button>
-            <Button icon={Plus} variant="primary" onClick={() => setIsQrModalOpen(true)}>
+            <Button icon={Plus} variant="primary" onClick={openCreatePregnancyForm}>
               Register Pregnancy
             </Button>
           </div>

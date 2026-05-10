@@ -185,7 +185,7 @@ export default function ChildrenPage() {
   const [childFormMode, setChildFormMode] = useState<'create' | 'edit'>('create');
   const [childFormError, setChildFormError] = useState('');
   const [isChildSubmitting, setIsChildSubmitting] = useState(false);
-  const [childFormValues, setChildFormValues] = useState({
+  const defaultChildFormValues = {
     firstName: '',
     lastName: '',
     dateOfBirth: '',
@@ -198,7 +198,8 @@ export default function ChildrenPage() {
     address: '',
     birthWeight: '',
     birthHeight: '',
-  });
+  };
+  const [childFormValues, setChildFormValues] = useState(defaultChildFormValues);
   const [isGrowthModalOpen, setIsGrowthModalOpen] = useState(false);
   const [growthError, setGrowthError] = useState('');
   const [isGrowthSubmitting, setIsGrowthSubmitting] = useState(false);
@@ -218,10 +219,16 @@ export default function ChildrenPage() {
   const [qrError, setQrError] = useState<string | null>(null);
   const [isQrLoading, setIsQrLoading] = useState(false);
 
+  const openCreateChildForm = () => {
+    setChildFormMode('create');
+    setChildFormError('');
+    setChildFormValues(defaultChildFormValues);
+    setIsChildFormOpen(true);
+  };
+
   useEffect(() => {
     if (searchParams.get('new') === '1') {
-      setChildFormMode('create');
-      setIsChildFormOpen(true);
+      openCreateChildForm();
     }
   }, [searchParams]);
 
@@ -631,7 +638,7 @@ export default function ChildrenPage() {
             >
               <QrCode className="w-5 h-5" />
             </button>
-            <Button icon={Plus} variant="primary" onClick={() => setIsQrModalOpen(true)}>
+            <Button icon={Plus} variant="primary" onClick={openCreateChildForm}>
               Register Child
             </Button>
           </div>
