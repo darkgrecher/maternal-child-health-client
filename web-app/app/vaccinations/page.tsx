@@ -41,7 +41,16 @@ import { useChildStore } from '../lib/stores';
 import type { ApiResponse, ChildProfile, VaccinationRecord, VaccineInfo } from '../lib/types';
 
 interface VaccinationScheduleResponse {
+  child?: Pick<ChildProfile, 'id' | 'firstName' | 'lastName' | 'dateOfBirth'>;
   schedule: VaccinationRecord[];
+  statistics?: {
+    completed: number;
+    total: number;
+    overdue: number;
+    pending: number;
+    completionPercentage: number;
+  };
+  nextVaccine?: VaccinationRecord | null;
 }
 
 interface UiVaccinationRecord {
