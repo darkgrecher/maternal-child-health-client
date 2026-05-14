@@ -52,6 +52,9 @@ const bottomNavItems: NavItem[] = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
+const WEB_APP_BASE_URL = process.env.NEXT_PUBLIC_WEB_APP_URL ?? 'http://localhost:3001';
+const ADMIN_PORTAL_URL = process.env.NEXT_PUBLIC_ADMIN_URL ?? `${WEB_APP_BASE_URL}/admin`;
+
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -61,7 +64,7 @@ export const Sidebar: React.FC = () => {
   const isAdmin = storeUser?.role === 'admin';
   const adminPortalItem: NavItem = {
     name: 'Admin Portal',
-    href: 'http://localhost:3001/admin',
+    href: ADMIN_PORTAL_URL,
     icon: Shield,
     external: true,
   };
