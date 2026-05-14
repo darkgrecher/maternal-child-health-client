@@ -40,10 +40,12 @@ interface NavItem {
   external?: boolean;
 }
 
-const WEB_APP_BASE_URL = process.env.NEXT_PUBLIC_WEB_APP_URL ?? 'http://localhost:3001';
+const WEB_APP_BASE_URL = process.env.NEXT_PUBLIC_WEB_APP_URL;
 
 const adminNavItems: NavItem[] = [
-  { name: 'MidwifeHub', href: WEB_APP_BASE_URL, icon: Heart, external: true },
+  ...(WEB_APP_BASE_URL
+    ? [{ name: 'MidwifeHub', href: WEB_APP_BASE_URL, icon: Heart, external: true }]
+    : []),
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'User Management', href: '/admin/users', icon: Users },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },

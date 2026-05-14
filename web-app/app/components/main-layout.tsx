@@ -52,8 +52,7 @@ const bottomNavItems: NavItem[] = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-const WEB_APP_BASE_URL = process.env.NEXT_PUBLIC_WEB_APP_URL ?? 'http://localhost:3001';
-const ADMIN_PORTAL_URL = process.env.NEXT_PUBLIC_ADMIN_URL ?? `${WEB_APP_BASE_URL}/admin`;
+const ADMIN_PORTAL_URL = process.env.NEXT_PUBLIC_ADMIN_URL;
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
@@ -62,15 +61,17 @@ export const Sidebar: React.FC = () => {
   const { logout: storeLogout, user: storeUser } = useAuthStore();
 
   const isAdmin = storeUser?.role === 'admin';
-  const adminPortalItem: NavItem = {
-    name: 'Admin Portal',
-    href: ADMIN_PORTAL_URL,
-    icon: Shield,
-    external: true,
-  };
+  const adminPortalItem: NavItem | null = ADMIN_PORTAL_URL
+    ? {
+        name: 'Admin Portal',
+        href: ADMIN_PORTAL_URL,
+        icon: Shield,
+        external: true,
+      }
+    : null;
 
   const visibleNavItems: NavItem[] = isAdmin
-    ? [navItems[0], adminPortalItem, ...navItems.slice(1)]
+    ? [navItems[0], ...(adminPortalItem ? [adminPortalItem] : []), ...navItems.slice(1)]
     : navItems;
 
   const displayName = storeUser?.name || 'User';
