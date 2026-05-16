@@ -1228,40 +1228,62 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <Modal
-        isOpen={isQrModalOpen}
-        onClose={() => setIsQrModalOpen(false)}
-        title="Scan to Link Profile"
-        size="md"
-      >
-        <div className="space-y-4">
-          {isQrLoading && (
-            <div className="w-full rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-10 text-center text-sm text-slate-500">
-              Generating QR code...
+      {/* QR Code Video Modal */}
+      {isQrModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsQrModalOpen(false)}
+          />
+          <div className="relative animate-slide-up shadow-2xl rounded-[3rem] overflow-hidden bg-white">
+            <button
+              onClick={() => setIsQrModalOpen(false)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-900/10 hover:bg-slate-900/20 text-slate-700 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <div className="relative w-[400px] h-[400px] sm:w-[500px] sm:h-[500px]">
+              <video 
+                src="/baby-qr.mp4" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+
+              <div className="absolute inset-0 flex flex-col items-center justify-end pb-[8%] sm:pb-[10%]">
+                {isQrLoading && (
+                  <div className="w-[160px] h-[160px] sm:w-[200px] sm:h-[200px] rounded-xl border border-dashed border-slate-300 flex items-center justify-center text-sm text-slate-500 bg-white/50 backdrop-blur-sm shadow-sm" style={{ transform: 'translateY(10%)' }}>
+                    Generating...
+                  </div>
+                )}
+                {qrError && (
+                  <div className="w-[160px] px-2 text-center text-xs text-red-500 bg-white/80 p-2 rounded-xl" style={{ transform: 'translateY(10%)' }}>
+                    {qrError}
+                  </div>
+                )}
+                {qrWarning && (
+                  <div className="w-[160px] px-2 text-center text-xs text-orange-500 bg-white/80 p-2 rounded-xl mt-2" style={{ transform: 'translateY(10%)' }}>
+                    {qrWarning}
+                  </div>
+                )}
+                {qrImageUrl && !isQrLoading && (
+                  <img
+                    src={qrImageUrl}
+                    alt="Scan QR"
+                    className="w-[160px] h-[160px] sm:w-[200px] sm:h-[200px] rounded-xl bg-white p-2 shadow-sm"
+                    style={{ transform: 'translateY(10%)' }}
+                  />
+                )}
+              </div>
             </div>
-          )}
-          {qrError && (
-            <Alert variant="warning" title="Unable to generate QR code" className="w-full">
-              {qrError}
-            </Alert>
-          )}
-          {qrImageUrl && !isQrLoading && (
-            <img
-              src={qrImageUrl}
-              alt="Midwife QR code"
-              className="w-full max-w-xs mx-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white"
-            />
-          )}
-          {qrWarning && (
-            <Alert variant="warning" title="Scan blocked" className="w-full">
-              {qrWarning}
-            </Alert>
-          )}
-          <p className="text-center text-sm text-slate-500">
-            Scan this QR code with the selected profile in the mobile app.
-          </p>
+          </div>
         </div>
-      </Modal>
+      )}
 
       <Modal
         isOpen={isLinkModalOpen}
