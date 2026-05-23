@@ -521,6 +521,54 @@ export interface AdminLogsResponse {
   actorSummary: AdminLogActorSummary[];
 }
 
+// ============================================================================
+// ADMIN ALERTS TYPES
+// ============================================================================
+
+export type AdminLinkNotificationType = 'mismatch' | 'unregistered';
+
+export type AdminLinkProfileType = 'any' | 'child' | 'pregnancy';
+
+export interface AdminLinkNotification {
+  id: string;
+  type: AdminLinkNotificationType;
+  expectedProfileType: AdminLinkProfileType;
+  scannedProfileType: AdminLinkProfileType;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+  midwife: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  } | null;
+}
+
+export interface AdminAlertsResponse {
+  range: {
+    label: string;
+    start: string;
+    end: string;
+    days: number;
+  };
+  system: {
+    total: number;
+    summary: {
+      warningCount: number;
+      errorCount: number;
+    };
+    items: AdminLogEntry[];
+  };
+  link: {
+    total: number;
+    summary: {
+      mismatchCount: number;
+      unregisteredCount: number;
+    };
+    items: AdminLinkNotification[];
+  };
+}
+
 export interface Alert {
   id: string;
   type: 'high_risk' | 'overdue_vaccination' | 'missed_appointment' | 'follow_up_required';
