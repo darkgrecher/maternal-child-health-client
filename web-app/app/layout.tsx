@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   title: "MidwifeHub - Maternal & Child Care Management",
   description: "Comprehensive care management system for midwives to track pregnancies, children, vaccinations, and appointments",
   keywords: ["midwife", "maternal care", "child health", "pregnancy tracking", "vaccination"],
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
 export default function RootLayout({
@@ -28,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/favicon.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
