@@ -40,10 +40,10 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Pregnancies', href: '/pregnancies', icon: Heart, badge: 3 },
+  { name: 'Pregnancies', href: '/pregnancies', icon: Heart },
   { name: 'Children', href: '/children', icon: Baby },
-  { name: 'Vaccinations', href: '/vaccinations', icon: Syringe, badge: 5 },
-  { name: 'Appointments', href: '/appointments', icon: Calendar, badge: 2 },
+  { name: 'Vaccinations', href: '/vaccinations', icon: Syringe },
+  { name: 'Appointments', href: '/appointments', icon: Calendar },
   { name: 'Activities', href: '/activities', icon: Activity },
   { name: 'Patients', href: '/patients', icon: Users },
 ];
