@@ -18,7 +18,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
-  Search,
   Menu,
   X,
   Shield,
@@ -40,10 +39,9 @@ interface NavItem {
   external?: boolean;
 }
 
-const WEB_APP_BASE_URL = process.env.NEXT_PUBLIC_WEB_APP_URL ?? 'http://localhost:3001';
+const WEB_APP_BASE_URL = process.env.NEXT_PUBLIC_WEB_APP_URL;
 
 const adminNavItems: NavItem[] = [
-  { name: 'MidwifeHub', href: WEB_APP_BASE_URL, icon: Heart, external: true },
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'User Management', href: '/admin/users', icon: Users },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
@@ -53,9 +51,9 @@ const adminNavItems: NavItem[] = [
   { name: 'Alerts', href: '/admin/alerts', icon: AlertTriangle, badge: 5 },
 ];
 
-const bottomNavItems: NavItem[] = [
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
-];
+const bottomNavItems: NavItem[] = WEB_APP_BASE_URL
+  ? [{ name: 'MidwifeHub', href: WEB_APP_BASE_URL, icon: Heart, external: true }]
+  : [];
 
 const AdminSidebar: React.FC = () => {
   const pathname = usePathname();
@@ -199,22 +197,36 @@ const AdminSidebar: React.FC = () => {
           <div className="mt-8 pt-4 border-t border-slate-800">
             <ul className="space-y-1">
               {bottomNavItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = !item.external && pathname === item.href;
                 return (
                   <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      className={clsx(
-                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-                        isActive
-                          ? 'bg-linear-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-500/30'
-                          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                      )}
-                      onClick={() => setIsMobileOpen(false)}
-                    >
-                      <item.icon className="w-5 h-5 shrink-0" />
-                      {!isCollapsed && <span className="font-medium">{item.name}</span>}
-                    </Link>
+                    {item.external ? (
+                      <a
+                        href={item.href}
+                        className={clsx(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                          'text-slate-400 hover:bg-slate-800 hover:text-white'
+                        )}
+                        onClick={() => setIsMobileOpen(false)}
+                      >
+                        <item.icon className="w-5 h-5 shrink-0" />
+                        {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                      </a>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className={clsx(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                          isActive
+                            ? 'bg-linear-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-500/30'
+                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                        )}
+                        onClick={() => setIsMobileOpen(false)}
+                      >
+                        <item.icon className="w-5 h-5 shrink-0" />
+                        {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                      </Link>
+                    )}
                   </li>
                 );
               })}
@@ -264,16 +276,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title, subtitle, actions }) =
         {subtitle && <p className="text-slate-500 mt-1">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus-within:ring-2 focus-within:ring-pink-500/40 focus-within:border-pink-500 focus-within:bg-white dark:focus-within:bg-slate-700 transition-all">
-          <Search className="w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="bg-transparent border-none outline-none text-sm w-48 text-slate-900 dark:text-white placeholder:text-slate-400"
-          />
-        </div>
-
         {/* Notifications */}
         <button className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
           <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />

@@ -2,7 +2,11 @@
  * API Client for Midwife Web Application
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error('Missing NEXT_PUBLIC_API_URL. Define it in .env.local.');
+}
 
 interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;

@@ -22,9 +22,12 @@ import {
   IdCard,
   Mail,
   Lock,
+  Pencil,
+  Save,
+  Trash2,
 } from 'lucide-react';
 import { AdminHeader } from '../layout';
-import { Alert, Badge, Button, Card, EmptyState, LoadingSpinner, SectionTitle } from '../../components/ui';
+import { Alert, Badge, Button, Card, EmptyState, LoadingSpinner, Modal, SectionTitle } from '../../components/ui';
 import { useAuthStore } from '../../lib/stores';
 import apiClient from '../../lib/api-client';
 
@@ -60,9 +63,33 @@ interface ProvisionedMidwife {
   lastLoginAt?: string | null;
 }
 
+interface EditFormState {
+  email: string;
+  role: Role;
+  name: string;
+  givenName: string;
+  familyName: string;
+  phone: string;
+  licenseNumber: string;
+  facilityName: string;
+  region: string;
+}
+
 const defaultForm: ProvisionFormState = {
   email: '',
   password: '',
+  role: 'midwife',
+  name: '',
+  givenName: '',
+  familyName: '',
+  phone: '',
+  licenseNumber: '',
+  facilityName: '',
+  region: '',
+};
+
+const defaultEditForm: EditFormState = {
+  email: '',
   role: 'midwife',
   name: '',
   givenName: '',
@@ -78,6 +105,34 @@ const roleLabels: Record<Role, string> = {
   supervisor: 'Supervisor',
   admin: 'Admin',
 };
+
+const sriLankaDistricts = [
+  'Ampara',
+  'Anuradhapura',
+  'Badulla',
+  'Batticaloa',
+  'Colombo',
+  'Galle',
+  'Gampaha',
+  'Hambantota',
+  'Jaffna',
+  'Kalutara',
+  'Kandy',
+  'Kegalle',
+  'Kilinochchi',
+  'Kurunegala',
+  'Mannar',
+  'Matale',
+  'Matara',
+  'Moneragala',
+  'Mullaitivu',
+  'Nuwara Eliya',
+  'Polonnaruwa',
+  'Puttalam',
+  'Ratnapura',
+  'Trincomalee',
+  'Vavuniya',
+];
 
 const roleBadgeVariant = (role: Role) => {
   if (role === 'admin') return 'info';
@@ -105,14 +160,28 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [midwives, setMidwives] = useState<ProvisionedMidwife[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
+  const [editingMidwife, setEditingMidwife] = useState<ProvisionedMidwife | null>(null);
+  const [editForm, setEditForm] = useState<EditFormState>(defaultEditForm);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [deletingMidwife, setDeletingMidwife] = useState<ProvisionedMidwife | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isAdmin = user?.role === 'admin';
 
   const isFormValid = useMemo(() => {
     return form.email.trim().length > 0 && form.password.trim().length >= 8;
   }, [form.email, form.password]);
+
+  const isEditFormValid = useMemo(() => {
+    return editForm.email.trim().length > 0;
+  }, [editForm.email]);
 
   useEffect(() => {
     if (!hasHydrated || !isAdmin) return;
@@ -150,6 +219,50 @@ export default function AdminUsersPage() {
 
   const handleChange = (field: keyof ProvisionFormState) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleEditChange = (field: keyof EditFormState) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setEditForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const openEditModal = (account: ProvisionedMidwife) => {
+    setEditingMidwife(account);
+    setEditForm({
+      email: account.email,
+      role: account.role,
+      name: account.name ?? '',
+      givenName: account.givenName ?? '',
+      familyName: account.familyName ?? '',
+      phone: account.phone ?? '',
+      licenseNumber: account.licenseNumber ?? '',
+      facilityName: account.facilityName ?? '',
+      region: account.region ?? '',
+    });
+    setEditError(null);
+    setActionSuccess(null);
+    setIsEditOpen(true);
+  };
+
+  const closeEditModal = () => {
+    if (isUpdating) return;
+    setIsEditOpen(false);
+    setEditingMidwife(null);
+    setEditForm(defaultEditForm);
+    setEditError(null);
+  };
+
+  const openDeleteModal = (account: ProvisionedMidwife) => {
+    setDeletingMidwife(account);
+    setDeleteError(null);
+    setActionSuccess(null);
+    setIsDeleteOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    if (isDeleting) return;
+    setIsDeleteOpen(false);
+    setDeletingMidwife(null);
+    setDeleteError(null);
   };
 
   const generatePassword = () => {
@@ -211,6 +324,69 @@ export default function AdminUsersPage() {
       setError(err instanceof Error ? err.message : 'Failed to provision account.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateMidwife = async () => {
+    if (!editingMidwife || isUpdating || !isEditFormValid) return;
+
+    setIsUpdating(true);
+    setEditError(null);
+
+    try {
+      const payload = {
+        email: editForm.email.trim(),
+        role: editForm.role,
+        name: editForm.name.trim(),
+        givenName: editForm.givenName.trim(),
+        familyName: editForm.familyName.trim(),
+        phone: editForm.phone.trim(),
+        licenseNumber: editForm.licenseNumber.trim(),
+        facilityName: editForm.facilityName.trim(),
+        region: editForm.region.trim(),
+      };
+
+      const response = await apiClient.patch<{ success: boolean; data: ProvisionedMidwife }>(
+        `/auth/midwives/${editingMidwife.id}`,
+        payload
+      );
+
+      const updated = response.data;
+      setMidwives((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      setActionSuccess(`Updated ${updated.email} successfully.`);
+      closeEditModal();
+    } catch (err) {
+      console.error('Midwife update failed:', err);
+      setEditError(err instanceof Error ? err.message : 'Failed to update account.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteMidwife = async () => {
+    if (!deletingMidwife || isDeleting) return;
+
+    if (deletingMidwife.id === user?.id) {
+      setDeleteError('You cannot delete your own account.');
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const response = await apiClient.delete<{ success: boolean; data: { id: string; email: string } }>(
+        `/auth/midwives/${deletingMidwife.id}`
+      );
+
+      setMidwives((prev) => prev.filter((item) => item.id !== response.data.id));
+      setActionSuccess(`Deleted ${response.data.email} successfully.`);
+      closeDeleteModal();
+    } catch (err) {
+      console.error('Midwife delete failed:', err);
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete account.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -463,13 +639,18 @@ export default function AdminUsersPage() {
                 </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
-                  <input
-                    type="text"
+                  <select
                     value={form.region}
                     onChange={handleChange('region')}
-                    placeholder="Central Province"
                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
+                  >
+                    <option value="">Select district</option>
+                    {sriLankaDistricts.map((district) => (
+                      <option key={district} value={district}>
+                        {district}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -541,6 +722,13 @@ export default function AdminUsersPage() {
             </Alert>
           </div>
         )}
+        {actionSuccess && (
+          <div className="mb-4">
+            <Alert variant="success" title="Roster updated" icon={BadgeCheck}>
+              {actionSuccess}
+            </Alert>
+          </div>
+        )}
         {isLoadingList ? (
           <div className="flex flex-col items-center justify-center py-12">
             <LoadingSpinner size="md" />
@@ -563,51 +751,269 @@ export default function AdminUsersPage() {
                   <th className="py-3 px-2 font-medium text-slate-500">Region</th>
                   <th className="py-3 px-2 font-medium text-slate-500">Created</th>
                   <th className="py-3 px-2 font-medium text-slate-500">Last login</th>
+                  <th className="py-3 px-2 font-medium text-slate-500">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {midwives.map((account) => (
-                  <tr
-                    key={account.id}
-                    className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                  >
-                    <td className="py-3 px-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-linear-to-br from-pink-400 to-purple-500 text-white flex items-center justify-center text-xs font-semibold">
-                          {account.name
-                            ? account.name.split(' ').map((part) => part[0]).join('').slice(0, 2)
-                            : account.email.slice(0, 2).toUpperCase()}
+                {midwives.map((account) => {
+                  const isSelf = account.id === user?.id;
+
+                  return (
+                    <tr
+                      key={account.id}
+                      className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                    >
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-linear-to-br from-pink-400 to-purple-500 text-white flex items-center justify-center text-xs font-semibold">
+                            {account.name
+                              ? account.name.split(' ').map((part) => part[0]).join('').slice(0, 2)
+                              : account.email.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-900 dark:text-white">
+                              {account.name || 'Unnamed'}
+                            </p>
+                            <p className="text-xs text-slate-500">{account.email}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-slate-900 dark:text-white">
-                            {account.name || 'Unnamed'}
-                          </p>
-                          <p className="text-xs text-slate-500">{account.email}</p>
+                      </td>
+                      <td className="py-3 px-2">
+                        <Badge variant={roleBadgeVariant(account.role)}>{roleLabels[account.role]}</Badge>
+                      </td>
+                      <td className="py-3 px-2 text-slate-600 dark:text-slate-300">
+                        {account.facilityName || 'Unassigned'}
+                      </td>
+                      <td className="py-3 px-2 text-slate-600 dark:text-slate-300">
+                        {account.region || 'Unassigned'}
+                      </td>
+                      <td className="py-3 px-2 text-slate-600 dark:text-slate-300">
+                        {formatDateTime(account.createdAt)}
+                      </td>
+                      <td className="py-3 px-2 text-slate-600 dark:text-slate-300">
+                        {formatDateTime(account.lastLoginAt)}
+                      </td>
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm" icon={Pencil} onClick={() => openEditModal(account)}>
+                            Edit
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            icon={Trash2}
+                            onClick={() => openDeleteModal(account)}
+                            disabled={isSelf}
+                            title={isSelf ? 'You cannot delete your own account' : 'Delete account'}
+                          >
+                            Delete
+                          </Button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-2">
-                      <Badge variant={roleBadgeVariant(account.role)}>{roleLabels[account.role]}</Badge>
-                    </td>
-                    <td className="py-3 px-2 text-slate-600 dark:text-slate-300">
-                      {account.facilityName || 'Unassigned'}
-                    </td>
-                    <td className="py-3 px-2 text-slate-600 dark:text-slate-300">
-                      {account.region || 'Unassigned'}
-                    </td>
-                    <td className="py-3 px-2 text-slate-600 dark:text-slate-300">
-                      {formatDateTime(account.createdAt)}
-                    </td>
-                    <td className="py-3 px-2 text-slate-600 dark:text-slate-300">
-                      {formatDateTime(account.lastLoginAt)}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </Card>
+
+      <Modal isOpen={isEditOpen} onClose={closeEditModal} title="Edit midwife" size="lg">
+        {editError && (
+          <div className="mb-4">
+            <Alert variant="error" title="Update failed" icon={Lock}>
+              {editError}
+            </Alert>
+          </div>
+        )}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              Email address
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
+              <input
+                type="email"
+                value={editForm.email}
+                onChange={handleEditChange('email')}
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              Role
+            </label>
+            <select
+              value={editForm.role}
+              onChange={handleEditChange('role')}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+            >
+              {roles.map((role) => (
+                <option key={role} value={role}>
+                  {roleLabels[role]}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              Display name
+            </label>
+            <input
+              type="text"
+              value={editForm.name}
+              onChange={handleEditChange('name')}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              Given name
+            </label>
+            <input
+              type="text"
+              value={editForm.givenName}
+              onChange={handleEditChange('givenName')}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              Family name
+            </label>
+            <input
+              type="text"
+              value={editForm.familyName}
+              onChange={handleEditChange('familyName')}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              Phone
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
+              <input
+                type="tel"
+                value={editForm.phone}
+                onChange={handleEditChange('phone')}
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              License number
+            </label>
+            <div className="relative">
+              <IdCard className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={editForm.licenseNumber}
+                onChange={handleEditChange('licenseNumber')}
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              Facility
+            </label>
+            <div className="relative">
+              <Building2 className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={editForm.facilityName}
+                onChange={handleEditChange('facilityName')}
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              Region
+            </label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
+              <select
+                value={editForm.region}
+                onChange={handleEditChange('region')}
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+              >
+                <option value="">Select district</option>
+                {sriLankaDistricts.map((district) => (
+                  <option key={district} value={district}>
+                    {district}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-2 pt-6">
+          <Button type="button" variant="secondary" onClick={closeEditModal} disabled={isUpdating}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            icon={Save}
+            onClick={handleUpdateMidwife}
+            isLoading={isUpdating}
+            disabled={!isEditFormValid}
+          >
+            Save changes
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isDeleteOpen} onClose={closeDeleteModal} title="Delete midwife" size="sm">
+        {deleteError && (
+          <div className="mb-4">
+            <Alert variant="error" title="Delete failed" icon={Lock}>
+              {deleteError}
+            </Alert>
+          </div>
+        )}
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            This will permanently remove the midwife account and revoke access. Any assigned patients will be unassigned.
+          </p>
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Account</p>
+            <p className="text-sm text-slate-500 mt-1">
+              {deletingMidwife?.name || 'Unnamed'} · {deletingMidwife?.email}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-2 pt-6">
+          <Button type="button" variant="secondary" onClick={closeDeleteModal} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            icon={Trash2}
+            onClick={handleDeleteMidwife}
+            isLoading={isDeleting}
+            disabled={deletingMidwife?.id === user?.id}
+          >
+            Delete
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

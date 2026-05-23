@@ -362,6 +362,213 @@ export interface DashboardResponse {
   overdueVaccinations: DashboardOverdueVaccination[];
 }
 
+// ============================================================================
+// ADMIN ANALYTICS TYPES
+// ============================================================================
+
+export interface AnalyticsRange {
+  label: string;
+  start: string;
+  end: string;
+  days: number;
+}
+
+export interface AnalyticsSummary {
+  totalUsers: number;
+  totalMidwives: number;
+  totalChildren: number;
+  totalPregnancies: number;
+  activePregnancies: number;
+  highRiskPregnancies: number;
+  overdueVaccinations: number;
+  appointmentsInRange: number;
+  vaccinationsInRange: number;
+}
+
+export interface AnalyticsTrend {
+  current: number;
+  previous: number;
+  changePercent: number | null;
+  direction: 'up' | 'down' | 'flat';
+}
+
+export interface AnalyticsSeries {
+  labels: string[];
+  newUsers: number[];
+  newChildren: number[];
+  newPregnancies: number[];
+  appointments: number[];
+  vaccinations: number[];
+}
+
+export interface AnalyticsRegionStat {
+  region: string;
+  midwives: number;
+  children: number;
+  pregnancies: number;
+}
+
+export interface AnalyticsVaccinationStatus {
+  status: string;
+  count: number;
+}
+
+export interface AnalyticsRecentActivity {
+  id: string;
+  type: string;
+  title: string;
+  description?: string | null;
+  date: string;
+  childId: string;
+  childName: string;
+}
+
+export interface AdminAnalyticsResponse {
+  range: AnalyticsRange;
+  summary: AnalyticsSummary;
+  trends: {
+    newUsers: AnalyticsTrend;
+    newMidwives: AnalyticsTrend;
+    newChildren: AnalyticsTrend;
+    newPregnancies: AnalyticsTrend;
+    appointments: AnalyticsTrend;
+    vaccinations: AnalyticsTrend;
+  };
+  series: AnalyticsSeries;
+  regionStats: AnalyticsRegionStat[];
+  vaccinationStatus: AnalyticsVaccinationStatus[];
+  recentActivities: AnalyticsRecentActivity[];
+}
+
+// ============================================================================
+// ADMIN DISTRICTS TYPES
+// ============================================================================
+
+export interface AdminDistrictSummary {
+  name: string;
+  midwives: number;
+  children: number;
+  pregnancies: number;
+}
+
+export interface AdminDistrictMidwife {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  licenseNumber: string | null;
+  facilityName: string | null;
+  region: string | null;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface AdminDistrictsResponse {
+  districts: AdminDistrictSummary[];
+  midwives: AdminDistrictMidwife[];
+}
+
+// ============================================================================
+// ADMIN LOGS TYPES
+// ============================================================================
+
+export type AdminLogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+export type AdminLogActorType = 'system' | 'user' | 'midwife';
+
+export interface AdminLogActor {
+  type: AdminLogActorType;
+  id?: string | null;
+  name?: string | null;
+  email?: string | null;
+}
+
+export interface AdminLogEntry {
+  id: string;
+  level: AdminLogLevel;
+  source: string;
+  event?: string | null;
+  message: string;
+  metadata?: Record<string, unknown> | null;
+  actor: AdminLogActor;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+}
+
+export interface AdminLogLevelSummary {
+  level: AdminLogLevel;
+  count: number;
+}
+
+export interface AdminLogActorSummary {
+  actorType: AdminLogActorType;
+  count: number;
+}
+
+export interface AdminLogsResponse {
+  range: {
+    label: string;
+    start: string;
+    end: string;
+    days: number;
+  };
+  items: AdminLogEntry[];
+  page: number;
+  pageSize: number;
+  total: number;
+  levelSummary: AdminLogLevelSummary[];
+  actorSummary: AdminLogActorSummary[];
+}
+
+// ============================================================================
+// ADMIN ALERTS TYPES
+// ============================================================================
+
+export type AdminLinkNotificationType = 'mismatch' | 'unregistered';
+
+export type AdminLinkProfileType = 'any' | 'child' | 'pregnancy';
+
+export interface AdminLinkNotification {
+  id: string;
+  type: AdminLinkNotificationType;
+  expectedProfileType: AdminLinkProfileType;
+  scannedProfileType: AdminLinkProfileType;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+  midwife: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  } | null;
+}
+
+export interface AdminAlertsResponse {
+  range: {
+    label: string;
+    start: string;
+    end: string;
+    days: number;
+  };
+  system: {
+    total: number;
+    summary: {
+      warningCount: number;
+      errorCount: number;
+    };
+    items: AdminLogEntry[];
+  };
+  link: {
+    total: number;
+    summary: {
+      mismatchCount: number;
+      unregisteredCount: number;
+    };
+    items: AdminLinkNotification[];
+  };
+}
+
 export interface Alert {
   id: string;
   type: 'high_risk' | 'overdue_vaccination' | 'missed_appointment' | 'follow_up_required';

@@ -489,7 +489,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, className, ...props }, ref) => {
     return (
-      <div className="w-full">
+      <div className={clsx('w-full', className)}>
         {label && (
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
             {label}
@@ -500,8 +500,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             className={clsx(
               'w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 pl-4 pr-10 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500/40 focus:border-pink-500 focus:bg-white dark:focus:bg-slate-700 shadow-sm hover:border-slate-300 dark:hover:border-slate-500 transition-all cursor-pointer',
-              error && 'border-red-500 focus:ring-red-500/40 focus:border-red-500',
-              className
+              error && 'border-red-500 focus:ring-red-500/40 focus:border-red-500'
             )}
             {...props}
           >

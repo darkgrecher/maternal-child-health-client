@@ -747,46 +747,46 @@ export default function ChildrenPage() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsQrModalOpen(false)}
           />
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl animate-slide-up overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-900/30">
-                  <QrCode className="w-5 h-5 text-pink-500" />
-                </div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Scan to Add Child Profile</h2>
-              </div>
-              <button
-                onClick={() => setIsQrModalOpen(false)}
-                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-400 hover:text-slate-600"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-5">
-              <div className="flex flex-col items-center gap-4">
+          <div className="relative animate-slide-up shadow-2xl rounded-[3rem] overflow-hidden bg-white">
+            <button
+              onClick={() => setIsQrModalOpen(false)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-900/10 hover:bg-slate-900/20 text-slate-700 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <div className="relative w-[400px] h-[400px] sm:w-[500px] sm:h-[500px]">
+              <video 
+                src="/baby-qr.mp4" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+
+              <div className="absolute inset-0 flex flex-col items-center justify-end pb-[8%] sm:pb-[10%]">
                 {isQrLoading && (
-                  <div className="w-full rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-10 text-center text-sm text-slate-500">
-                    Generating QR code...
+                  <div className="w-[160px] h-[160px] sm:w-[200px] sm:h-[200px] rounded-xl border border-dashed border-slate-300 flex items-center justify-center text-sm text-slate-500 bg-white/50 backdrop-blur-sm shadow-sm" style={{ transform: 'translateY(10%)' }}>
+                    Generating...
                   </div>
                 )}
                 {qrError && (
-                  <Alert variant="warning" title="Unable to generate QR code" className="w-full">
+                  <div className="w-[160px] px-2 text-center text-xs text-red-500 bg-white/80 p-2 rounded-xl" style={{ transform: 'translateY(10%)' }}>
                     {qrError}
-                  </Alert>
+                  </div>
                 )}
                 {qrImageUrl && !isQrLoading && (
                   <img
                     src={qrImageUrl}
-                    alt="Midwife QR code"
-                    className="w-full max-w-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white"
+                    alt="Child QR code"
+                    className="w-[160px] h-[160px] sm:w-[200px] sm:h-[200px] rounded-xl bg-white p-2 shadow-sm"
+                    style={{ transform: 'translateY(10%)' }}
                   />
                 )}
               </div>
-              <p className="text-center text-sm text-slate-500 mt-4">
-                Scan the QR code with your mobile device to quickly add a new child profile
-              </p>
             </div>
           </div>
         </div>
