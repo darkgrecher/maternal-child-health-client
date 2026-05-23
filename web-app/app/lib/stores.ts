@@ -19,6 +19,52 @@ import type {
   ApiResponse,
 } from './types';
 
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+
+const urlBase64ToUint8Array = (base64String: string) => {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const output = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i += 1) {
+    output[i] = rawData.charCodeAt(i);
+  }
+  return output;
+};
+
+const registerWebPushSubscription = async () => {
+  if (typeof window === 'undefined') return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if (!('Notification' in window)) return;
+  if (!VAPID_PUBLIC_KEY) return;
+
+  const permission = await window.Notification.requestPermission();
+  if (permission !== 'granted') return;
+
+  const registration = await navigator.serviceWorker.register('/service-worker.js');
+  const existing = await registration.pushManager.getSubscription();
+  const subscription =
+    existing ??
+    (await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    }));
+
+  const json = subscription.toJSON();
+  const p256dh = json.keys?.p256dh;
+  const auth = json.keys?.auth;
+
+  if (!p256dh || !auth) return;
+
+  await apiClient.post('/notifications/subscriptions', {
+    endpoint: subscription.endpoint,
+    p256dh,
+    auth,
+    userAgent: navigator.userAgent,
+    isActive: true,
+  });
+};
+
 // ============================================================================
 // AUTH STORE
 // ============================================================================
@@ -94,6 +140,9 @@ export const useAuthStore = create<AuthStore>()(
             refreshToken,
             isAuthenticated: true,
             isLoading: false,
+          });
+          registerWebPushSubscription().catch((error) => {
+            console.warn('Web push registration failed:', error);
           });
         } catch (error) {
           set({ isLoading: false });

@@ -8,7 +8,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Appointment, AppointmentStatus, AppointmentType } from '../types';
+import { Appointment, AppointmentType } from '../types';
 import appointmentService, {
   CreateAppointmentDto,
   UpdateAppointmentDto,
@@ -55,6 +55,25 @@ interface AppointmentState {
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const splitAppointments = (appointments: Appointment[]) => {
+  const now = new Date();
+  const upcoming = appointments
+    .filter((apt) => new Date(apt.dateTime) >= now && apt.status === 'scheduled')
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+  const past = appointments
+    .filter((apt) => new Date(apt.dateTime) < now || apt.status !== 'scheduled')
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+  return { upcoming, past };
+};
+
+const buildSummary = (appointments: Appointment[], upcoming: Appointment[]) => ({
+  totalAppointments: appointments.length,
+  upcomingCount: upcoming.length,
+  completedCount: appointments.filter((a) => a.status === 'completed').length,
+  cancelledCount: appointments.filter((a) => a.status === 'cancelled').length,
+  nextAppointment: upcoming[0] || null,
+});
 
 export const useAppointmentStore = create<AppointmentState>()(
   persist(
@@ -129,17 +148,18 @@ export const useAppointmentStore = create<AppointmentState>()(
         set({ isLoading: true, error: null });
         try {
           const newAppointment = await appointmentService.createAppointment(childId, data);
-          
-          // Add to local state
-          set((state) => ({
-            appointments: [...state.appointments, newAppointment],
-            upcomingAppointments: newAppointment.status === 'scheduled' && new Date(newAppointment.dateTime) >= new Date()
-              ? [...state.upcomingAppointments, newAppointment].sort(
-                  (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
-                )
-              : state.upcomingAppointments,
-            isLoading: false,
-          }));
+
+          set((state) => {
+            const appointments = [...state.appointments, newAppointment];
+            const { upcoming, past } = splitAppointments(appointments);
+            return {
+              appointments,
+              upcomingAppointments: upcoming,
+              pastAppointments: past,
+              summary: buildSummary(appointments, upcoming),
+              isLoading: false,
+            };
+          });
           
           return newAppointment;
         } catch (error: any) {
@@ -156,20 +176,20 @@ export const useAppointmentStore = create<AppointmentState>()(
         set({ isLoading: true, error: null });
         try {
           const updatedAppointment = await appointmentService.updateAppointment(appointmentId, data);
-          
-          // Update in local state
-          set((state) => ({
-            appointments: state.appointments.map((a) =>
+
+          set((state) => {
+            const appointments = state.appointments.map((a) =>
               a.id === appointmentId ? updatedAppointment : a
-            ),
-            upcomingAppointments: state.upcomingAppointments.map((a) =>
-              a.id === appointmentId ? updatedAppointment : a
-            ).filter((a) => a.status === 'scheduled' && new Date(a.dateTime) >= new Date()),
-            pastAppointments: state.pastAppointments.map((a) =>
-              a.id === appointmentId ? updatedAppointment : a
-            ),
-            isLoading: false,
-          }));
+            );
+            const { upcoming, past } = splitAppointments(appointments);
+            return {
+              appointments,
+              upcomingAppointments: upcoming,
+              pastAppointments: past,
+              summary: buildSummary(appointments, upcoming),
+              isLoading: false,
+            };
+          });
           
           return updatedAppointment;
         } catch (error: any) {
@@ -186,18 +206,20 @@ export const useAppointmentStore = create<AppointmentState>()(
         set({ isLoading: true, error: null });
         try {
           const cancelledAppointment = await appointmentService.cancelAppointment(appointmentId);
-          
-          // Update in local state
-          set((state) => ({
-            appointments: state.appointments.map((a) =>
+
+          set((state) => {
+            const appointments = state.appointments.map((a) =>
               a.id === appointmentId ? cancelledAppointment : a
-            ),
-            upcomingAppointments: state.upcomingAppointments.filter((a) => a.id !== appointmentId),
-            pastAppointments: [...state.pastAppointments, cancelledAppointment].sort(
-              (a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
-            ),
-            isLoading: false,
-          }));
+            );
+            const { upcoming, past } = splitAppointments(appointments);
+            return {
+              appointments,
+              upcomingAppointments: upcoming,
+              pastAppointments: past,
+              summary: buildSummary(appointments, upcoming),
+              isLoading: false,
+            };
+          });
           
           return true;
         } catch (error: any) {
@@ -214,18 +236,20 @@ export const useAppointmentStore = create<AppointmentState>()(
         set({ isLoading: true, error: null });
         try {
           const completedAppointment = await appointmentService.completeAppointment(appointmentId);
-          
-          // Update in local state
-          set((state) => ({
-            appointments: state.appointments.map((a) =>
+
+          set((state) => {
+            const appointments = state.appointments.map((a) =>
               a.id === appointmentId ? completedAppointment : a
-            ),
-            upcomingAppointments: state.upcomingAppointments.filter((a) => a.id !== appointmentId),
-            pastAppointments: [...state.pastAppointments, completedAppointment].sort(
-              (a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
-            ),
-            isLoading: false,
-          }));
+            );
+            const { upcoming, past } = splitAppointments(appointments);
+            return {
+              appointments,
+              upcomingAppointments: upcoming,
+              pastAppointments: past,
+              summary: buildSummary(appointments, upcoming),
+              isLoading: false,
+            };
+          });
           
           return true;
         } catch (error: any) {
@@ -242,14 +266,18 @@ export const useAppointmentStore = create<AppointmentState>()(
         set({ isLoading: true, error: null });
         try {
           await appointmentService.deleteAppointment(appointmentId);
-          
-          // Remove from local state
-          set((state) => ({
-            appointments: state.appointments.filter((a) => a.id !== appointmentId),
-            upcomingAppointments: state.upcomingAppointments.filter((a) => a.id !== appointmentId),
-            pastAppointments: state.pastAppointments.filter((a) => a.id !== appointmentId),
-            isLoading: false,
-          }));
+
+          set((state) => {
+            const appointments = state.appointments.filter((a) => a.id !== appointmentId);
+            const { upcoming, past } = splitAppointments(appointments);
+            return {
+              appointments,
+              upcomingAppointments: upcoming,
+              pastAppointments: past,
+              summary: buildSummary(appointments, upcoming),
+              isLoading: false,
+            };
+          });
           
           return true;
         } catch (error: any) {

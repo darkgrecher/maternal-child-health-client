@@ -162,9 +162,7 @@ const PregnancyCheckupsScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerIconButton}
-              onPress={() => {
-                // TODO: Navigate to notifications
-              }}
+              onPress={() => navigation.navigate('Notifications')}
             >
               <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
             </TouchableOpacity>

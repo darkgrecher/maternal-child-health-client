@@ -48,6 +48,7 @@ const adminNavItems: NavItem[] = [
   { name: 'Districts', href: '/admin/districts', icon: Building2 },
   { name: 'System Logs', href: '/admin/logs', icon: FileText },
   { name: 'Reports', href: '/admin/reports', icon: Activity },
+  { name: 'Notification Health', href: '/admin/notifications', icon: Bell },
   { name: 'Alerts', href: '/admin/alerts', icon: AlertTriangle },
 ];
 

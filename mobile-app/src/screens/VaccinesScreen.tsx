@@ -82,7 +82,7 @@ interface VaccineItemProps {
 const VaccineItem: React.FC<VaccineItemProps> = ({ record, t, onAdminister }) => {
   const { colors } = useThemeStore();
   const { vaccine, status, scheduledDate, administeredDate } = record;
-  const canAdminister = status !== 'completed';
+  const canAdminister = true;
   
   return (
     <TouchableOpacity 
@@ -138,37 +138,29 @@ interface AdministerModalProps {
   visible: boolean;
   record: VaccinationRecord | null;
   onClose: () => void;
-  onConfirm: (data: { administeredBy?: string; location?: string; batchNumber?: string; notes?: string }) => void;
+  onConfirm: () => void;
+  onUnmark?: () => void;
   isLoading: boolean;
   t: any;
 }
 
 const AdministerModal: React.FC<AdministerModalProps> = ({ 
-  visible, record, onClose, onConfirm, isLoading, t 
+  visible, record, onClose, onConfirm, onUnmark, isLoading, t 
 }) => {
   const { colors } = useThemeStore();
-  const [administeredBy, setAdministeredBy] = useState('');
-  const [location, setLocation] = useState('');
-  const [batchNumber, setBatchNumber] = useState('');
-  const [notes, setNotes] = useState('');
-
-  const handleConfirm = () => {
-    onConfirm({ administeredBy, location, batchNumber, notes });
-    // Reset form
-    setAdministeredBy('');
-    setLocation('');
-    setBatchNumber('');
-    setNotes('');
-  };
 
   if (!record) return null;
+
+  const isCompleted = record.status === 'completed';
 
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: colors.white }]}>
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('vaccines.recordVaccination', 'Record Vaccination')}</Text>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+              {isCompleted ? t('vaccines.unmarkVaccination', 'Unmark Vaccination') : t('vaccines.recordVaccination', 'Record Vaccination')}
+            </Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
@@ -178,62 +170,28 @@ const AdministerModal: React.FC<AdministerModalProps> = ({
           <Text style={[styles.modalVaccineInfo, { color: colors.textSecondary }]}>
             {record.vaccine.shortName} - {record.vaccine.ageGroup}
           </Text>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>{t('vaccines.administeredBy', 'Administered By')}</Text>
-            <TextInput
-              style={styles.input}
-              value={administeredBy}
-              onChangeText={setAdministeredBy}
-              placeholder={t('vaccines.enterName', 'Enter name')}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>{t('vaccines.location', 'Location')}</Text>
-            <TextInput
-              style={styles.input}
-              value={location}
-              onChangeText={setLocation}
-              placeholder={t('vaccines.enterLocation', 'Enter location')}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>{t('vaccines.batchNumber', 'Batch Number')}</Text>
-            <TextInput
-              style={styles.input}
-              value={batchNumber}
-              onChangeText={setBatchNumber}
-              placeholder={t('vaccines.enterBatchNumber', 'Enter batch number')}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>{t('vaccines.notes', 'Notes')}</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder={t('vaccines.enterNotes', 'Enter any notes')}
-              multiline
-              numberOfLines={3}
-            />
-          </View>
+          
+          {isCompleted && (
+            <Text style={[styles.modalVaccineInfo, { color: colors.textSecondary, marginTop: 8 }]}>
+              {t('vaccines.givenOn', 'Given on')}: {record.administeredDate ? format(new Date(record.administeredDate), 'yyyy-MM-dd') : 'N/A'}
+            </Text>
+          )}
 
           <View style={styles.modalButtons}>
             <TouchableOpacity style={[styles.cancelButton, { borderColor: colors.gray[300] }]} onPress={onClose}>
               <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>{t('common.cancel', 'Cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.confirmButton, { backgroundColor: colors.primary }, isLoading && styles.buttonDisabled]} 
-              onPress={handleConfirm}
+              style={[styles.confirmButton, { backgroundColor: isCompleted ? colors.error : colors.primary }, isLoading && styles.buttonDisabled]} 
+              onPress={isCompleted ? onUnmark : onConfirm}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text style={[styles.confirmButtonText, { color: colors.white }]}>{t('vaccines.markComplete', 'Mark Complete')}</Text>
+                <Text style={[styles.confirmButtonText, { color: colors.white }]}>
+                  {isCompleted ? t('vaccines.markIncomplete', 'Mark Incomplete') : t('vaccines.markComplete', 'Mark Complete')}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -261,6 +219,7 @@ const VaccinesScreen: React.FC = () => {
     error,
     fetchChildVaccinationRecords,
     administerVaccine,
+    unmarkVaccine,
     getVaccinesByAgeGroup, 
     getCompletionPercentage, 
     getCompletedCount, 
@@ -293,12 +252,11 @@ const VaccinesScreen: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleConfirmAdminister = async (data: { administeredBy?: string; location?: string; batchNumber?: string; notes?: string }) => {
+  const handleConfirmAdminister = async () => {
     if (!profile?.id || !selectedRecord) return;
     
     try {
       await administerVaccine(profile.id, selectedRecord.vaccineId, {
-        ...data,
         administeredDate: new Date().toISOString(),
       });
       setShowModal(false);
@@ -311,6 +269,25 @@ const VaccinesScreen: React.FC = () => {
       Alert.alert(
         t('common.error', 'Error'),
         t('vaccines.recordError', 'Failed to record vaccination. Please try again.')
+      );
+    }
+  };
+
+  const handleUnmarkVaccine = async () => {
+    if (!profile?.id || !selectedRecord) return;
+    
+    try {
+      await unmarkVaccine(profile.id, selectedRecord.vaccineId);
+      setShowModal(false);
+      setSelectedRecord(null);
+      Alert.alert(
+        t('vaccines.success', 'Success'),
+        t('vaccines.vaccinationUnmarked', 'Vaccination has been unmarked successfully.')
+      );
+    } catch (err) {
+      Alert.alert(
+        t('common.error', 'Error'),
+        t('vaccines.unmarkError', 'Failed to unmark vaccination. Please try again.')
       );
     }
   };
@@ -522,6 +499,7 @@ const VaccinesScreen: React.FC = () => {
           setSelectedRecord(null);
         }}
         onConfirm={handleConfirmAdminister}
+        onUnmark={handleUnmarkVaccine}
         isLoading={isLoading}
         t={t}
       />

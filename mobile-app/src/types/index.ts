@@ -492,6 +492,31 @@ export interface SyncQueueItem {
 }
 
 // ============================================================================
+// NOTIFICATION TYPES
+// ============================================================================
+
+export type NotificationType = 'appointment' | 'vaccination' | 'high_risk' | 'daily_digest' | 'system';
+
+export type NotificationChannel = 'in_app' | 'email' | 'sms' | 'push' | 'web_push';
+
+export interface NotificationListItem {
+  id: string;
+  recipientId: string;
+  type: NotificationType;
+  channel: NotificationChannel;
+  title: string;
+  message: string;
+  data: Record<string, unknown> | null;
+  scheduledAt: string | null;
+  sentAt: string | null;
+  createdAt: string;
+  isRead: boolean;
+  readAt: string | null;
+  deliveredAt: string | null;
+  deliveryError: string | null;
+}
+
+// ============================================================================
 // APP STATE TYPES
 // ============================================================================
 
@@ -526,6 +551,7 @@ export type RootStackParamList = {
   AppointmentDetails: { appointmentId: string };
   Settings: undefined;
   Activities: undefined;
+  Notifications: undefined;
   AddChild: undefined;
   CreatePregnancy: { previousPregnancyId?: string } | undefined;
   PregnancyDashboard: undefined;

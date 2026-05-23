@@ -68,6 +68,31 @@ export interface MidwifeSettingsResponse {
 }
 
 // ============================================================================
+// NOTIFICATION TYPES
+// ============================================================================
+
+export type NotificationType = 'appointment' | 'vaccination' | 'high_risk' | 'daily_digest' | 'system';
+
+export type NotificationChannel = 'in_app' | 'email' | 'sms' | 'push' | 'web_push';
+
+export interface NotificationListItem {
+  id: string;
+  recipientId: string;
+  type: NotificationType;
+  channel: NotificationChannel;
+  title: string;
+  message: string;
+  data: unknown | null;
+  scheduledAt: string | null;
+  sentAt: string | null;
+  createdAt: string;
+  isRead: boolean;
+  readAt: string | null;
+  deliveredAt: string | null;
+  deliveryError: string | null;
+}
+
+// ============================================================================
 // PREGNANCY TYPES
 // ============================================================================
 
@@ -567,6 +592,52 @@ export interface AdminAlertsResponse {
     };
     items: AdminLinkNotification[];
   };
+}
+
+export interface AdminNotificationDeliveryItem {
+  id: string;
+  notificationId: string;
+  actorType: 'user' | 'midwife';
+  actorId: string;
+  actor: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  } | null;
+  channel: NotificationChannel;
+  type: NotificationType;
+  title: string;
+  message: string;
+  createdAt: string;
+  deliveredAt: string | null;
+  deliveryError: string | null;
+}
+
+export interface AdminNotificationDeliverySummary {
+  byChannel: {
+    channel: NotificationChannel;
+    count: number;
+  }[];
+  byActorType: {
+    actorType: 'user' | 'midwife';
+    count: number;
+  }[];
+  byType: {
+    type: NotificationType;
+    count: number;
+  }[];
+}
+
+export interface AdminNotificationDeliveryHealthResponse {
+  range: {
+    label: string;
+    start: string;
+    end: string;
+    days: number;
+  };
+  totalFailed: number;
+  summary: AdminNotificationDeliverySummary;
+  items: AdminNotificationDeliveryItem[];
 }
 
 export interface Alert {
