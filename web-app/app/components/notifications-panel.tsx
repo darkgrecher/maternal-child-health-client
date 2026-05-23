@@ -69,43 +69,43 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, 
   if (!isOpen) return null;
 
   return (
-    <div className="absolute right-0 top-12 w-80 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl z-50">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+    <div className="absolute right-0 top-12 w-80 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card-bg)] shadow-xl z-50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[color:var(--border)]">
         <div className="flex items-center gap-2">
-          <Bell className="w-4 h-4 text-slate-500" />
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">Notifications</p>
+          <Bell className="w-4 h-4 text-[color:var(--text-muted)]" />
+          <p className="text-sm font-semibold text-[color:var(--text-primary)]">Notifications</p>
         </div>
         <button
           onClick={onClose}
-          className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="p-1 rounded-lg hover:bg-[color:var(--surface-elevated)]"
           aria-label="Close notifications"
         >
-          <X className="w-4 h-4 text-slate-500" />
+          <X className="w-4 h-4 text-[color:var(--text-muted)]" />
         </button>
       </div>
 
       <div className="max-h-80 overflow-y-auto">
         {isLoading && (
-          <div className="p-4 text-sm text-slate-500">Loading notifications...</div>
+          <div className="p-4 text-sm text-[color:var(--text-secondary)]">Loading notifications...</div>
         )}
         {error && (
           <div className="p-4 text-sm text-red-500">{error}</div>
         )}
         {!isLoading && !error && notifications.length === 0 && (
-          <div className="p-4 text-sm text-slate-500">No new notifications.</div>
+          <div className="p-4 text-sm text-[color:var(--text-secondary)]">No new notifications.</div>
         )}
         {notifications.map((notification) => (
           <div
             key={notification.id}
-            className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-none"
+            className="px-4 py-3 border-b border-[color:var(--border)] last:border-none"
           >
             <div className="flex items-start gap-2">
-              <div className="mt-1 rounded-full bg-amber-100 dark:bg-amber-900/30 p-1">
+              <div className="mt-1 rounded-full bg-[color:var(--accent-light)] p-1">
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
               </div>
               <div>
-                <p className="text-sm text-slate-700 dark:text-slate-200">{notification.message}</p>
-                <p className="text-xs text-slate-400 mt-1">{formatTimestamp(notification.createdAt)}</p>
+                <p className="text-sm text-[color:var(--text-primary)]">{notification.message}</p>
+                <p className="text-xs text-[color:var(--text-muted)] mt-1">{formatTimestamp(notification.createdAt)}</p>
               </div>
             </div>
           </div>

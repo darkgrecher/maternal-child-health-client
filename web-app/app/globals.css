@@ -6,26 +6,32 @@
    ============================================================================ */
 
 :root {
-  --background: #f8fafc;
-  --foreground: #1e293b;
-  --primary: #ec4899;
-  --primary-dark: #db2777;
-  --primary-light: #fbcfe8;
-  --secondary: #8b5cf6;
-  --secondary-dark: #7c3aed;
-  --success: #10b981;
-  --success-light: #d1fae5;
-  --warning: #f59e0b;
-  --warning-light: #fef3c7;
-  --error: #ef4444;
-  --error-light: #fee2e2;
-  --info: #3b82f6;
-  --info-light: #dbeafe;
+  --background: #f7f6f2;
+  --foreground: #1f2a2e;
+  --primary: #2f7a6d;
+  --primary-dark: #256457;
+  --primary-light: #d6eae5;
+  --secondary: #7fb4c8;
+  --secondary-dark: #6a9eb2;
+  --secondary-light: #dcecf3;
+  --accent: #f4b266;
+  --accent-dark: #de9a4f;
+  --accent-light: #fbe3c7;
+  --success: #2f9d78;
+  --success-light: #d6f2e7;
+  --warning: #e0a24f;
+  --warning-light: #fbe9cf;
+  --error: #d96c6c;
+  --error-light: #f7d6d6;
+  --info: #5fa3bf;
+  --info-light: #d7ecf4;
   --card-bg: #ffffff;
-  --border: #e2e8f0;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
+  --surface: #ffffff;
+  --surface-elevated: #fcfbf8;
+  --border: #e4e1da;
+  --text-primary: #1f2a2e;
+  --text-secondary: #556566;
+  --text-muted: #7b8a8b;
 }
 
 @theme inline {
@@ -35,6 +41,11 @@
   --color-primary-dark: var(--primary-dark);
   --color-primary-light: var(--primary-light);
   --color-secondary: var(--secondary);
+  --color-secondary-dark: var(--secondary-dark);
+  --color-secondary-light: var(--secondary-light);
+  --color-accent: var(--accent);
+  --color-accent-dark: var(--accent-dark);
+  --color-accent-light: var(--accent-light);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
@@ -45,13 +56,24 @@
 
 /* Dark theme - applied via .dark class */
 :root.dark {
-  --background: #0f172a;
-  --foreground: #f1f5f9;
-  --card-bg: #1e293b;
-  --border: #334155;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --background: #0f1413;
+  --foreground: #e7eceb;
+  --primary: #58b09a;
+  --primary-dark: #479683;
+  --primary-light: #1f3a35;
+  --secondary: #8cc6d9;
+  --secondary-dark: #6fafc5;
+  --secondary-light: #213841;
+  --accent: #f0b36a;
+  --accent-dark: #d49751;
+  --accent-light: #3a2c20;
+  --card-bg: #151c1a;
+  --surface: #151c1a;
+  --surface-elevated: #1c2422;
+  --border: #27312f;
+  --text-primary: #e7eceb;
+  --text-secondary: #b8c2bf;
+  --text-muted: #9ba6a5;
 }
 
 /* ============================================================================
@@ -66,6 +88,28 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.app-shell {
+  background: radial-gradient(
+      900px 600px at 8% -10%,
+      rgba(47, 122, 109, 0.14),
+      transparent 60%
+    ),
+    radial-gradient(
+      700px 500px at 90% 10%,
+      rgba(127, 180, 200, 0.18),
+      transparent 55%
+    ),
+    var(--background);
+}
+
+.surface {
+  background: var(--surface);
+}
+
+.surface-elevated {
+  background: var(--surface-elevated);
 }
 
 /* ============================================================================
@@ -179,7 +223,7 @@ body {
 
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(15, 20, 19, 0.12);
 }
 
 /* ============================================================================
@@ -202,21 +246,22 @@ body {
 .btn-primary {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
+  box-shadow: 0 14px 30px -18px rgba(47, 122, 109, 0.6);
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
+  opacity: 0.92;
   transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background: var(--card-bg);
+  background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-primary);
 }
 
 .btn-secondary:hover {
-  background: var(--background);
+  background: var(--surface-elevated);
   border-color: var(--primary);
 }
 
@@ -229,7 +274,7 @@ body {
   padding: 0.625rem 1rem;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--card-bg);
+  background: var(--surface);
   color: var(--text-primary);
   font-size: 0.875rem;
   transition: all 0.2s ease;
@@ -255,7 +300,9 @@ body {
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
 }
 
 .badge-success {
@@ -287,15 +334,15 @@ body {
 }
 
 .gradient-success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #2f9d78 0%, #1f7c5e 100%);
 }
 
 .gradient-warning {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, #e0a24f 0%, #c8873a 100%);
 }
 
 .gradient-error {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #d96c6c 0%, #bb5454 100%);
 }
 
 /* ============================================================================
@@ -320,7 +367,7 @@ body {
 }
 
 .sidebar-link:hover {
-  background: var(--background);
+  background: var(--surface-elevated);
   color: var(--text-primary);
 }
 
@@ -399,7 +446,7 @@ body {
 }
 
 .table tr:hover td {
-  background: var(--background);
+  background: var(--surface-elevated);
 }
 
 /* ============================================================================
@@ -442,7 +489,7 @@ body {
 }
 
 .calendar-day:hover {
-  background: var(--background);
+  background: var(--surface-elevated);
 }
 
 .calendar-day.today {

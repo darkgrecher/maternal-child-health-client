@@ -46,9 +46,9 @@ const adminNavItems: NavItem[] = [
   { name: 'User Management', href: '/admin/users', icon: Users },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
   { name: 'Districts', href: '/admin/districts', icon: Building2 },
-  { name: 'System Logs', href: '/admin/logs', icon: FileText, badge: 3 },
+  { name: 'System Logs', href: '/admin/logs', icon: FileText },
   { name: 'Reports', href: '/admin/reports', icon: Activity },
-  { name: 'Alerts', href: '/admin/alerts', icon: AlertTriangle, badge: 5 },
+  { name: 'Alerts', href: '/admin/alerts', icon: AlertTriangle },
 ];
 
 const bottomNavItems: NavItem[] = WEB_APP_BASE_URL
