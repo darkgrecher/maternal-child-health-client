@@ -440,6 +440,34 @@ export interface AdminAnalyticsResponse {
   recentActivities: AnalyticsRecentActivity[];
 }
 
+// ============================================================================
+// ADMIN DISTRICTS TYPES
+// ============================================================================
+
+export interface AdminDistrictSummary {
+  name: string;
+  midwives: number;
+  children: number;
+  pregnancies: number;
+}
+
+export interface AdminDistrictMidwife {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  licenseNumber: string | null;
+  facilityName: string | null;
+  region: string | null;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface AdminDistrictsResponse {
+  districts: AdminDistrictSummary[];
+  midwives: AdminDistrictMidwife[];
+}
+
 export interface Alert {
   id: string;
   type: 'high_risk' | 'overdue_vaccination' | 'missed_appointment' | 'follow_up_required';
