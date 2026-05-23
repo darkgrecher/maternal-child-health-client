@@ -36,12 +36,12 @@ export function AuthGuard({ children }: AuthGuardProps) {
   // Show loading spinner while local auth state hydrates
   if (!hasHydrated) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-slate-900">
-        <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-pink-500 to-purple-600 flex items-center justify-center mb-4 animate-pulse">
+      <div className="min-h-screen flex flex-col items-center justify-center app-shell">
+        <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center mb-4 animate-pulse">
           <Heart className="w-8 h-8 text-white" />
         </div>
-        <div className="w-8 h-8 border-3 border-pink-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-500 mt-4 text-sm">Loading...</p>
+        <div className="w-8 h-8 border-3 border-[color:var(--primary)] border-t-transparent rounded-full animate-spin" />
+        <p className="text-[color:var(--text-muted)] mt-4 text-sm">Loading...</p>
       </div>
     );
   }

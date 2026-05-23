@@ -36,7 +36,7 @@ export const Card: React.FC<CardProps> = ({ children, className, hover = false, 
   return (
     <div
       className={clsx(
-        'bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm',
+        'bg-[color:var(--card-bg)] rounded-xl border border-[color:var(--border)] p-6 shadow-sm text-[color:var(--text-primary)]',
         hover && 'card-hover cursor-pointer',
         className
       )}
@@ -68,8 +68,8 @@ export const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
   icon: Icon,
-  iconColor = 'text-pink-500',
-  iconBg = 'bg-pink-100',
+  iconColor = 'text-[color:var(--primary)]',
+  iconBg = 'bg-[color:var(--primary-light)]',
   trend,
   subtitle,
 }) => {
@@ -79,8 +79,8 @@ export const StatCard: React.FC<StatCardProps> = ({
         <Icon className={clsx('w-6 h-6', iconColor)} />
       </div>
       <div className="flex-1">
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{title}</p>
-        <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
+        <p className="text-sm text-[color:var(--text-secondary)] mb-1">{title}</p>
+        <p className="text-2xl font-bold text-[color:var(--text-primary)]">{value}</p>
         {trend && (
           <p
             className={clsx(
@@ -95,7 +95,7 @@ export const StatCard: React.FC<StatCardProps> = ({
           </p>
         )}
         {subtitle && (
-          <p className="text-xs text-slate-400 mt-1">{subtitle}</p>
+          <p className="text-xs text-[color:var(--text-muted)] mt-1">{subtitle}</p>
         )}
       </div>
     </Card>
@@ -129,9 +129,9 @@ export const Button: React.FC<ButtonProps> = ({
   
   const variants = {
     primary: 'btn-primary text-white',
-    secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600',
-    outline: 'border-2 border-pink-500 text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-500/10',
-    ghost: 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700',
+    secondary: 'btn-secondary',
+    outline: 'border-2 border-[color:var(--primary)] text-[color:var(--primary)] hover:bg-[color:var(--primary-light)]',
+    ghost: 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-elevated)]',
     danger: 'bg-red-500 text-white hover:bg-red-600',
   };
 
@@ -178,7 +178,7 @@ export const Badge: React.FC<BadgeProps> = ({
   className,
 }) => {
   const variants = {
-    default: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+    default: 'bg-[color:var(--surface-elevated)] text-[color:var(--text-secondary)]',
     success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     warning: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     error: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
@@ -219,7 +219,7 @@ interface ProgressBarProps {
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   value,
   max = 100,
-  color = 'bg-pink-500',
+  color = 'bg-[color:var(--primary)]',
   size = 'md',
   showLabel = false,
 }) => {
@@ -233,14 +233,14 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
   return (
     <div className="w-full">
-      <div className={clsx('w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden', sizes[size])}>
+      <div className={clsx('w-full bg-[color:var(--border)] rounded-full overflow-hidden', sizes[size])}>
         <div
           className={clsx('h-full rounded-full transition-all duration-500', color)}
           style={{ width: `${percentage}%` }}
         />
       </div>
       {showLabel && (
-        <p className="text-sm text-slate-500 mt-1">{Math.round(percentage)}%</p>
+        <p className="text-sm text-[color:var(--text-secondary)] mt-1">{Math.round(percentage)}%</p>
       )}
     </div>
   );
@@ -285,7 +285,7 @@ export const Avatar: React.FC<AvatarProps> = ({ src, name, size = 'md', classNam
   return (
     <div
       className={clsx(
-        'rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-semibold',
+        'rounded-full gradient-primary flex items-center justify-center text-white font-semibold',
         sizes[size],
         className
       )}
@@ -310,8 +310,8 @@ export const SectionTitle: React.FC<SectionTitleProps> = ({ title, subtitle, act
   return (
     <div className="flex items-center justify-between mb-4">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title || children}</h2>
-        {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
+        <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">{title || children}</h2>
+        {subtitle && <p className="text-sm text-[color:var(--text-secondary)]">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -337,11 +337,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
-        <Icon className="w-8 h-8 text-slate-400" />
+      <div className="p-4 rounded-full bg-[color:var(--surface-elevated)] mb-4">
+        <Icon className="w-8 h-8 text-[color:var(--text-muted)]" />
       </div>
-      <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">{title}</h3>
-      <p className="text-sm text-slate-500 max-w-sm mb-4">{description}</p>
+      <h3 className="text-lg font-medium text-[color:var(--text-primary)] mb-2">{title}</h3>
+      <p className="text-sm text-[color:var(--text-secondary)] max-w-sm mb-4">{description}</p>
       {action}
     </div>
   );
@@ -366,7 +366,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 'md', cla
   return (
     <div
       className={clsx(
-        'border-pink-500 border-t-transparent rounded-full animate-spin',
+        'border-[color:var(--primary)] border-t-transparent rounded-full animate-spin',
         sizes[size],
         className
       )}
@@ -449,18 +449,18 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+          <label className="block text-sm font-medium text-[color:var(--text-secondary)] mb-1.5">
             {label}
           </label>
         )}
         <div className="relative group">
           {Icon && (
-            <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 group-focus-within:text-pink-500 transition-colors" />
+            <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[color:var(--text-muted)] group-focus-within:text-[color:var(--primary)] transition-colors" />
           )}
           <input
             ref={ref}
             className={clsx(
-              'w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/40 focus:border-pink-500 focus:bg-white dark:focus:bg-slate-700 shadow-sm hover:border-slate-300 dark:hover:border-slate-500 transition-all',
+              'w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-elevated)] px-4 py-2.5 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)] focus:border-[color:var(--primary)] focus:bg-[color:var(--surface)] shadow-sm hover:border-[color:var(--primary-light)] transition-all',
               Icon && 'pl-11',
               error && 'border-red-500 focus:ring-red-500/40 focus:border-red-500',
               className
@@ -491,7 +491,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className={clsx('w-full', className)}>
         {label && (
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+          <label className="block text-sm font-medium text-[color:var(--text-secondary)] mb-1.5">
             {label}
           </label>
         )}
@@ -499,7 +499,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           <select
             ref={ref}
             className={clsx(
-              'w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 pl-4 pr-10 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500/40 focus:border-pink-500 focus:bg-white dark:focus:bg-slate-700 shadow-sm hover:border-slate-300 dark:hover:border-slate-500 transition-all cursor-pointer',
+              'w-full appearance-none rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-elevated)] pl-4 pr-10 py-2.5 text-sm text-[color:var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)] focus:border-[color:var(--primary)] focus:bg-[color:var(--surface)] shadow-sm hover:border-[color:var(--primary-light)] transition-all cursor-pointer',
               error && 'border-red-500 focus:ring-red-500/40 focus:border-red-500'
             )}
             {...props}
@@ -510,7 +510,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             ))}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[color:var(--text-muted)] pointer-events-none" />
         </div>
         {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
       </div>
@@ -557,15 +557,15 @@ export const Modal: React.FC<ModalProps> = ({
       />
       <div
         className={clsx(
-          'relative w-full max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl animate-slide-up flex flex-col',
+          'relative w-full max-h-[90vh] bg-[color:var(--card-bg)] rounded-2xl shadow-xl animate-slide-up flex flex-col',
           sizes[size]
         )}
       >
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
+        <div className="flex items-center justify-between p-6 border-b border-[color:var(--border)]">
+          <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">{title}</h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-[color:var(--surface-elevated)] transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -624,12 +624,12 @@ export function Table<T>({
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-slate-200 dark:border-slate-700">
+          <tr className="border-b border-[color:var(--border)]">
             {columns.map((column) => (
               <th
                 key={column.key}
                 className={clsx(
-                  'px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300',
+                  'px-4 py-3 text-left text-sm font-semibold text-[color:var(--text-secondary)]',
                   column.className
                 )}
               >
@@ -643,7 +643,7 @@ export function Table<T>({
             <tr
               key={keyExtractor(item)}
               className={clsx(
-                'border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors',
+                'border-b border-[color:var(--border)] hover:bg-[color:var(--surface-elevated)] transition-colors',
                 onRowClick && 'cursor-pointer'
               )}
               onClick={() => onRowClick?.(item)}
@@ -652,7 +652,7 @@ export function Table<T>({
                 <td
                   key={column.key}
                   className={clsx(
-                    'px-4 py-3 text-sm text-slate-700 dark:text-slate-300',
+                    'px-4 py-3 text-sm text-[color:var(--text-primary)]',
                     column.className
                   )}
                 >

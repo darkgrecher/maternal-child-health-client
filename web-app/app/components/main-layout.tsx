@@ -86,7 +86,7 @@ export const Sidebar: React.FC = () => {
     <>
       {/* Mobile Menu Button */}
       <button
-        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-white dark:bg-slate-800 shadow-lg lg:hidden"
+        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-[color:var(--card-bg)] border border-[color:var(--border)] shadow-lg lg:hidden"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
         {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -103,21 +103,21 @@ export const Sidebar: React.FC = () => {
       {/* Sidebar */}
       <aside
         className={clsx(
-          'fixed top-0 left-0 z-40 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 flex flex-col',
+          'fixed top-0 left-0 z-40 h-screen bg-[color:var(--card-bg)] border-r border-[color:var(--border)] transition-all duration-300 flex flex-col',
           isCollapsed ? 'w-20' : 'w-64',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-[color:var(--border)]">
           {!isCollapsed && (
             <Link href="/" className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
                 <Heart className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-slate-900 dark:text-white">MidwifeHub</h1>
-                <p className="text-xs text-slate-500">Care Management</p>
+                <h1 className="font-bold text-[color:var(--text-primary)]">MidwifeHub</h1>
+                <p className="text-xs text-[color:var(--text-muted)]">Care Management</p>
               </div>
             </Link>
           )}
@@ -128,12 +128,12 @@ export const Sidebar: React.FC = () => {
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="hidden lg:flex p-1.5 rounded-lg hover:bg-[color:var(--surface-elevated)] transition-colors"
           >
             {isCollapsed ? (
-              <ChevronRight className="w-5 h-5 text-slate-500" />
+              <ChevronRight className="w-5 h-5 text-[color:var(--text-muted)]" />
             ) : (
-              <ChevronLeft className="w-5 h-5 text-slate-500" />
+              <ChevronLeft className="w-5 h-5 text-[color:var(--text-muted)]" />
             )}
           </button>
         </div>
@@ -150,7 +150,7 @@ export const Sidebar: React.FC = () => {
                       href={item.href}
                       className={clsx(
                         'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-                        'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-elevated)]'
                       )}
                       onClick={() => setIsMobileOpen(false)}
                     >
@@ -159,14 +159,14 @@ export const Sidebar: React.FC = () => {
                         <>
                           <span className="flex-1 font-medium">{item.name}</span>
                           {item.badge && (
-                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[color:var(--primary)] text-white">
                               {item.badge}
                             </span>
                           )}
                         </>
                       )}
                       {isCollapsed && item.badge && (
-                        <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                        <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-[color:var(--primary)] text-white">
                           {item.badge}
                         </span>
                       )}
@@ -177,24 +177,24 @@ export const Sidebar: React.FC = () => {
                       className={clsx(
                         'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
                         isActive
-                          ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
-                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          ? 'bg-[color:var(--primary-light)] text-[color:var(--primary)]'
+                          : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-elevated)]'
                       )}
                       onClick={() => setIsMobileOpen(false)}
                     >
-                      <item.icon className={clsx('w-5 h-5 shrink-0', isActive && 'text-pink-500')} />
+                      <item.icon className={clsx('w-5 h-5 shrink-0', isActive && 'text-[color:var(--primary)]')} />
                       {!isCollapsed && (
                         <>
                           <span className="flex-1 font-medium">{item.name}</span>
                           {item.badge && (
-                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[color:var(--primary)] text-white">
                               {item.badge}
                             </span>
                           )}
                         </>
                       )}
                       {isCollapsed && item.badge && (
-                        <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-pink-500 text-white">
+                        <span className="absolute left-12 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-[color:var(--primary)] text-white">
                           {item.badge}
                         </span>
                       )}
@@ -205,7 +205,7 @@ export const Sidebar: React.FC = () => {
             })}
           </ul>
 
-          <div className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="mt-8 pt-4 border-t border-[color:var(--border)]">
             <ul className="space-y-1">
               {visibleBottomItems.map((item) => {
                 const isActive = !item.external && pathname === item.href;
@@ -216,7 +216,7 @@ export const Sidebar: React.FC = () => {
                         href={item.href}
                         className={clsx(
                           'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-                          'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-elevated)]'
                         )}
                         onClick={() => setIsMobileOpen(false)}
                       >
@@ -229,8 +229,8 @@ export const Sidebar: React.FC = () => {
                         className={clsx(
                           'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
                           isActive
-                            ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
-                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            ? 'bg-[color:var(--primary-light)] text-[color:var(--primary)]'
+                            : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-elevated)]'
                         )}
                         onClick={() => setIsMobileOpen(false)}
                       >
@@ -246,24 +246,24 @@ export const Sidebar: React.FC = () => {
         </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="p-4 border-t border-[color:var(--border)]">
           <div className={clsx('flex items-center gap-3', isCollapsed && 'justify-center')}>
             <Avatar name={displayName} size="md" />
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                <p className="text-sm font-semibold text-[color:var(--text-primary)] truncate">
                   {displayName}
                 </p>
-                <p className="text-xs text-slate-500 truncate capitalize">{displayRole}</p>
+                <p className="text-xs text-[color:var(--text-muted)] truncate capitalize">{displayRole}</p>
               </div>
             )}
             {!isCollapsed && (
               <button
                 onClick={handleLogout}
                 title="Sign out"
-                className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors"
+                className="p-2 rounded-lg hover:bg-red-50 hover:text-red-500 transition-colors"
               >
-                <LogOut className="w-4 h-4 text-slate-500 hover:text-red-500" />
+                <LogOut className="w-4 h-4 text-[color:var(--text-muted)] hover:text-red-500" />
               </button>
             )}
           </div>
@@ -289,17 +289,17 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
   return (
     <header className="flex items-center justify-between mb-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h1>
-        {subtitle && <p className="text-slate-500 mt-1">{subtitle}</p>}
+        <h1 className="text-2xl font-bold text-[color:var(--text-primary)]">{title}</h1>
+        {subtitle && <p className="text-[color:var(--text-secondary)] mt-1">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-4">
         {/* Search */}
-        <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus-within:ring-2 focus-within:ring-pink-500/40 focus-within:border-pink-500 focus-within:bg-white dark:focus-within:bg-slate-700 transition-all">
-          <Search className="w-4 h-4 text-slate-400" />
+        <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-[color:var(--surface-elevated)] border border-[color:var(--border)] rounded-xl focus-within:ring-2 focus-within:ring-[color:var(--primary)] focus-within:border-[color:var(--primary)] focus-within:bg-[color:var(--surface)] transition-all">
+          <Search className="w-4 h-4 text-[color:var(--text-muted)]" />
           <input
             type="text"
             placeholder="Search..."
-            className="bg-transparent border-none outline-none text-sm w-48 text-slate-900 dark:text-white placeholder:text-slate-400"
+            className="bg-transparent border-none outline-none text-sm w-48 text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)]"
           />
         </div>
 
@@ -307,11 +307,11 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
         <div className="relative">
           <button
             onClick={() => setIsNotificationsOpen((prev) => !prev)}
-            className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="relative p-2 rounded-xl hover:bg-[color:var(--surface-elevated)] transition-colors"
             aria-label="Open notifications"
           >
-            <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-pink-500 rounded-full" />
+            <Bell className="w-5 h-5 text-[color:var(--text-secondary)]" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-[color:var(--primary)] rounded-full" />
           </button>
           <NotificationsPanel
             isOpen={isNotificationsOpen}
@@ -335,7 +335,7 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen app-shell">
       <Sidebar />
       <main className="lg:ml-64 min-h-screen p-4 lg:p-8 pt-20 lg:pt-8">
         {children}
