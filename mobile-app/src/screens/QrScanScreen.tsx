@@ -30,7 +30,12 @@ const QR_PREFIX = 'mch-midwife:';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'QrScan'>;
 
-const extractCode = (payload: string) => {
+type ParsedQrPayload = {
+  code: string;
+  profileType: string | null;
+};
+
+const parseQrPayload = (payload: string): ParsedQrPayload => {
   const trimmed = payload.trim();
   const withPrefix = trimmed.startsWith(QR_PREFIX)
     ? trimmed.slice(QR_PREFIX.length)
@@ -39,7 +44,17 @@ const extractCode = (payload: string) => {
       : trimmed;
 
   const segments = withPrefix.split(':');
-  return segments.length > 1 ? segments.slice(1).join(':') : withPrefix;
+  if (segments.length > 1) {
+    return {
+      profileType: segments[0],
+      code: segments.slice(1).join(':'),
+    };
+  }
+
+  return {
+    profileType: null,
+    code: withPrefix,
+  };
 };
 
 const QrScanScreen: React.FC = () => {
@@ -82,7 +97,7 @@ const QrScanScreen: React.FC = () => {
     setScanError(null);
 
     try {
-      const code = extractCode(data);
+      const { code, profileType: scannedProfileType } = parseQrPayload(data);
       if (!code) {
         throw new Error(t('qr.invalidCode', 'Invalid QR code.'));
       }
@@ -95,8 +110,12 @@ const QrScanScreen: React.FC = () => {
 
       await Promise.all([fetchChildren(), fetchPregnancies()]);
 
+      const successTitle = scannedProfileType === 'any'
+        ? t('qr.scannedTitle', 'Scanned Successfully')
+        : t('qr.registeredTitle', 'Registered successfully');
+
       Alert.alert(
-        t('qr.registeredTitle', 'Registered successfully'),
+        successTitle,
         '',
         [{
           text: t('common.ok', 'OK'),
