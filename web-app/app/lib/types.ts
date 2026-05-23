@@ -468,6 +468,59 @@ export interface AdminDistrictsResponse {
   midwives: AdminDistrictMidwife[];
 }
 
+// ============================================================================
+// ADMIN LOGS TYPES
+// ============================================================================
+
+export type AdminLogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+export type AdminLogActorType = 'system' | 'user' | 'midwife';
+
+export interface AdminLogActor {
+  type: AdminLogActorType;
+  id?: string | null;
+  name?: string | null;
+  email?: string | null;
+}
+
+export interface AdminLogEntry {
+  id: string;
+  level: AdminLogLevel;
+  source: string;
+  event?: string | null;
+  message: string;
+  metadata?: Record<string, unknown> | null;
+  actor: AdminLogActor;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+}
+
+export interface AdminLogLevelSummary {
+  level: AdminLogLevel;
+  count: number;
+}
+
+export interface AdminLogActorSummary {
+  actorType: AdminLogActorType;
+  count: number;
+}
+
+export interface AdminLogsResponse {
+  range: {
+    label: string;
+    start: string;
+    end: string;
+    days: number;
+  };
+  items: AdminLogEntry[];
+  page: number;
+  pageSize: number;
+  total: number;
+  levelSummary: AdminLogLevelSummary[];
+  actorSummary: AdminLogActorSummary[];
+}
+
 export interface Alert {
   id: string;
   type: 'high_risk' | 'overdue_vaccination' | 'missed_appointment' | 'follow_up_required';
