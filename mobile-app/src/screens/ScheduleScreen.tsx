@@ -354,7 +354,7 @@ const ScheduleScreen: React.FC = () => {
         }}
         tertiaryRightIcon="notifications-outline"
         onTertiaryRightPress={() => {
-          // TODO: Navigate to notifications
+          navigation.navigate('Notifications');
         }}
         secondaryRightIcon="settings-outline"
         onSecondaryRightPress={() => {
