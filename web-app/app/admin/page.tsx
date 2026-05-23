@@ -460,7 +460,11 @@ export default function AdminDashboardPage() {
     return items.slice(0, 5).map((log) => {
       const actor = formatActorLabel(log.actor);
       const isAlert = log.level === 'error' || log.level === 'warn';
-      const type = isAlert ? 'alert' : log.actor.type === 'system' ? 'system' : 'user';
+      const type: ActivityItemProps['type'] = isAlert
+        ? 'alert'
+        : log.actor.type === 'system'
+          ? 'system'
+          : 'user';
       return {
         user: actor,
         action: log.message || log.event || log.source,
@@ -483,7 +487,7 @@ export default function AdminDashboardPage() {
       }));
   }, [districtsResponse]);
 
-  const recentUsers = useMemo(() => {
+  const recentUsers = useMemo<UserRowProps[]>(() => {
     return midwives.slice(0, 5).map((midwife) => {
       const displayName =
         midwife.name?.trim() ||
