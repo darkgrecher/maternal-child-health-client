@@ -362,6 +362,84 @@ export interface DashboardResponse {
   overdueVaccinations: DashboardOverdueVaccination[];
 }
 
+// ============================================================================
+// ADMIN ANALYTICS TYPES
+// ============================================================================
+
+export interface AnalyticsRange {
+  label: string;
+  start: string;
+  end: string;
+  days: number;
+}
+
+export interface AnalyticsSummary {
+  totalUsers: number;
+  totalMidwives: number;
+  totalChildren: number;
+  totalPregnancies: number;
+  activePregnancies: number;
+  highRiskPregnancies: number;
+  overdueVaccinations: number;
+  appointmentsInRange: number;
+  vaccinationsInRange: number;
+}
+
+export interface AnalyticsTrend {
+  current: number;
+  previous: number;
+  changePercent: number | null;
+  direction: 'up' | 'down' | 'flat';
+}
+
+export interface AnalyticsSeries {
+  labels: string[];
+  newUsers: number[];
+  newChildren: number[];
+  newPregnancies: number[];
+  appointments: number[];
+  vaccinations: number[];
+}
+
+export interface AnalyticsRegionStat {
+  region: string;
+  midwives: number;
+  children: number;
+  pregnancies: number;
+}
+
+export interface AnalyticsVaccinationStatus {
+  status: string;
+  count: number;
+}
+
+export interface AnalyticsRecentActivity {
+  id: string;
+  type: string;
+  title: string;
+  description?: string | null;
+  date: string;
+  childId: string;
+  childName: string;
+}
+
+export interface AdminAnalyticsResponse {
+  range: AnalyticsRange;
+  summary: AnalyticsSummary;
+  trends: {
+    newUsers: AnalyticsTrend;
+    newMidwives: AnalyticsTrend;
+    newChildren: AnalyticsTrend;
+    newPregnancies: AnalyticsTrend;
+    appointments: AnalyticsTrend;
+    vaccinations: AnalyticsTrend;
+  };
+  series: AnalyticsSeries;
+  regionStats: AnalyticsRegionStat[];
+  vaccinationStatus: AnalyticsVaccinationStatus[];
+  recentActivities: AnalyticsRecentActivity[];
+}
+
 export interface Alert {
   id: string;
   type: 'high_risk' | 'overdue_vaccination' | 'missed_appointment' | 'follow_up_required';
