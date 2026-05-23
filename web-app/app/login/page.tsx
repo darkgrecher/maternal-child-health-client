@@ -73,7 +73,7 @@ export default function LoginPage() {
           </div>
 
           <Image
-            src="/midwife.png"
+            src="/midwife-removebg-preview.png"
             alt="Midwife"
             width={280}
             height={420}
