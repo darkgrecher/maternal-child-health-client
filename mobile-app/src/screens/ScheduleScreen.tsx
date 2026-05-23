@@ -30,7 +30,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format, isFuture, isToday } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-import { Card, Header, SectionTitle, Badge, Button, TabButton, FloatingChatButton } from '../components/common';
+import { Card, Header, Badge, Button, TabButton, FloatingChatButton } from '../components/common';
 import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
 import { useAppointmentStore, useChildStore, useThemeStore } from '../stores';
 import { Appointment, AppointmentType, RootStackParamList, TabParamList } from '../types';
@@ -265,6 +265,7 @@ const ScheduleScreen: React.FC = () => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formState, setFormState] = useState({
+    childId: '',
     title: '',
     type: 'general_checkup' as AppointmentType,
     duration: '30',
@@ -276,7 +277,7 @@ const ScheduleScreen: React.FC = () => {
     notes: '',
   });
   
-  const { profile: selectedChild, children, fetchChildren } = useChildStore();
+  const { profile: selectedChild, children, fetchChildren, selectChild } = useChildStore();
   const { 
     upcomingAppointments, 
     pastAppointments, 
@@ -290,10 +291,7 @@ const ScheduleScreen: React.FC = () => {
 
   const clinicInfo = selectedChild?.assignedMidwife;
   const nextAppointment = upcomingAppointments[0];
-  const clinicName = clinicInfo?.clinic || nextAppointment?.location || '';
-  const clinicAddress = clinicInfo?.address || nextAppointment?.address || '';
   const clinicPhone = clinicInfo?.phone || nextAppointment?.providerPhone || '';
-  const hasClinicInfo = Boolean(clinicName || clinicAddress || clinicPhone);
 
   // Ensure child profiles are loaded
   useEffect(() => {
@@ -331,8 +329,24 @@ const ScheduleScreen: React.FC = () => {
     setRefreshing(false);
   };
 
+  useEffect(() => {
+    if (!isFormVisible || editingAppointment) return;
+    if (formState.childId) return;
+    const defaultChildId = resolveDefaultChildId();
+    if (defaultChildId) {
+      setFormState((prev) => ({ ...prev, childId: defaultChildId }));
+    }
+  }, [isFormVisible, editingAppointment, formState.childId, children.length, selectedChild?.id]);
+
+  const resolveDefaultChildId = () => {
+    const childState = useChildStore.getState();
+    return childState.profile?.id || childState.children[0]?.id || '';
+  };
+
   const setDefaultForm = () => {
+    const defaultChildId = resolveDefaultChildId();
     setFormState({
+      childId: defaultChildId,
       title: '',
       type: 'general_checkup',
       duration: '30',
@@ -352,9 +366,17 @@ const ScheduleScreen: React.FC = () => {
     setIsFormVisible(true);
   };
 
+  const handleOpenAppointment = async () => {
+    if (!selectedChild?.id && children.length === 0) {
+      await fetchChildren();
+    }
+    openNewAppointment();
+  };
+
   const openEditAppointment = (appointment: Appointment) => {
     setEditingAppointment(appointment);
     setFormState({
+      childId: appointment.childId,
       title: appointment.title,
       type: appointment.type,
       duration: appointment.duration ? String(appointment.duration) : '30',
@@ -375,15 +397,19 @@ const ScheduleScreen: React.FC = () => {
   };
 
   const handleSaveAppointment = async () => {
-    if (!selectedChild?.id) {
+    const appointmentChildId = editingAppointment?.childId || formState.childId;
+    if (!appointmentChildId) {
       Alert.alert(t('common.error'), t('navigation.profileRequiredMessage'));
       return;
     }
 
-    if (!formState.title.trim() || !formState.location.trim()) {
+    if (!formState.title.trim()) {
       Alert.alert(t('common.error'), t('schedule.formRequired', 'Please fill in the required fields.'));
       return;
     }
+
+    const resolvedLocation =
+      formState.location.trim() || clinicInfo?.clinic || clinicInfo?.address || 'Clinic';
 
     setIsSubmitting(true);
 
@@ -394,7 +420,7 @@ const ScheduleScreen: React.FC = () => {
       type: formState.type,
       dateTime: formDateTime.toISOString(),
       duration: durationValue !== undefined && Number.isNaN(durationValue) ? undefined : durationValue,
-      location: formState.location.trim(),
+      location: resolvedLocation,
       address: formState.address.trim() || undefined,
       providerName: formState.providerName.trim() || undefined,
       providerRole: formState.providerRole.trim() || undefined,
@@ -405,13 +431,17 @@ const ScheduleScreen: React.FC = () => {
     try {
       const result = editingAppointment
         ? await updateAppointmentApi(editingAppointment.id, payload)
-        : await createAppointment(selectedChild.id, payload);
+        : await createAppointment(appointmentChildId, payload);
 
       if (!result) {
         throw new Error('Unable to save appointment');
       }
 
-      await fetchAppointments(selectedChild.id);
+      if (!editingAppointment && appointmentChildId !== selectedChild?.id) {
+        selectChild(appointmentChildId);
+      }
+
+      await fetchAppointments(appointmentChildId);
       closeFormModal();
     } catch (saveError: any) {
       Alert.alert(
@@ -457,11 +487,7 @@ const ScheduleScreen: React.FC = () => {
   };
 
   const handleFindClinic = () => {
-    const query = clinicAddress || clinicName;
-    const url = query
-      ? `https://maps.google.com/?q=${encodeURIComponent(query)}`
-      : 'https://maps.google.com/?q=child+health+clinic+near+me';
-    Linking.openURL(url);
+    Linking.openURL('https://maps.google.com/?q=child+health+clinic+near+me');
   };
 
   const handleEmergency = () => {
@@ -480,7 +506,10 @@ const ScheduleScreen: React.FC = () => {
   };
 
   const displayedAppointments = activeTab === 'upcoming' ? upcomingAppointments : pastAppointments;
-  const canCallClinic = Boolean(clinicPhone);
+  const childOptions = children.length > 0 ? children : selectedChild ? [selectedChild] : [];
+  const hasChildren = childOptions.length > 0;
+  const selectedFormChild = childOptions.find((child) => child.id === formState.childId) || childOptions[0];
+  const childSelectionDisabled = Boolean(editingAppointment);
 
   return (
     <SwipeableTabNavigator>
@@ -534,7 +563,7 @@ const ScheduleScreen: React.FC = () => {
               icon="add-circle-outline"
               label={t('schedule.addAppointment')}
               onPress={() => {
-                openNewAppointment();
+                handleOpenAppointment();
               }}
               color={colors.primary}
             />
@@ -604,7 +633,7 @@ const ScheduleScreen: React.FC = () => {
                 variant="primary"
                 style={{ marginTop: SPACING.md }}
                 onPress={() => {
-                  openNewAppointment();
+                  handleOpenAppointment();
                 }}
               />
             )}
@@ -639,62 +668,6 @@ const ScheduleScreen: React.FC = () => {
           </Card>
         )}
 
-        {/* Clinic Information */}
-        <Card style={styles.clinicCard}>
-          <SectionTitle 
-            title={t('schedule.yourClinic')}
-            icon="business-outline"
-            iconColor={colors.info}
-          />
-          
-          <View style={styles.clinicInfo}>
-            {hasClinicInfo ? (
-              <>
-                {clinicName ? (
-                  <Text style={styles.clinicName}>{clinicName}</Text>
-                ) : null}
-                {clinicAddress ? (
-                  <View style={styles.clinicDetailRow}>
-                    <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
-                    <Text style={styles.clinicDetailText}>{clinicAddress}</Text>
-                  </View>
-                ) : null}
-                {clinicPhone ? (
-                  <View style={styles.clinicDetailRow}>
-                    <Ionicons name="call-outline" size={16} color={colors.textSecondary} />
-                    <Text style={styles.clinicDetailText}>{clinicPhone}</Text>
-                  </View>
-                ) : null}
-              </>
-            ) : (
-              <Text style={styles.clinicDetailText}>
-                {t('schedule.noClinicInfo', 'Clinic information will appear once assigned.')}
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.clinicActions}>
-            {canCallClinic && (
-              <TouchableOpacity 
-                style={[styles.clinicActionButton, { backgroundColor: colors.primary }]}
-                onPress={() => Linking.openURL(`tel:${clinicPhone}`)}
-              >
-                <Ionicons name="call" size={18} color={colors.white} />
-                <Text style={styles.clinicActionText}>{t('schedule.call')}</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity 
-              style={[styles.clinicActionButton, styles.clinicActionButtonSecondary, { borderColor: colors.primary }]}
-              onPress={handleFindClinic}
-            >
-              <Ionicons name="navigate" size={18} color={colors.primary} />
-              <Text style={[styles.clinicActionText, styles.clinicActionTextSecondary, { color: colors.primary }]}>
-                {t('schedule.directions')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
-
         {/* Bottom spacing */}
         <View style={{ height: SPACING.xl }} />
       </ScrollView>
@@ -717,24 +690,73 @@ const ScheduleScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView
-              style={styles.modalBody}
-              contentContainerStyle={styles.modalBodyContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
-                  {t('schedule.formTitle', 'Title')} *
-                </Text>
-                <TextInput
-                  style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
-                  value={formState.title}
-                  onChangeText={(text) => setFormState((prev) => ({ ...prev, title: text }))}
-                  placeholder={t('schedule.formTitlePlaceholder', 'Appointment title')}
-                  placeholderTextColor={colors.gray[400]}
-                />
-              </View>
+            {hasChildren ? (
+              <ScrollView
+                style={styles.modalBody}
+                contentContainerStyle={styles.modalBodyContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={styles.formGroup}>
+                  <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                    {t('schedule.formChild', 'Child')} *
+                  </Text>
+                  {childOptions.length === 1 && selectedFormChild ? (
+                    <View style={[styles.readonlyField, { borderColor: colors.gray[200] }]}> 
+                      <Text style={[styles.readonlyText, { color: colors.textPrimary }]}>
+                        {selectedFormChild.firstName} {selectedFormChild.lastName}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.typeGrid}>
+                      {childOptions.map((child) => {
+                        const isSelected = formState.childId === child.id;
+                        return (
+                          <TouchableOpacity
+                            key={child.id}
+                            style={[
+                              styles.typeChip,
+                              {
+                                borderColor: isSelected ? colors.primary : colors.gray[200],
+                                backgroundColor: isSelected ? colors.primaryLight : colors.white,
+                                opacity: childSelectionDisabled ? 0.6 : 1,
+                              },
+                            ]}
+                            onPress={() => {
+                              if (!childSelectionDisabled) {
+                                setFormState((prev) => ({ ...prev, childId: child.id }));
+                              }
+                            }}
+                            disabled={childSelectionDisabled}
+                          >
+                            <Text
+                              style={{
+                                color: isSelected ? colors.primary : colors.textSecondary,
+                                fontSize: FONT_SIZE.xs,
+                                fontWeight: FONT_WEIGHT.medium,
+                              }}
+                            >
+                              {child.firstName} {child.lastName}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                    {t('schedule.formTitle', 'Title')} *
+                  </Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
+                    value={formState.title}
+                    onChangeText={(text) => setFormState((prev) => ({ ...prev, title: text }))}
+                    placeholder={t('schedule.formTitlePlaceholder', 'Appointment title')}
+                    placeholderTextColor={colors.gray[400]}
+                  />
+                </View>
 
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
@@ -770,25 +792,30 @@ const ScheduleScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View style={styles.formRow}>
-                <TouchableOpacity
-                  style={[styles.dateButton, { borderColor: colors.gray[200] }]}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                  <Text style={[styles.dateText, { color: colors.textPrimary }]}>
-                    {format(formDateTime, 'MMMM d, yyyy')}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.dateButton, { borderColor: colors.gray[200] }]}
-                  onPress={() => setShowTimePicker(true)}
-                >
-                  <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
-                  <Text style={[styles.dateText, { color: colors.textPrimary }]}>
-                    {format(formDateTime, 'h:mm a')}
-                  </Text>
-                </TouchableOpacity>
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                  {t('schedule.formDateTime', 'Date & Time')} *
+                </Text>
+                <View style={styles.formRow}>
+                  <TouchableOpacity
+                    style={[styles.dateButton, { borderColor: colors.gray[200] }]}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+                    <Text style={[styles.dateText, { color: colors.textPrimary }]}>
+                      {format(formDateTime, 'MMMM d, yyyy')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.dateButton, { borderColor: colors.gray[200] }]}
+                    onPress={() => setShowTimePicker(true)}
+                  >
+                    <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
+                    <Text style={[styles.dateText, { color: colors.textPrimary }]}>
+                      {format(formDateTime, 'h:mm a')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {showDatePicker && (
@@ -922,7 +949,18 @@ const ScheduleScreen: React.FC = () => {
                   numberOfLines={3}
                 />
               </View>
-            </ScrollView>
+              </ScrollView>
+            ) : (
+              <View style={styles.emptyChildContainer}>
+                <Ionicons name="person-add-outline" size={40} color={colors.gray[300]} />
+                <Text style={[styles.emptyChildTitle, { color: colors.textPrimary }]}>
+                  {t('schedule.noChildren', 'No child profiles yet')}
+                </Text>
+                <Text style={[styles.emptyChildText, { color: colors.textSecondary }]}>
+                  {t('schedule.noChildrenMessage', 'Add a child profile to schedule appointments.')}
+                </Text>
+              </View>
+            )}
 
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -934,19 +972,33 @@ const ScheduleScreen: React.FC = () => {
                   {t('common.cancel')}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colors.primary }, isSubmitting && styles.buttonDisabled]}
-                onPress={handleSaveAppointment}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color={colors.white} />
-                ) : (
+              {hasChildren ? (
+                <TouchableOpacity
+                  style={[styles.modalButton, { backgroundColor: colors.primary }, isSubmitting && styles.buttonDisabled]}
+                  onPress={handleSaveAppointment}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <Text style={[styles.modalButtonText, { color: colors.white }]}>
+                      {t('common.save')}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    closeFormModal();
+                    navigation.navigate('AddChild');
+                  }}
+                >
                   <Text style={[styles.modalButtonText, { color: colors.white }]}>
-                    {t('common.save')}
+                    {t('home.addChild', 'Add Child Profile')}
                   </Text>
-                )}
-              </TouchableOpacity>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -1129,65 +1181,18 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
 
-  // Clinic Card
-  clinicCard: {
-    marginTop: SPACING.sm,
-  },
-  clinicInfo: {
-    marginBottom: SPACING.md,
-  },
-  clinicName: {
-    fontSize: FONT_SIZE.md,
-    fontWeight: FONT_WEIGHT.semibold,
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
-  },
-  clinicDetailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
-  },
-  clinicDetailText: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
-  },
-  clinicActions: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  clinicActionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xs,
-    // backgroundColor applied dynamically via inline styles
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
-  },
-  clinicActionButtonSecondary: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    // borderColor applied dynamically via inline styles
-  },
-  clinicActionText: {
-    fontSize: FONT_SIZE.sm,
-    fontWeight: FONT_WEIGHT.semibold,
-    color: COLORS.white,
-  },
-  clinicActionTextSecondary: {
-    // color applied dynamically via inline styles
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    padding: SPACING.lg,
+    justifyContent: 'flex-start',
+    paddingTop: SPACING.xl,
+    paddingHorizontal: SPACING.md,
   },
   modalContent: {
     borderRadius: BORDER_RADIUS.lg,
-    maxHeight: '90%',
+    maxHeight: '95%',
+    minHeight: 500,
+    width: '100%',
     padding: SPACING.lg,
   },
   modalHeader: {
@@ -1212,6 +1217,17 @@ const styles = StyleSheet.create({
   formLabel: {
     fontSize: FONT_SIZE.sm,
     marginBottom: SPACING.xs,
+  },
+  readonlyField: {
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.gray[50],
+  },
+  readonlyText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
   },
   input: {
     borderWidth: 1,
@@ -1279,6 +1295,20 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.7,
+  },
+  emptyChildContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+    gap: SPACING.xs,
+  },
+  emptyChildTitle: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.semibold,
+    marginTop: SPACING.xs,
+  },
+  emptyChildText: {
+    fontSize: FONT_SIZE.sm,
+    textAlign: 'center',
   },
 });
 
