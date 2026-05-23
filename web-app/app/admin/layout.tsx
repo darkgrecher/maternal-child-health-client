@@ -18,7 +18,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
-  Search,
   Menu,
   X,
   Shield,
@@ -266,16 +265,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title, subtitle, actions }) =
         {subtitle && <p className="text-slate-500 mt-1">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus-within:ring-2 focus-within:ring-pink-500/40 focus-within:border-pink-500 focus-within:bg-white dark:focus-within:bg-slate-700 transition-all">
-          <Search className="w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="bg-transparent border-none outline-none text-sm w-48 text-slate-900 dark:text-white placeholder:text-slate-400"
-          />
-        </div>
-
         {/* Notifications */}
         <button className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
           <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />

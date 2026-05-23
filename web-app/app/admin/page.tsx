@@ -13,15 +13,10 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Baby,
-  BarChart3,
-  Database,
-  Download,
   Heart,
   MapPin,
-  MoreHorizontal,
   RefreshCw,
   Server,
-  Shield,
   ShieldCheck,
   UserPlus,
   Users,
@@ -192,11 +187,6 @@ const UserRow: React.FC<UserRowProps> = ({ name, email, role, district, status, 
       </td>
       <td className="py-4 px-4">
         <span className="text-sm text-slate-500">{lastActive}</span>
-      </td>
-      <td className="py-4 px-4">
-        <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-          <MoreHorizontal className="w-4 h-4 text-slate-400" />
-        </button>
       </td>
     </tr>
   );
@@ -568,9 +558,6 @@ export default function AdminDashboardPage() {
             >
               Refresh
             </Button>
-            <Button icon={Download} disabled={isLoading}>
-              Export
-            </Button>
           </div>
         }
       />
@@ -711,7 +698,6 @@ export default function AdminDashboardPage() {
                   <th className="text-left py-3 px-4 font-medium text-slate-500 text-sm">District</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-500 text-sm">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-500 text-sm">Last Active</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-500 text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -724,41 +710,6 @@ export default function AdminDashboardPage() {
         )}
       </Card>
 
-      {/* Quick Actions */}
-      <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Link href="/admin/users" className="block">
-          <Card hover className="cursor-pointer text-center">
-            <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/30 w-fit mx-auto mb-3">
-              <Users className="w-6 h-6 text-blue-500" />
-            </div>
-            <h4 className="font-medium text-slate-900 dark:text-white">Manage Users</h4>
-            <p className="text-xs text-slate-500 mt-1">Add, edit, or remove users</p>
-          </Card>
-        </Link>
-        <Link href="/admin/analytics" className="block">
-          <Card hover className="cursor-pointer text-center">
-            <div className="p-3 rounded-xl bg-purple-100 dark:bg-purple-900/30 w-fit mx-auto mb-3">
-              <BarChart3 className="w-6 h-6 text-purple-500" />
-            </div>
-            <h4 className="font-medium text-slate-900 dark:text-white">View Analytics</h4>
-            <p className="text-xs text-slate-500 mt-1">Detailed system analytics</p>
-          </Card>
-        </Link>
-        <Card hover className="cursor-pointer text-center">
-          <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 w-fit mx-auto mb-3">
-            <Database className="w-6 h-6 text-emerald-500" />
-          </div>
-          <h4 className="font-medium text-slate-900 dark:text-white">Database</h4>
-          <p className="text-xs text-slate-500 mt-1">Manage database backups</p>
-        </Card>
-        <Card hover className="cursor-pointer text-center">
-          <div className="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30 w-fit mx-auto mb-3">
-            <Shield className="w-6 h-6 text-amber-500" />
-          </div>
-          <h4 className="font-medium text-slate-900 dark:text-white">Security</h4>
-          <p className="text-xs text-slate-500 mt-1">Access control settings</p>
-        </Card>
-      </div>
     </>
   );
 }
