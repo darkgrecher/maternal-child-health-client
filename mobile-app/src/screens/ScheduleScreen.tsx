@@ -5,7 +5,7 @@
  * allows managing appointments and finding clinics.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,14 +16,19 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { format, isPast, isFuture, isToday } from 'date-fns';
+import { format, isFuture, isToday } from 'date-fns';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { Card, Header, SectionTitle, Badge, Button, TabButton, FloatingChatButton } from '../components/common';
 import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
@@ -38,6 +43,15 @@ type ScheduleScreenNavigationProp = CompositeNavigationProp<
 
 type TabType = 'upcoming' | 'past';
 
+const APPOINTMENT_TYPE_OPTIONS: Array<{ value: AppointmentType; labelKey: string }> = [
+  { value: 'vaccination', labelKey: 'schedule.types.vaccination' },
+  { value: 'growth_check', labelKey: 'schedule.types.growth_check' },
+  { value: 'development_check', labelKey: 'schedule.types.development_check' },
+  { value: 'general_checkup', labelKey: 'schedule.types.general_checkup' },
+  { value: 'specialist', labelKey: 'schedule.types.specialist' },
+  { value: 'emergency', labelKey: 'schedule.types.emergency' },
+];
+
 /**
  * Appointment Card Component
  */
@@ -46,7 +60,8 @@ const AppointmentCard: React.FC<{
   onReschedule?: () => void;
   onCancel?: () => void;
   onCall?: () => void;
-}> = ({ appointment, onReschedule, onCancel, onCall }) => {
+  canCall?: boolean;
+}> = ({ appointment, onReschedule, onCancel, onCall, canCall }) => {
   const { t } = useTranslation();
   const { colors } = useThemeStore();
   const appointmentDate = new Date(appointment.dateTime);
@@ -201,7 +216,7 @@ const AppointmentCard: React.FC<{
               </Text>
             </TouchableOpacity>
           )}
-          {onCall && appointment.providerPhone && (
+          {onCall && canCall && (
             <TouchableOpacity style={styles.actionButton} onPress={onCall}>
               <Ionicons name="call-outline" size={16} color={colors.success} />
               <Text style={[styles.actionText, { color: colors.success }]}>
@@ -243,8 +258,25 @@ const ScheduleScreen: React.FC = () => {
   const { colors } = useThemeStore();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [formDateTime, setFormDateTime] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formState, setFormState] = useState({
+    title: '',
+    type: 'general_checkup' as AppointmentType,
+    duration: '30',
+    location: '',
+    address: '',
+    providerName: '',
+    providerRole: '',
+    providerPhone: '',
+    notes: '',
+  });
   
-  const { profile: selectedChild } = useChildStore();
+  const { profile: selectedChild, children, fetchChildren } = useChildStore();
   const { 
     upcomingAppointments, 
     pastAppointments, 
@@ -252,42 +284,147 @@ const ScheduleScreen: React.FC = () => {
     error,
     fetchAppointments,
     cancelAppointmentApi,
+    createAppointment,
+    updateAppointmentApi,
   } = useAppointmentStore();
+
+  const clinicInfo = selectedChild?.assignedMidwife;
+  const nextAppointment = upcomingAppointments[0];
+  const clinicName = clinicInfo?.clinic || nextAppointment?.location || '';
+  const clinicAddress = clinicInfo?.address || nextAppointment?.address || '';
+  const clinicPhone = clinicInfo?.phone || nextAppointment?.providerPhone || '';
+  const hasClinicInfo = Boolean(clinicName || clinicAddress || clinicPhone);
+
+  // Ensure child profiles are loaded
+  useEffect(() => {
+    if (!selectedChild && children.length === 0) {
+      fetchChildren();
+    }
+  }, [selectedChild, children.length, fetchChildren]);
 
   // Fetch appointments when component mounts or child changes
   useEffect(() => {
     if (selectedChild?.id) {
       fetchAppointments(selectedChild.id);
     }
-  }, [selectedChild?.id]);
+  }, [selectedChild?.id, fetchAppointments]);
+
+  // Refresh appointments on focus to keep in sync with web app
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedChild?.id) {
+        fetchAppointments(selectedChild.id);
+      }
+    }, [selectedChild?.id, fetchAppointments])
+  );
 
   // Pull to refresh
   const onRefresh = async () => {
-    if (selectedChild?.id) {
+    if (!selectedChild?.id) {
       setRefreshing(true);
-      await fetchAppointments(selectedChild.id);
+      await fetchChildren();
       setRefreshing(false);
+      return;
+    }
+    setRefreshing(true);
+    await Promise.all([fetchChildren(), fetchAppointments(selectedChild.id)]);
+    setRefreshing(false);
+  };
+
+  const setDefaultForm = () => {
+    setFormState({
+      title: '',
+      type: 'general_checkup',
+      duration: '30',
+      location: clinicInfo?.clinic || '',
+      address: clinicInfo?.address || '',
+      providerName: '',
+      providerRole: '',
+      providerPhone: clinicInfo?.phone || '',
+      notes: '',
+    });
+    setFormDateTime(new Date());
+  };
+
+  const openNewAppointment = () => {
+    setEditingAppointment(null);
+    setDefaultForm();
+    setIsFormVisible(true);
+  };
+
+  const openEditAppointment = (appointment: Appointment) => {
+    setEditingAppointment(appointment);
+    setFormState({
+      title: appointment.title,
+      type: appointment.type,
+      duration: appointment.duration ? String(appointment.duration) : '30',
+      location: appointment.location,
+      address: appointment.address || '',
+      providerName: appointment.providerName || '',
+      providerRole: appointment.providerRole || '',
+      providerPhone: appointment.providerPhone || '',
+      notes: appointment.notes || '',
+    });
+    setFormDateTime(new Date(appointment.dateTime));
+    setIsFormVisible(true);
+  };
+
+  const closeFormModal = () => {
+    setIsFormVisible(false);
+    setEditingAppointment(null);
+  };
+
+  const handleSaveAppointment = async () => {
+    if (!selectedChild?.id) {
+      Alert.alert(t('common.error'), t('navigation.profileRequiredMessage'));
+      return;
+    }
+
+    if (!formState.title.trim() || !formState.location.trim()) {
+      Alert.alert(t('common.error'), t('schedule.formRequired', 'Please fill in the required fields.'));
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const trimmedDuration = formState.duration.trim();
+    const durationValue = trimmedDuration ? Number(trimmedDuration) : undefined;
+    const payload = {
+      title: formState.title.trim(),
+      type: formState.type,
+      dateTime: formDateTime.toISOString(),
+      duration: durationValue !== undefined && Number.isNaN(durationValue) ? undefined : durationValue,
+      location: formState.location.trim(),
+      address: formState.address.trim() || undefined,
+      providerName: formState.providerName.trim() || undefined,
+      providerRole: formState.providerRole.trim() || undefined,
+      providerPhone: formState.providerPhone.trim() || undefined,
+      notes: formState.notes.trim() || undefined,
+    };
+
+    try {
+      const result = editingAppointment
+        ? await updateAppointmentApi(editingAppointment.id, payload)
+        : await createAppointment(selectedChild.id, payload);
+
+      if (!result) {
+        throw new Error('Unable to save appointment');
+      }
+
+      await fetchAppointments(selectedChild.id);
+      closeFormModal();
+    } catch (saveError: any) {
+      Alert.alert(
+        t('common.error'),
+        saveError?.message || t('schedule.formSaveError', 'Unable to save appointment.')
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleReschedule = (appointment: Appointment) => {
-    Alert.alert(
-      t('schedule.rescheduleTitle'),
-      t('schedule.rescheduleMessage'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { 
-          text: t('schedule.contactClinic'), 
-          onPress: () => {
-            if (appointment.providerPhone) {
-              Linking.openURL(`tel:${appointment.providerPhone}`);
-            } else {
-              Linking.openURL('tel:+94112345678');
-            }
-          }
-        },
-      ]
-    );
+    openEditAppointment(appointment);
   };
 
   const handleCancel = (appointment: Appointment) => {
@@ -311,16 +448,20 @@ const ScheduleScreen: React.FC = () => {
   };
 
   const handleCall = (appointment: Appointment) => {
-    if (appointment.providerPhone) {
-      Linking.openURL(`tel:${appointment.providerPhone}`);
-    } else {
-      Linking.openURL('tel:+94112345678');
+    const phone = appointment.providerPhone || clinicPhone;
+    if (!phone) {
+      Alert.alert(t('common.error'), t('schedule.noContact', 'No contact number available for this clinic.'));
+      return;
     }
+    Linking.openURL(`tel:${phone}`);
   };
 
   const handleFindClinic = () => {
-    // Open maps to find nearest clinic
-    Linking.openURL('https://maps.google.com/?q=child+health+clinic+near+me');
+    const query = clinicAddress || clinicName;
+    const url = query
+      ? `https://maps.google.com/?q=${encodeURIComponent(query)}`
+      : 'https://maps.google.com/?q=child+health+clinic+near+me';
+    Linking.openURL(url);
   };
 
   const handleEmergency = () => {
@@ -339,6 +480,7 @@ const ScheduleScreen: React.FC = () => {
   };
 
   const displayedAppointments = activeTab === 'upcoming' ? upcomingAppointments : pastAppointments;
+  const canCallClinic = Boolean(clinicPhone);
 
   return (
     <SwipeableTabNavigator>
@@ -392,8 +534,7 @@ const ScheduleScreen: React.FC = () => {
               icon="add-circle-outline"
               label={t('schedule.addAppointment')}
               onPress={() => {
-                // TODO: Open add appointment modal
-                Alert.alert(t('common.comingSoon'), t('schedule.addAppointmentMessage'));
+                openNewAppointment();
               }}
               color={colors.primary}
             />
@@ -463,7 +604,7 @@ const ScheduleScreen: React.FC = () => {
                 variant="primary"
                 style={{ marginTop: SPACING.md }}
                 onPress={() => {
-                  Alert.alert(t('common.comingSoon'));
+                  openNewAppointment();
                 }}
               />
             )}
@@ -477,6 +618,7 @@ const ScheduleScreen: React.FC = () => {
                 onReschedule={() => handleReschedule(appointment)}
                 onCancel={() => handleCancel(appointment)}
                 onCall={() => handleCall(appointment)}
+                canCall={Boolean(appointment.providerPhone || clinicPhone)}
               />
             ))}
           </>
@@ -506,35 +648,41 @@ const ScheduleScreen: React.FC = () => {
           />
           
           <View style={styles.clinicInfo}>
-            <Text style={styles.clinicName}>MOH Office - Colombo South</Text>
-            <View style={styles.clinicDetailRow}>
-              <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+            {hasClinicInfo ? (
+              <>
+                {clinicName ? (
+                  <Text style={styles.clinicName}>{clinicName}</Text>
+                ) : null}
+                {clinicAddress ? (
+                  <View style={styles.clinicDetailRow}>
+                    <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+                    <Text style={styles.clinicDetailText}>{clinicAddress}</Text>
+                  </View>
+                ) : null}
+                {clinicPhone ? (
+                  <View style={styles.clinicDetailRow}>
+                    <Ionicons name="call-outline" size={16} color={colors.textSecondary} />
+                    <Text style={styles.clinicDetailText}>{clinicPhone}</Text>
+                  </View>
+                ) : null}
+              </>
+            ) : (
               <Text style={styles.clinicDetailText}>
-                No. 123, Health Street, Colombo 03
+                {t('schedule.noClinicInfo', 'Clinic information will appear once assigned.')}
               </Text>
-            </View>
-            <View style={styles.clinicDetailRow}>
-              <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
-              <Text style={styles.clinicDetailText}>
-                Monday - Friday: 8:00 AM - 4:00 PM
-              </Text>
-            </View>
-            <View style={styles.clinicDetailRow}>
-              <Ionicons name="call-outline" size={16} color={colors.textSecondary} />
-              <Text style={styles.clinicDetailText}>
-                +94 11 234 5678
-              </Text>
-            </View>
+            )}
           </View>
 
           <View style={styles.clinicActions}>
-            <TouchableOpacity 
-              style={[styles.clinicActionButton, { backgroundColor: colors.primary }]}
-              onPress={() => Linking.openURL('tel:+94112345678')}
-            >
-              <Ionicons name="call" size={18} color={colors.white} />
-              <Text style={styles.clinicActionText}>{t('schedule.call')}</Text>
-            </TouchableOpacity>
+            {canCallClinic && (
+              <TouchableOpacity 
+                style={[styles.clinicActionButton, { backgroundColor: colors.primary }]}
+                onPress={() => Linking.openURL(`tel:${clinicPhone}`)}
+              >
+                <Ionicons name="call" size={18} color={colors.white} />
+                <Text style={styles.clinicActionText}>{t('schedule.call')}</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity 
               style={[styles.clinicActionButton, styles.clinicActionButtonSecondary, { borderColor: colors.primary }]}
               onPress={handleFindClinic}
@@ -550,6 +698,259 @@ const ScheduleScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={{ height: SPACING.xl }} />
       </ScrollView>
+
+      {/* Appointment Form Modal */}
+      <Modal visible={isFormVisible} transparent animationType="slide">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.white }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                {editingAppointment
+                  ? t('schedule.editAppointment', 'Edit Appointment')
+                  : t('schedule.scheduleNew', 'Schedule New Appointment')}
+              </Text>
+              <TouchableOpacity onPress={closeFormModal}>
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.modalBody}
+              contentContainerStyle={styles.modalBodyContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                  {t('schedule.formTitle', 'Title')} *
+                </Text>
+                <TextInput
+                  style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
+                  value={formState.title}
+                  onChangeText={(text) => setFormState((prev) => ({ ...prev, title: text }))}
+                  placeholder={t('schedule.formTitlePlaceholder', 'Appointment title')}
+                  placeholderTextColor={colors.gray[400]}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                  {t('schedule.formType', 'Appointment Type')}
+                </Text>
+                <View style={styles.typeGrid}>
+                  {APPOINTMENT_TYPE_OPTIONS.map((option) => {
+                    const isSelected = formState.type === option.value;
+                    return (
+                      <TouchableOpacity
+                        key={option.value}
+                        style={[
+                          styles.typeChip,
+                          {
+                            borderColor: isSelected ? colors.primary : colors.gray[200],
+                            backgroundColor: isSelected ? colors.primaryLight : colors.white,
+                          },
+                        ]}
+                        onPress={() => setFormState((prev) => ({ ...prev, type: option.value }))}
+                      >
+                        <Text
+                          style={{
+                            color: isSelected ? colors.primary : colors.textSecondary,
+                            fontSize: FONT_SIZE.xs,
+                            fontWeight: FONT_WEIGHT.medium,
+                          }}
+                        >
+                          {t(option.labelKey)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.formRow}>
+                <TouchableOpacity
+                  style={[styles.dateButton, { borderColor: colors.gray[200] }]}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+                  <Text style={[styles.dateText, { color: colors.textPrimary }]}>
+                    {format(formDateTime, 'MMMM d, yyyy')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.dateButton, { borderColor: colors.gray[200] }]}
+                  onPress={() => setShowTimePicker(true)}
+                >
+                  <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
+                  <Text style={[styles.dateText, { color: colors.textPrimary }]}>
+                    {format(formDateTime, 'h:mm a')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={formDateTime}
+                  mode="date"
+                  display="default"
+                  onChange={(_, selectedDate) => {
+                    setShowDatePicker(false);
+                    if (selectedDate) {
+                      const updated = new Date(formDateTime);
+                      updated.setFullYear(
+                        selectedDate.getFullYear(),
+                        selectedDate.getMonth(),
+                        selectedDate.getDate()
+                      );
+                      setFormDateTime(updated);
+                    }
+                  }}
+                />
+              )}
+
+              {showTimePicker && (
+                <DateTimePicker
+                  value={formDateTime}
+                  mode="time"
+                  display="default"
+                  onChange={(_, selectedTime) => {
+                    setShowTimePicker(false);
+                    if (selectedTime) {
+                      const updated = new Date(formDateTime);
+                      updated.setHours(selectedTime.getHours(), selectedTime.getMinutes(), 0, 0);
+                      setFormDateTime(updated);
+                    }
+                  }}
+                />
+              )}
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                  {t('schedule.formDuration', 'Duration (minutes)')}
+                </Text>
+                <TextInput
+                  style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
+                  value={formState.duration}
+                  onChangeText={(text) => setFormState((prev) => ({ ...prev, duration: text }))}
+                  placeholder="30"
+                  keyboardType="numeric"
+                  placeholderTextColor={colors.gray[400]}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                  {t('schedule.formLocation', 'Location')} *
+                </Text>
+                <TextInput
+                  style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
+                  value={formState.location}
+                  onChangeText={(text) => setFormState((prev) => ({ ...prev, location: text }))}
+                  placeholder={t('schedule.formLocationPlaceholder', 'Clinic or hospital')}
+                  placeholderTextColor={colors.gray[400]}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                  {t('schedule.formAddress', 'Address')}
+                </Text>
+                <TextInput
+                  style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
+                  value={formState.address}
+                  onChangeText={(text) => setFormState((prev) => ({ ...prev, address: text }))}
+                  placeholder={t('schedule.formAddressPlaceholder', 'Address (optional)')}
+                  placeholderTextColor={colors.gray[400]}
+                />
+              </View>
+
+              <View style={styles.formRow}>
+                <View style={styles.formHalf}>
+                  <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                    {t('schedule.formProviderName', 'Provider Name')}
+                  </Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
+                    value={formState.providerName}
+                    onChangeText={(text) => setFormState((prev) => ({ ...prev, providerName: text }))}
+                    placeholder={t('schedule.formProviderNamePlaceholder', 'Doctor or clinic')}
+                    placeholderTextColor={colors.gray[400]}
+                  />
+                </View>
+                <View style={styles.formHalf}>
+                  <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                    {t('schedule.formProviderRole', 'Provider Role')}
+                  </Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
+                    value={formState.providerRole}
+                    onChangeText={(text) => setFormState((prev) => ({ ...prev, providerRole: text }))}
+                    placeholder={t('schedule.formProviderRolePlaceholder', 'Specialist, nurse...')}
+                    placeholderTextColor={colors.gray[400]}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                  {t('schedule.formProviderPhone', 'Provider Phone')}
+                </Text>
+                <TextInput
+                  style={[styles.input, { borderColor: colors.gray[200], color: colors.textPrimary }]}
+                  value={formState.providerPhone}
+                  onChangeText={(text) => setFormState((prev) => ({ ...prev, providerPhone: text }))}
+                  placeholder={t('schedule.formProviderPhonePlaceholder', 'Phone (optional)')}
+                  keyboardType="phone-pad"
+                  placeholderTextColor={colors.gray[400]}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+                  {t('schedule.notes')}
+                </Text>
+                <TextInput
+                  style={[styles.input, styles.textArea, { borderColor: colors.gray[200], color: colors.textPrimary }]}
+                  value={formState.notes}
+                  onChangeText={(text) => setFormState((prev) => ({ ...prev, notes: text }))}
+                  placeholder={t('schedule.formNotesPlaceholder', 'Additional notes (optional)')}
+                  placeholderTextColor={colors.gray[400]}
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancelButton, { borderColor: colors.gray[300] }]}
+                onPress={closeFormModal}
+                disabled={isSubmitting}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.textSecondary }]}>
+                  {t('common.cancel')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }, isSubmitting && styles.buttonDisabled]}
+                onPress={handleSaveAppointment}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Text style={[styles.modalButtonText, { color: colors.white }]}>
+                    {t('common.save')}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
       
       <FloatingChatButton />
       </View>
@@ -777,6 +1178,107 @@ const styles = StyleSheet.create({
   },
   clinicActionTextSecondary: {
     // color applied dynamically via inline styles
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    padding: SPACING.lg,
+  },
+  modalContent: {
+    borderRadius: BORDER_RADIUS.lg,
+    maxHeight: '90%',
+    padding: SPACING.lg,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  modalTitle: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: FONT_WEIGHT.semibold,
+  },
+  modalBody: {
+    flex: 1,
+  },
+  modalBodyContent: {
+    paddingBottom: SPACING.md,
+  },
+  formGroup: {
+    marginBottom: SPACING.sm,
+  },
+  formLabel: {
+    fontSize: FONT_SIZE.sm,
+    marginBottom: SPACING.xs,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    fontSize: FONT_SIZE.sm,
+    backgroundColor: COLORS.white,
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
+  formHalf: {
+    flex: 1,
+  },
+  dateButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
+  },
+  dateText: {
+    fontSize: FONT_SIZE.sm,
+  },
+  typeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+  },
+  typeChip: {
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.round,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
+  },
+  modalButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  modalCancelButton: {
+    borderWidth: 1,
+    backgroundColor: COLORS.white,
+  },
+  modalButtonText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.semibold,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
 });
 
