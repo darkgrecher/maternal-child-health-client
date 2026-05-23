@@ -281,9 +281,15 @@ interface HeaderProps {
   title: string;
   subtitle?: string;
   actions?: React.ReactNode;
+  showSearch?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
+export const Header: React.FC<HeaderProps> = ({
+  title,
+  subtitle,
+  actions,
+  showSearch = true,
+}) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   return (
@@ -293,15 +299,16 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
         {subtitle && <p className="text-[color:var(--text-secondary)] mt-1">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-[color:var(--surface-elevated)] border border-[color:var(--border)] rounded-xl focus-within:ring-2 focus-within:ring-[color:var(--primary)] focus-within:border-[color:var(--primary)] focus-within:bg-[color:var(--surface)] transition-all">
-          <Search className="w-4 h-4 text-[color:var(--text-muted)]" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="bg-transparent border-none outline-none text-sm w-48 text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)]"
-          />
-        </div>
+        {showSearch && (
+          <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-[color:var(--surface-elevated)] border border-[color:var(--border)] rounded-xl focus-within:ring-2 focus-within:ring-[color:var(--primary)] focus-within:border-[color:var(--primary)] focus-within:bg-[color:var(--surface)] transition-all">
+            <Search className="w-4 h-4 text-[color:var(--text-muted)]" />
+            <input
+              type="text"
+              placeholder="Search..."
+              className="bg-transparent border-none outline-none text-sm w-48 text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)]"
+            />
+          </div>
+        )}
 
         {/* Notifications */}
         <div className="relative">

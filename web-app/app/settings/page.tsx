@@ -375,22 +375,21 @@ export default function SettingsPage() {
   return (
     <MainLayout>
       <div className="max-w-6xl mx-auto">
-        <div className="sticky top-0 z-30 -mx-4 mb-8 border-b border-slate-200/70 bg-slate-50/90 px-4 pb-4 pt-4 backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/90 lg:-mx-8 lg:px-8">
-          <Header
-            title="Settings"
-            subtitle="Manage your preferences"
-            actions={
-              <Button
-                icon={Save}
-                onClick={handleSave}
-                isLoading={isSaving}
-                disabled={isSaving || isLoading}
-              >
-                Save Changes
-              </Button>
-            }
-          />
-        </div>
+        <Header
+          title="Settings"
+          subtitle="Manage your preferences"
+          showSearch={false}
+          actions={
+            <Button
+              icon={Save}
+              onClick={handleSave}
+              isLoading={isSaving}
+              disabled={isSaving || isLoading}
+            >
+              Save Changes
+            </Button>
+          }
+        />
 
         {loadError && (
           <Alert variant="error" icon={AlertCircle} className="mb-6">
