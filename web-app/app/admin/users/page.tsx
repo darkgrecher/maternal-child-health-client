@@ -742,7 +742,7 @@ export default function AdminUsersPage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-[720px] w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700 text-left">
                   <th className="py-3 px-2 font-medium text-slate-500">Midwife</th>

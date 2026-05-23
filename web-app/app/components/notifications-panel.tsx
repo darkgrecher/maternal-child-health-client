@@ -69,7 +69,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, 
   if (!isOpen) return null;
 
   return (
-    <div className="absolute right-0 top-12 w-80 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card-bg)] shadow-xl z-50">
+    <div className="absolute right-0 top-12 w-[calc(100vw-2rem)] max-w-sm sm:w-80 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card-bg)] shadow-xl z-50">
       <div className="flex items-center justify-between px-4 py-3 border-b border-[color:var(--border)]">
         <div className="flex items-center gap-2">
           <Bell className="w-4 h-4 text-[color:var(--text-muted)]" />

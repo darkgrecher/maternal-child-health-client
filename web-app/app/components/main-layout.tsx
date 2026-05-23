@@ -293,12 +293,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   return (
-    <header className="flex items-center justify-between mb-8">
-      <div>
+    <header className="flex flex-col items-end gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div className="text-right sm:text-left">
         <h1 className="text-2xl font-bold text-[color:var(--text-primary)]">{title}</h1>
         {subtitle && <p className="text-[color:var(--text-secondary)] mt-1">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto sm:flex-nowrap sm:gap-4">
         {showSearch && (
           <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-[color:var(--surface-elevated)] border border-[color:var(--border)] rounded-xl focus-within:ring-2 focus-within:ring-[color:var(--primary)] focus-within:border-[color:var(--primary)] focus-within:bg-[color:var(--surface)] transition-all">
             <Search className="w-4 h-4 text-[color:var(--text-muted)]" />
@@ -344,7 +344,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen app-shell">
       <Sidebar />
-      <main className="lg:ml-64 min-h-screen p-4 lg:p-8 pt-20 lg:pt-8">
+      <main className="lg:ml-64 min-h-screen p-4 lg:p-8">
         {children}
       </main>
     </div>

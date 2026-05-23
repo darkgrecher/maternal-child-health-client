@@ -670,9 +670,9 @@ export default function AdminDashboardPage() {
 
       {/* User Management Table */}
       <Card>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Users</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link href="/admin/users">
               <Button variant="secondary" icon={UserPlus}>
                 Add User
@@ -694,7 +694,7 @@ export default function AdminDashboardPage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-[640px] w-full">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   <th className="text-left py-3 px-4 font-medium text-slate-500 text-sm">User</th>

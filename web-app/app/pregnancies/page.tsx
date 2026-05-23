@@ -1017,7 +1017,7 @@ export default function PregnanciesPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800">
                 <p className="text-sm text-slate-500">Current Week</p>
                 <p className="text-2xl font-bold text-pink-500">Week {selectedPregnancy.currentWeek}</p>

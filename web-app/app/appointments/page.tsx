@@ -501,7 +501,7 @@ export default function AppointmentsPage() {
                           hover
                           onClick={() => setSelectedAppointment(appointment)}
                         >
-                          <div className="flex items-center gap-4">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                             <div className="text-center min-w-17.5">
                               <p className="text-lg font-bold text-slate-900 dark:text-white">
                                 {format(new Date(appointment.dateTime), 'h:mm')}
@@ -537,7 +537,7 @@ export default function AppointmentsPage() {
                                 </span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -597,7 +597,7 @@ export default function AppointmentsPage() {
                           hover
                           onClick={() => setSelectedAppointment(appointment)}
                         >
-                          <div className="flex items-center gap-4">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                             <div className="text-center min-w-17.5">
                               <p className="text-sm font-medium text-slate-500">
                                 {format(new Date(appointment.dateTime), 'MMM d')}
@@ -627,6 +627,7 @@ export default function AppointmentsPage() {
                               variant="ghost"
                               size="sm"
                               icon={Edit}
+                              className="self-start sm:self-auto"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 openEditAppointment(appointment);
@@ -647,7 +648,7 @@ export default function AppointmentsPage() {
         /* Calendar View */
         <Card>
           {/* Calendar Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
             <Button
               variant="ghost"
               icon={ChevronLeft}
@@ -665,8 +666,9 @@ export default function AppointmentsPage() {
           </div>
 
           {/* Week Grid */}
-          <div className="grid grid-cols-7 gap-2">
-            {weekDays.map((day) => {
+          <div className="overflow-x-auto">
+            <div className="grid grid-cols-7 gap-2 min-w-[720px]">
+              {weekDays.map((day) => {
               const dayAppointments = getAppointmentsForDate(day);
               const isCurrentDay = isToday(day);
               
@@ -718,7 +720,8 @@ export default function AppointmentsPage() {
                   </div>
                 </div>
               );
-            })}
+              })}
+            </div>
           </div>
         </Card>
       )}
@@ -732,7 +735,7 @@ export default function AppointmentsPage() {
       >
         {selectedAppointment && (
           <div className="space-y-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <Avatar name={selectedChildName} size="lg" />
               <div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -755,7 +758,7 @@ export default function AppointmentsPage() {
               <h4 className="font-medium text-slate-900 dark:text-white mb-2">
                 {selectedAppointment.title}
               </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2 text-slate-500">
                   <Calendar className="w-4 h-4" />
                   {format(new Date(selectedAppointment.dateTime), 'MMMM d, yyyy')}
@@ -804,7 +807,7 @@ export default function AppointmentsPage() {
               </div>
             )}
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button
                 variant="primary"
                 icon={Check}

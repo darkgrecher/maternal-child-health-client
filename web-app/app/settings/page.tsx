@@ -515,7 +515,7 @@ export default function SettingsPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
                     Theme
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
                       { value: 'light' as const, label: 'Light', icon: Sun },
                       { value: 'dark' as const, label: 'Dark', icon: Moon },

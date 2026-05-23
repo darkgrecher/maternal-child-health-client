@@ -353,7 +353,7 @@ export default function AdminDistrictsPage() {
           </div>
         ) : filteredMidwives.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-[640px] w-full">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   <th className="text-left py-3 px-4 font-medium text-slate-500 text-sm">Midwife</th>

@@ -172,7 +172,7 @@ export default function PatientsPage() {
       )}
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="flex items-center gap-4 p-4">
           <div className="p-3 rounded-xl bg-purple-100">
             <Users className="w-6 h-6 text-purple-500" />
@@ -215,7 +215,7 @@ export default function PatientsPage() {
       <Card className="mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* View Toggle */}
-          <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg">
+          <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg">
             <button
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 view === 'all'
@@ -429,7 +429,7 @@ export default function PatientsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-medium text-slate-500 uppercase">Phone</label>
                   {contactPhone ? (
@@ -463,7 +463,7 @@ export default function PatientsPage() {
                   <SectionTitle title="Current Pregnancy" />
                   <Card className="bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className="text-sm text-slate-500">Current Week</p>
                           <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">
@@ -599,7 +599,7 @@ export default function PatientsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-medium text-slate-500 uppercase">Age</label>
                   <p className="text-slate-900 dark:text-white">

@@ -308,7 +308,7 @@ interface SectionTitleProps {
 
 export const SectionTitle: React.FC<SectionTitleProps> = ({ title, subtitle, action, children }) => {
   return (
-    <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
       <div>
         <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">{title || children}</h2>
         {subtitle && <p className="text-sm text-[color:var(--text-secondary)]">{subtitle}</p>}
@@ -622,7 +622,7 @@ export function Table<T>({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="min-w-[640px] w-full">
         <thead>
           <tr className="border-b border-[color:var(--border)]">
             {columns.map((column) => (

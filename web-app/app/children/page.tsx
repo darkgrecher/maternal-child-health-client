@@ -757,7 +757,7 @@ export default function ChildrenPage() {
               </svg>
             </button>
             
-            <div className="relative w-[400px] h-[400px] sm:w-[500px] sm:h-[500px]">
+            <div className="relative w-[85vw] h-[85vw] max-w-[500px] max-h-[500px]">
               <video 
                 src="/baby-qr.mp4" 
                 autoPlay 
@@ -1068,7 +1068,7 @@ export default function ChildrenPage() {
             </div>
 
             {/* Birth Info */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800">
                 <p className="text-sm text-slate-500">Birth Weight</p>
                 <p className="font-semibold text-slate-900 dark:text-white">{selectedChild.birthWeight ?? '--'} kg</p>
@@ -1079,7 +1079,7 @@ export default function ChildrenPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button
                 variant="primary"
                 icon={TrendingUp}

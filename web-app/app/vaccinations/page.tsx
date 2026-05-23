@@ -1004,7 +1004,7 @@ export default function VaccinationsPage() {
             subtitle="Standard vaccination timeline for children"
           />
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-[640px] w-full">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">

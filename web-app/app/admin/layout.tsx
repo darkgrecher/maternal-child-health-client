@@ -270,12 +270,12 @@ interface AdminHeaderProps {
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ title, subtitle, actions }) => {
   return (
-    <header className="flex items-center justify-between mb-8">
-      <div>
+    <header className="flex flex-col items-end gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div className="text-right sm:text-left">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h1>
         {subtitle && <p className="text-slate-500 mt-1">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto sm:flex-nowrap sm:gap-4">
         {/* Notifications */}
         <button className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
           <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -296,7 +296,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <AdminSidebar />
-      <main className="lg:ml-64 min-h-screen p-4 lg:p-8 pt-20 lg:pt-8">
+      <main className="lg:ml-64 min-h-screen p-4 lg:p-8">
         {children}
       </main>
     </div>

@@ -278,7 +278,7 @@ export default function ActivitiesPage() {
       </Modal>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="flex items-center gap-4 p-4">
           <div className="p-3 rounded-xl bg-pink-100">
             <Heart className="w-6 h-6 text-pink-500" />

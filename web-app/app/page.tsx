@@ -123,6 +123,14 @@ const getActivityVisual = (type: string) => {
   }
 };
 
+const getTimeGreeting = (date: Date) => {
+  const hour = date.getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  if (hour < 21) return 'Good evening';
+  return 'Good night';
+};
+
 type LinkProfileType = 'child' | 'pregnancy';
 
 interface LinkStatusData {
@@ -322,6 +330,7 @@ export default function DashboardPage() {
 
   const today = new Date();
   const stats = dashboard?.stats ?? DEFAULT_STATS;
+  const timeGreeting = getTimeGreeting(today);
   const todayAppointments = dashboard?.todayAppointments ?? [];
   const recentActivities = dashboard?.recentActivities ?? [];
   const highRiskPregnancies = dashboard?.highRiskPregnancies ?? [];
@@ -852,7 +861,7 @@ export default function DashboardPage() {
   return (
     <MainLayout>
       <Header
-        title={`Good Morning, ${greetingName}! 👋`}
+        title={`${timeGreeting}, ${greetingName}!`}
         subtitle={format(today, 'EEEE, MMMM d, yyyy')}
         actions={
           <div className="flex items-center gap-3">
