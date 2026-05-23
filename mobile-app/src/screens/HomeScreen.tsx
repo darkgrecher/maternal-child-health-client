@@ -6,7 +6,7 @@
  * Supports swipe gestures to switch between multiple child profiles.
  */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -31,14 +31,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Custom app icon
 const APP_ICON = require('../../assets/ChatGPT Image Jan 25, 2026, 05_05_58 PM.png');
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Card, ProgressBar, SectionTitle, Avatar, Badge, Button, FloatingChatButton, ConvertToChildModal } from '../components/common';
 import { SwipeableTabNavigator } from '../navigation/SwipeableTabNavigator';
-import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore, useEmergencyContactStore, usePregnancyStore } from '../stores';
+import { useChildStore, useVaccineStore, useAppointmentStore, useAuthStore, useGrowthStore, useActivityStore, useThemeStore, useEmergencyContactStore, usePregnancyStore, useNotificationStore } from '../stores';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../constants';
 import { RootStackParamList, TabParamList, Activity } from '../types';
 import { format } from 'date-fns';
@@ -79,6 +79,7 @@ const HomeScreen: React.FC = () => {
   const { fetchChildVaccinationRecords, getCompletionPercentage, getCompletedCount, getTotalCount, getOverdueCount, getNextVaccine } = useVaccineStore();
   const { getNextAppointment, fetchAppointments } = useAppointmentStore();
   const { accessToken, user } = useAuthStore();
+  const { items: notifications, fetchNotifications } = useNotificationStore();
   const { getLatestMeasurement: getLatestGrowthMeasurement, fetchGrowthData } = useGrowthStore();
   
   // Track which user the modal was shown for (to reset when switching accounts)
@@ -86,6 +87,15 @@ const HomeScreen: React.FC = () => {
   const { activities, fetchActivities, createActivity, deleteActivity: deleteActivityFromStore, getRecentActivities } = useActivityStore();
   const { colors } = useThemeStore();
   const { contacts: emergencyContacts, fetchContacts: fetchEmergencyContacts, createContact: createEmergencyContact, deleteContact: deleteEmergencyContact } = useEmergencyContactStore();
+  const unreadCount = notifications.filter((notification) => !notification.isRead).length;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (accessToken) {
+        fetchNotifications();
+      }
+    }, [accessToken, fetchNotifications])
+  );
 
   // Dynamic activity color function using theme colors
   const getActivityColorDynamic = (type: string): string => {
@@ -662,11 +672,19 @@ const HomeScreen: React.FC = () => {
             >
               <Ionicons name="qr-code-outline" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.headerIconButton}>
+            <TouchableOpacity
+              style={styles.headerIconButton}
+              onPress={() => navigation.navigate('Notifications')}
+            >
               <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
-              <View style={[styles.notificationBadge, { backgroundColor: colors.primary }]}>
-                <Text style={styles.notificationBadgeText}>8</Text>
-              </View>
+              {unreadCount > 0 && (
+                <View style={[styles.notificationBadge, { backgroundColor: colors.primary }]}
+                >
+                  <Text style={styles.notificationBadgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerIconButton}
@@ -1286,6 +1304,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     minWidth: 18,
     height: 18,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },

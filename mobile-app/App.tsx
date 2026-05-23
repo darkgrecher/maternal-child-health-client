@@ -19,7 +19,8 @@ import './src/i18n';
 import Navigation from './src/navigation';
 
 // Stores
-import { useAppStore, useAuthStore, useThemeStore } from './src/stores';
+import { useAppStore, useAuthStore, useNotificationStore, useThemeStore } from './src/stores';
+import { notificationsService } from './src/services/notificationsService';
 
 // Context
 import { ThemeProvider } from './src/context';
@@ -50,7 +51,8 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const [isInitialized, setIsInitialized] = useState(false);
   
   const { setOnlineStatus } = useAppStore();
-  const { status, accessToken, setStatus, fetchProfile } = useAuthStore();
+  const { status, accessToken, setStatus, fetchProfile, user } = useAuthStore();
+  const { clear: clearNotifications } = useNotificationStore();
 
   useEffect(() => {
     const initialize = async () => {
@@ -85,6 +87,24 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
     initialize();
   }, []);
+
+  useEffect(() => {
+    if (!accessToken) {
+      clearNotifications();
+      void notificationsService.clearStoredRegistration();
+      return;
+    }
+
+    const registerPushToken = async () => {
+      try {
+        await notificationsService.registerDeviceToken(user?.id);
+      } catch (error) {
+        console.log('Push registration failed:', error);
+      }
+    };
+
+    registerPushToken();
+  }, [accessToken, user?.id, clearNotifications]);
 
   if (!isInitialized) {
     return <LoadingScreen />;

@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { ActivityIndicator, View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import type { TouchableOpacityProps } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -36,6 +37,7 @@ import {
   PregnancyHealthScreen,
   PregnancyJournalScreen,
   QrScanScreen,
+  NotificationsScreen,
   AuthScreen,
 } from '../screens';
 
@@ -145,10 +147,11 @@ const ChildTabNavigator: React.FC = () => {
         // Disable non-Home tabs when no profile exists
         tabBarButton: (props) => {
           const isHomeTab = route.name === 'Home';
+          const touchableProps = props as TouchableOpacityProps;
           if (!isHomeTab && !hasProfile) {
             return (
               <TouchableOpacity
-                {...props}
+                {...touchableProps}
                 onPress={(e) => {
                   e.preventDefault();
                   showCreateProfileAlert();
@@ -156,7 +159,7 @@ const ChildTabNavigator: React.FC = () => {
               />
             );
           }
-          return <TouchableOpacity {...props} />;
+          return <TouchableOpacity {...touchableProps} />;
         },
       })}
     >
@@ -258,6 +261,7 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="Activities" component={ActivitiesScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="AddChild" component={AddChildScreen} />
       <Stack.Screen name="QrScan" component={QrScanScreen} />
       <Stack.Screen name="CreatePregnancy" component={CreatePregnancyScreen} />

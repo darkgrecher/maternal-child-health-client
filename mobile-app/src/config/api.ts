@@ -32,4 +32,9 @@ export const API_ENDPOINTS = {
     ACTIVE: '/pregnancies/active',
     CONVERT: (id: string) => `/pregnancies/${id}/convert-to-child`,
   },
+  NOTIFICATIONS: {
+    BASE: '/notifications',
+    DEVICES: '/notifications/devices',
+    MARK_READ: (id: string) => `/notifications/${id}/read`,
+  },
 } as const;

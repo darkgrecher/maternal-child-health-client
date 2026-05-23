@@ -19,5 +19,6 @@ export { default as PregnancyCheckupsScreen } from './PregnancyCheckupsScreen';
 export { default as PregnancyHealthScreen } from './PregnancyHealthScreen';
 export { default as PregnancyJournalScreen } from './PregnancyJournalScreen';
 export { default as QrScanScreen } from './QrScanScreen';
+export { default as NotificationsScreen } from './NotificationsScreen';
 export { LoginScreen } from './LoginScreen';
 export { AuthScreen } from './AuthScreen';

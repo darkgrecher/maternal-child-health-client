@@ -4,17 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Bell, AlertTriangle, X } from 'lucide-react';
 import apiClient from '../lib/api-client';
 import { useAuthStore } from '../lib/stores';
-import type { ApiResponse } from '../lib/types';
-
-interface LinkNotification {
-  id: string;
-  message: string;
-  createdAt: string;
-  isRead: boolean;
-  type: string;
-  expectedProfileType: 'child' | 'pregnancy';
-  scannedProfileType: 'child' | 'pregnancy';
-}
+import type { ApiResponse, NotificationListItem } from '../lib/types';
 
 interface NotificationsPanelProps {
   isOpen: boolean;
@@ -29,7 +19,7 @@ const formatTimestamp = (value: string) => {
 
 export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose }) => {
   const { accessToken } = useAuthStore();
-  const [notifications, setNotifications] = useState<LinkNotification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +33,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, 
       setError(null);
 
       try {
-        const response = await apiClient.get<ApiResponse<LinkNotification[]>>('/midwife-links/notifications');
+        const response = await apiClient.get<ApiResponse<NotificationListItem[]>>('/notifications');
         if (!isCancelled) {
           setNotifications(response.data ?? []);
         }
@@ -104,7 +94,9 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, 
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
               </div>
               <div>
-                <p className="text-sm text-[color:var(--text-primary)]">{notification.message}</p>
+                <p className="text-sm text-[color:var(--text-primary)]">
+                  {notification.message || notification.title}
+                </p>
                 <p className="text-xs text-[color:var(--text-muted)] mt-1">{formatTimestamp(notification.createdAt)}</p>
               </div>
             </div>
