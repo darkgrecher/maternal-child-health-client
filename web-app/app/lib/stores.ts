@@ -216,6 +216,7 @@ export const usePregnancyStore = create<PregnancyStore>((set, get) => ({
       }));
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
+      throw error;
     }
   },
 
@@ -307,6 +308,7 @@ export const useChildStore = create<ChildStore>((set, get) => ({
       }));
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
+      throw error;
     }
   },
 

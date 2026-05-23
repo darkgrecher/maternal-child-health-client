@@ -18,6 +18,7 @@ import {
   Syringe,
   TrendingUp,
   Edit,
+  Trash2,
   Scale,
   Ruler,
   Activity,
@@ -173,7 +174,7 @@ const getChildParentPhone = (child: ChildProfile) =>
   child.emergencyContact || 'Not provided';
 
 export default function ChildrenPage() {
-  const { children, isLoading, error, fetchChildren, createChild, updateChild } = useChildStore();
+  const { children, isLoading, error, fetchChildren, createChild, updateChild, deleteChild } = useChildStore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
@@ -181,6 +182,8 @@ export default function ChildrenPage() {
   const [filterVaccine, setFilterVaccine] = useState('all');
   const [selectedChild, setSelectedChild] = useState<UiChild | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [childActionError, setChildActionError] = useState<string | null>(null);
+  const [isChildDeleting, setIsChildDeleting] = useState(false);
   const [isChildFormOpen, setIsChildFormOpen] = useState(false);
   const [childFormMode, setChildFormMode] = useState<'create' | 'edit'>('create');
   const [childFormError, setChildFormError] = useState('');
@@ -307,6 +310,27 @@ export default function ChildrenPage() {
       setChildFormError(err instanceof Error ? err.message : 'Unable to save child profile.');
     } finally {
       setIsChildSubmitting(false);
+    }
+  };
+
+  const handleDeleteChild = async () => {
+    if (!selectedChild) return;
+    const confirmed = window.confirm(
+      'Remove this child from your list? The profile will stay for the parent, only your registration is removed.'
+    );
+    if (!confirmed) return;
+
+    setChildActionError(null);
+    setIsChildDeleting(true);
+    try {
+      await deleteChild(selectedChild.id);
+      setIsModalOpen(false);
+      setSelectedChild(null);
+      await fetchChildren();
+    } catch (err) {
+      setChildActionError(err instanceof Error ? err.message : 'Unable to remove child profile.');
+    } finally {
+      setIsChildDeleting(false);
     }
   };
 
@@ -733,6 +757,7 @@ export default function ChildrenPage() {
           keyExtractor={(child) => child.id}
           onRowClick={(child) => {
             setSelectedChild(child);
+            setChildActionError(null);
             setIsModalOpen(true);
           }}
           isLoading={isLoading}
@@ -1021,6 +1046,11 @@ export default function ChildrenPage() {
       >
         {selectedChild && (
           <div className="space-y-4">
+            {childActionError && (
+              <Alert variant="warning" title="Unable to remove child profile">
+                {childActionError}
+              </Alert>
+            )}
             <div className="flex items-center gap-4">
               <Avatar name={`${selectedChild.firstName} ${selectedChild.lastName}`} size="xl" />
               <div>
@@ -1113,6 +1143,14 @@ export default function ChildrenPage() {
                 }}
               >
                 Edit
+              </Button>
+              <Button
+                variant="danger"
+                icon={Trash2}
+                isLoading={isChildDeleting}
+                onClick={handleDeleteChild}
+              >
+                Delete
               </Button>
             </div>
           </div>

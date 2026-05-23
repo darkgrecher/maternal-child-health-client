@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   FileText,
   Edit,
+  Trash2,
   Baby,
   QrCode,
 } from 'lucide-react';
@@ -112,12 +113,22 @@ const getAgeFromDob = (dob?: string) => {
 
 export default function PregnanciesPage() {
   const searchParams = useSearchParams();
-  const { pregnancies, isLoading, error, fetchPregnancies, createPregnancy, updatePregnancy } = usePregnancyStore();
+  const {
+    pregnancies,
+    isLoading,
+    error,
+    fetchPregnancies,
+    createPregnancy,
+    updatePregnancy,
+    deletePregnancy,
+  } = usePregnancyStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterRisk, setFilterRisk] = useState('all');
   const [selectedPregnancy, setSelectedPregnancy] = useState<UiPregnancy | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pregnancyActionError, setPregnancyActionError] = useState<string | null>(null);
+  const [isPregnancyDeleting, setIsPregnancyDeleting] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -257,6 +268,27 @@ export default function PregnanciesPage() {
       setPregnancyFormError(err instanceof Error ? err.message : 'Unable to save pregnancy profile.');
     } finally {
       setIsPregnancySubmitting(false);
+    }
+  };
+
+  const handleDeletePregnancy = async () => {
+    if (!selectedPregnancy) return;
+    const confirmed = window.confirm(
+      'Remove this pregnancy from your list? The profile will remain for the mother, only your registration is removed.'
+    );
+    if (!confirmed) return;
+
+    setPregnancyActionError(null);
+    setIsPregnancyDeleting(true);
+    try {
+      await deletePregnancy(selectedPregnancy.id);
+      setIsModalOpen(false);
+      setSelectedPregnancy(null);
+      await fetchPregnancies();
+    } catch (err) {
+      setPregnancyActionError(err instanceof Error ? err.message : 'Unable to remove pregnancy profile.');
+    } finally {
+      setIsPregnancyDeleting(false);
     }
   };
 
@@ -649,6 +681,7 @@ export default function PregnanciesPage() {
           keyExtractor={(pregnancy) => pregnancy.id}
           onRowClick={(pregnancy) => {
             setSelectedPregnancy(pregnancy);
+            setPregnancyActionError(null);
             setIsModalOpen(true);
           }}
           isLoading={isLoading}
@@ -1002,6 +1035,11 @@ export default function PregnanciesPage() {
       >
         {selectedPregnancy && (
           <div className="space-y-4">
+            {pregnancyActionError && (
+              <Alert variant="warning" title="Unable to remove pregnancy profile">
+                {pregnancyActionError}
+              </Alert>
+            )}
             <div className="flex items-center gap-4">
               <Avatar name={selectedPregnancy.motherName} size="xl" />
               <div>
@@ -1087,6 +1125,14 @@ export default function PregnanciesPage() {
                 }}
               >
                 Edit
+              </Button>
+              <Button
+                variant="danger"
+                icon={Trash2}
+                isLoading={isPregnancyDeleting}
+                onClick={handleDeletePregnancy}
+              >
+                Delete
               </Button>
             </div>
           </div>
