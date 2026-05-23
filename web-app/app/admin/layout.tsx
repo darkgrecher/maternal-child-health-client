@@ -54,9 +54,7 @@ const adminNavItems: NavItem[] = [
   { name: 'Alerts', href: '/admin/alerts', icon: AlertTriangle, badge: 5 },
 ];
 
-const bottomNavItems: NavItem[] = [
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
-];
+const bottomNavItems: NavItem[] = [];
 
 const AdminSidebar: React.FC = () => {
   const pathname = usePathname();
