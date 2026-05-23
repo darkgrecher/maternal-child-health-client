@@ -79,6 +79,34 @@ const roleLabels: Record<Role, string> = {
   admin: 'Admin',
 };
 
+const sriLankaDistricts = [
+  'Ampara',
+  'Anuradhapura',
+  'Badulla',
+  'Batticaloa',
+  'Colombo',
+  'Galle',
+  'Gampaha',
+  'Hambantota',
+  'Jaffna',
+  'Kalutara',
+  'Kandy',
+  'Kegalle',
+  'Kilinochchi',
+  'Kurunegala',
+  'Mannar',
+  'Matale',
+  'Matara',
+  'Moneragala',
+  'Mullaitivu',
+  'Nuwara Eliya',
+  'Polonnaruwa',
+  'Puttalam',
+  'Ratnapura',
+  'Trincomalee',
+  'Vavuniya',
+];
+
 const roleBadgeVariant = (role: Role) => {
   if (role === 'admin') return 'info';
   if (role === 'supervisor') return 'warning';
@@ -463,13 +491,18 @@ export default function AdminUsersPage() {
                 </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
-                  <input
-                    type="text"
+                  <select
                     value={form.region}
                     onChange={handleChange('region')}
-                    placeholder="Central Province"
                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
+                  >
+                    <option value="">Select district</option>
+                    {sriLankaDistricts.map((district) => (
+                      <option key={district} value={district}>
+                        {district}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
