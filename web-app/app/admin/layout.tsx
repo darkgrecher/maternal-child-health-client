@@ -42,9 +42,6 @@ interface NavItem {
 const WEB_APP_BASE_URL = process.env.NEXT_PUBLIC_WEB_APP_URL;
 
 const adminNavItems: NavItem[] = [
-  ...(WEB_APP_BASE_URL
-    ? [{ name: 'MidwifeHub', href: WEB_APP_BASE_URL, icon: Heart, external: true }]
-    : []),
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'User Management', href: '/admin/users', icon: Users },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
@@ -54,7 +51,9 @@ const adminNavItems: NavItem[] = [
   { name: 'Alerts', href: '/admin/alerts', icon: AlertTriangle, badge: 5 },
 ];
 
-const bottomNavItems: NavItem[] = [];
+const bottomNavItems: NavItem[] = WEB_APP_BASE_URL
+  ? [{ name: 'MidwifeHub', href: WEB_APP_BASE_URL, icon: Heart, external: true }]
+  : [];
 
 const AdminSidebar: React.FC = () => {
   const pathname = usePathname();
@@ -198,22 +197,36 @@ const AdminSidebar: React.FC = () => {
           <div className="mt-8 pt-4 border-t border-slate-800">
             <ul className="space-y-1">
               {bottomNavItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = !item.external && pathname === item.href;
                 return (
                   <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      className={clsx(
-                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-                        isActive
-                          ? 'bg-linear-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-500/30'
-                          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                      )}
-                      onClick={() => setIsMobileOpen(false)}
-                    >
-                      <item.icon className="w-5 h-5 shrink-0" />
-                      {!isCollapsed && <span className="font-medium">{item.name}</span>}
-                    </Link>
+                    {item.external ? (
+                      <a
+                        href={item.href}
+                        className={clsx(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                          'text-slate-400 hover:bg-slate-800 hover:text-white'
+                        )}
+                        onClick={() => setIsMobileOpen(false)}
+                      >
+                        <item.icon className="w-5 h-5 shrink-0" />
+                        {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                      </a>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className={clsx(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                          isActive
+                            ? 'bg-linear-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-500/30'
+                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                        )}
+                        onClick={() => setIsMobileOpen(false)}
+                      >
+                        <item.icon className="w-5 h-5 shrink-0" />
+                        {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                      </Link>
+                    )}
                   </li>
                 );
               })}

@@ -61,7 +61,7 @@ export const Sidebar: React.FC = () => {
   const { logout: storeLogout, user: storeUser } = useAuthStore();
 
   const isAdmin = storeUser?.role === 'admin';
-  const adminPortalItem: NavItem | null = ADMIN_PORTAL_URL
+  const adminPortalItem: NavItem | null = isAdmin && ADMIN_PORTAL_URL
     ? {
         name: 'Admin Portal',
         href: ADMIN_PORTAL_URL,
@@ -70,9 +70,10 @@ export const Sidebar: React.FC = () => {
       }
     : null;
 
-  const visibleNavItems: NavItem[] = isAdmin
-    ? [navItems[0], ...(adminPortalItem ? [adminPortalItem] : []), ...navItems.slice(1)]
-    : navItems;
+  const visibleNavItems: NavItem[] = navItems;
+  const visibleBottomItems: NavItem[] = adminPortalItem
+    ? [...bottomNavItems, adminPortalItem]
+    : bottomNavItems;
 
   const displayName = storeUser?.name || 'User';
   const displayRole = storeUser?.role || 'Midwife';
@@ -206,23 +207,37 @@ export const Sidebar: React.FC = () => {
 
           <div className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
             <ul className="space-y-1">
-              {bottomNavItems.map((item) => {
-                const isActive = pathname === item.href;
+              {visibleBottomItems.map((item) => {
+                const isActive = !item.external && pathname === item.href;
                 return (
                   <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      className={clsx(
-                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-                        isActive
-                          ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
-                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                      )}
-                      onClick={() => setIsMobileOpen(false)}
-                    >
-                      <item.icon className="w-5 h-5 shrink-0" />
-                      {!isCollapsed && <span className="font-medium">{item.name}</span>}
-                    </Link>
+                    {item.external ? (
+                      <a
+                        href={item.href}
+                        className={clsx(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                          'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        )}
+                        onClick={() => setIsMobileOpen(false)}
+                      >
+                        <item.icon className="w-5 h-5 shrink-0" />
+                        {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                      </a>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className={clsx(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                          isActive
+                            ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        )}
+                        onClick={() => setIsMobileOpen(false)}
+                      >
+                        <item.icon className="w-5 h-5 shrink-0" />
+                        {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                      </Link>
+                    )}
                   </li>
                 );
               })}
