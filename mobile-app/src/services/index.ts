@@ -7,3 +7,4 @@ export * from './vaccineService';
 export * from './growthService';
 export * from './appointmentService';
 export * from './midwifeLinkService';
+export * from './aiChatService';

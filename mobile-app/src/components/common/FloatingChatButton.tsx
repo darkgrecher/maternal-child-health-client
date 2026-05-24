@@ -16,14 +16,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../constants';
 import { useThemeStore } from '../../stores';
+import { sendChatMessage } from '../../services';
 
 interface ChatMessage {
   id: string;
@@ -33,44 +32,62 @@ interface ChatMessage {
 }
 
 export const FloatingChatButton: React.FC = () => {
-  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors } = useThemeStore();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      text: 'Hello! I\'m your AI assistant. How can I help you with your child\'s health today?',
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
-  const handleSend = () => {
-    if (inputText.trim() === '') return;
+  const handleSend = async () => {
+    const trimmed = inputText.trim();
+    if (trimmed === '' || isSending) return;
 
-    // Add user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      text: inputText,
+      text: trimmed,
       isUser: true,
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
     setInputText('');
+    setIsSending(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const aiMessages = nextMessages.map((message) => ({
+        role: message.isUser ? 'user' : 'assistant',
+        content: message.text,
+      }));
+
+      const aiResponse = await sendChatMessage(aiMessages);
+
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: 'I understand your question. This is a placeholder response. In the production version, this will be connected to an AI assistant that can help you with health advice, vaccination schedules, and more.',
+        text: aiResponse,
         isUser: false,
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, aiMessage]);
-    }, 1000);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to reach the AI assistant. Please try again.';
+
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: message,
+        isUser: false,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -172,10 +189,10 @@ export const FloatingChatButton: React.FC = () => {
               <TouchableOpacity
                 style={[
                   styles.sendButton,
-                  { backgroundColor: inputText.trim() === '' ? colors.gray[300] : colors.primary },
+                  { backgroundColor: inputText.trim() === '' || isSending ? colors.gray[300] : colors.primary },
                 ]}
                 onPress={handleSend}
-                disabled={inputText.trim() === ''}
+                disabled={inputText.trim() === '' || isSending}
               >
                 <Ionicons
                   name="send"

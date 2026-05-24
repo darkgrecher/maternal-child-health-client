@@ -34,7 +34,9 @@
     "extra": {
       "eas": {
         "projectId": "c286e119-34e3-4801-9c14-38da99930e1f"
-      }
+      },
+      "DO_AGENT_ENDPOINT": "https://i425cv2vqcuvvd25gygwl2nd.agents.do-ai.run",
+      "DO_AGENT_KEY": "vXfgIVjJOqypELylhzQnxY4AMzqj6VQR"
     },
     "owner": "darkgrechers-organization",
     "plugins": [
