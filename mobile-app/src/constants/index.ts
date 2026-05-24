@@ -310,8 +310,7 @@ export const HEALTH_TIPS = [
 // ============================================================================
 
 export const API_CONFIG = {
-  // TODO: Replace with actual backend URL
-  baseUrl: 'http://localhost:3000/api',
+  baseUrl: 'https://maternal-child-health-server-i486p.ondigitalocean.app/api',
   timeout: 30000,
   retryAttempts: 3,
   syncInterval: 300000, // 5 minutes

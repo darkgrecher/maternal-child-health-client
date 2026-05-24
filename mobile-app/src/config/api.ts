@@ -4,11 +4,10 @@
  * Configuration for API endpoints and client setup.
  */
 
-// API Base URL - Update this with your server URL
-// Using local network IP instead of localhost for Expo Go on physical devices
+// API Base URL
 export const API_BASE_URL = __DEV__ 
-  ? 'http://192.168.1.121:3000/api'  // Development - Use your local IP for physical devices (Wi-Fi)
-  : 'https://your-production-server.com/api';  // Production
+  ? 'https://maternal-child-health-server-i486p.ondigitalocean.app/api'
+  : 'https://maternal-child-health-server-i486p.ondigitalocean.app/api';
 
 /**
  * API Endpoints

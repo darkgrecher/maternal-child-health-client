@@ -18,6 +18,23 @@ import type { NotificationListItem } from '../types';
 const PUSH_TOKEN_KEY = 'push-token';
 const PUSH_TOKEN_USER_KEY = 'push-token-user';
 
+const isExpoGo = (): boolean => {
+  if (Constants.executionEnvironment) {
+    return Constants.executionEnvironment === 'storeClient';
+  }
+
+  return Constants.appOwnership === 'expo';
+};
+
+const isRemotePushSupported = (): boolean => {
+  if (!Device.isDevice) {
+    return false;
+  }
+
+  // Expo Go does not support remote push notifications in SDK 53+.
+  return !isExpoGo();
+};
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -63,7 +80,7 @@ const getDeviceId = async (): Promise<string> => {
 };
 
 const getExpoPushToken = async (): Promise<string | null> => {
-  if (!Device.isDevice) {
+  if (!isRemotePushSupported()) {
     return null;
   }
 
