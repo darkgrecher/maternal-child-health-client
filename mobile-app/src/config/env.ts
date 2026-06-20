@@ -33,11 +33,6 @@ const clean = (value: string | undefined): string | undefined => {
 const raw = {
   apiBaseUrl: clean(process.env.EXPO_PUBLIC_API_BASE_URL),
 
-  googleExpoClientId: clean(process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID),
-  googleIosClientId: clean(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID),
-  googleAndroidClientId: clean(process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID),
-  googleWebClientId: clean(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID),
-
   auth0Domain: clean(process.env.EXPO_PUBLIC_AUTH0_DOMAIN),
   auth0ClientId: clean(process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID),
   auth0Audience: clean(process.env.EXPO_PUBLIC_AUTH0_AUDIENCE),
@@ -51,10 +46,6 @@ const raw = {
 /** Keys that must be present for the app to function. */
 const REQUIRED_KEYS: Array<keyof typeof raw> = [
   'apiBaseUrl',
-  'googleExpoClientId',
-  'googleIosClientId',
-  'googleAndroidClientId',
-  'googleWebClientId',
   'auth0Domain',
   'auth0ClientId',
   'auth0Audience',
@@ -78,12 +69,6 @@ if (missing.length > 0) {
 export const ENV = {
   api: {
     baseUrl: raw.apiBaseUrl ?? '',
-  },
-  google: {
-    expoClientId: raw.googleExpoClientId ?? '',
-    iosClientId: raw.googleIosClientId ?? '',
-    androidClientId: raw.googleAndroidClientId ?? '',
-    webClientId: raw.googleWebClientId ?? '',
   },
   auth0: {
     domain: raw.auth0Domain ?? '',
