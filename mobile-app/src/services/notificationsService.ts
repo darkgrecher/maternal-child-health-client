@@ -3,14 +3,21 @@
  *
  * Handles Expo push permissions, device token registration,
  * and in-app notification APIs.
+ *
+ * Note: `expo-notifications` cannot be imported in Expo Go on Android (SDK 53+).
+ * Simply importing it registers a device-push-token listener at module load,
+ * which throws. We therefore load it lazily and only outside Expo Go; in Expo Go
+ * the push-related methods become no-ops while in-app (server) notifications
+ * continue to work.
  */
 
 import { Platform } from 'react-native';
+import { isRunningInExpoGo } from 'expo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
+import type * as NotificationsModule from 'expo-notifications';
 import { apiClient } from './apiClient';
 import { API_ENDPOINTS } from '../config/api';
 import type { NotificationListItem } from '../types';
@@ -18,37 +25,35 @@ import type { NotificationListItem } from '../types';
 const PUSH_TOKEN_KEY = 'push-token';
 const PUSH_TOKEN_USER_KEY = 'push-token-user';
 
-const isExpoGo = (): boolean => {
-  if (Constants.executionEnvironment) {
-    return Constants.executionEnvironment === 'storeClient';
-  }
-
-  return Constants.appOwnership === 'expo';
-};
+// Lazy, conditional load — see file header. The `require` only runs (and the
+// module's throwing side-effects only register) outside Expo Go.
+const Notifications: typeof NotificationsModule | null = isRunningInExpoGo()
+  ? null
+  : require('expo-notifications');
 
 const isRemotePushSupported = (): boolean => {
-  if (!Device.isDevice) {
-    return false;
-  }
-
-  // Expo Go does not support remote push notifications in SDK 53+.
-  return !isExpoGo();
+  // Remote push requires a real device and a development/standalone build
+  // (removed from Expo Go in SDK 53+).
+  return Device.isDevice && !isRunningInExpoGo();
 };
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (Notifications) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 const getProjectId = (): string | undefined => {
   return Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 };
 
 const ensureAndroidChannel = async () => {
-  if (Platform.OS !== 'android') return;
+  if (!Notifications || Platform.OS !== 'android') return;
 
   await Notifications.setNotificationChannelAsync('default', {
     name: 'default',
@@ -56,7 +61,9 @@ const ensureAndroidChannel = async () => {
   });
 };
 
-const requestPermissions = async (): Promise<Notifications.PermissionStatus> => {
+const requestPermissions = async (): Promise<string> => {
+  if (!Notifications) return 'denied';
+
   const settings = await Notifications.getPermissionsAsync();
   if (settings.status === 'granted') {
     return settings.status;
@@ -73,14 +80,15 @@ const getDeviceId = async (): Promise<string> => {
   }
 
   if (Platform.OS === 'android') {
-    return Application.androidId ?? `android-${Constants.deviceName ?? 'device'}`;
+    const androidId = await Application.getAndroidId();
+    return androidId ?? `android-${Constants.deviceName ?? 'device'}`;
   }
 
   return `${Platform.OS}-${Constants.deviceName ?? 'device'}`;
 };
 
 const getExpoPushToken = async (): Promise<string | null> => {
-  if (!isRemotePushSupported()) {
+  if (!isRemotePushSupported() || !Notifications) {
     return null;
   }
 
@@ -91,12 +99,18 @@ const getExpoPushToken = async (): Promise<string | null> => {
 
   await ensureAndroidChannel();
 
-  const projectId = getProjectId();
-  const tokenResponse = projectId
-    ? await Notifications.getExpoPushTokenAsync({ projectId })
-    : await Notifications.getExpoPushTokenAsync();
+  try {
+    const projectId = getProjectId();
+    const tokenResponse = projectId
+      ? await Notifications.getExpoPushTokenAsync({ projectId })
+      : await Notifications.getExpoPushTokenAsync();
 
-  return tokenResponse.data;
+    return tokenResponse.data;
+  } catch (error) {
+    // e.g. remote push unavailable or no network — degrade gracefully
+    console.log('Failed to get Expo push token:', error);
+    return null;
+  }
 };
 
 export const notificationsService = {

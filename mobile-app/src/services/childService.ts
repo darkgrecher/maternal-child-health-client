@@ -89,9 +89,9 @@ const mapToChildProfile = (data: ChildApiResponse): ChildProfile => ({
   assignedMidwife: data.assignedMidwife
     ? {
         id: data.assignedMidwife.id,
-        name: data.assignedMidwife.name || undefined,
+        name: data.assignedMidwife.name || '',
         role: 'midwife',
-        phone: data.assignedMidwife.phone || undefined,
+        phone: data.assignedMidwife.phone || '',
         email: data.assignedMidwife.email || undefined,
         clinic: data.assignedMidwife.clinic || undefined,
         address: data.assignedMidwife.address || undefined,

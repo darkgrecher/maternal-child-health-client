@@ -1,7 +1,5 @@
 /**
- * Context Exports
- * 
- * Central export file for all React contexts.
+ * Context / Providers barrel export
  */
 
-export { ThemeProvider, useTheme, useThemeWithActions } from './ThemeContext';
+export { ThemeProvider } from './ThemeProvider';

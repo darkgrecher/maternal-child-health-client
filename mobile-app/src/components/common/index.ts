@@ -16,3 +16,4 @@ export { TabButton } from './TabButton';
 export { default as SimpleLineChart } from './SimpleLineChart';
 export { FloatingChatButton } from './FloatingChatButton';
 export { ConvertToChildModal } from './ConvertToChildModal';
+export { LoopingVideo } from './LoopingVideo';

@@ -23,7 +23,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { LoopingVideo } from '../components/common/LoopingVideo';
 import * as Contacts from 'expo-contacts';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -574,13 +574,10 @@ const HomeScreen: React.FC = () => {
           <View style={[styles.centerContent, { flex: 1 }]}>
           <View style={styles.emptyStateContainer}>
             <View style={styles.welcomeVideoContainer}>
-              <Video
+              <LoopingVideo
                 source={require('../../assets/Seamless_Video_Loop_Creation.mp4')}
                 style={styles.welcomeVideo}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay
-                isLooping
-                isMuted
+                contentFit="cover"
               />
             </View>
             <Text style={styles.emptyTitle}>{t('home.welcomeTitle', 'Welcome!')}</Text>
@@ -730,13 +727,10 @@ const HomeScreen: React.FC = () => {
         <Card style={styles.childSummaryCard}>
           <View style={styles.childInfo}>
             <View style={styles.avatarVideoContainer}>
-              <Video
+              <LoopingVideo
                 source={require('../../assets/Baby_Animation_For_Home_Screen.mp4')}
                 style={styles.avatarVideo}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay
-                isLooping
-                isMuted
+                contentFit="cover"
               />
             </View>
             <View style={styles.childDetails}>

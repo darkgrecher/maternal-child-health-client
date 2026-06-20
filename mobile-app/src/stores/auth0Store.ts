@@ -97,9 +97,8 @@ export const useAuthStore = create<AuthState>()(
         try {
           // Send Google token to backend for validation
           const response = await apiClient.post<{
-            accessToken: string;
-            refreshToken: string;
-            user: AppUser;
+            success: boolean;
+            data: { accessToken: string; refreshToken: string; user: AppUser };
           }>(API_ENDPOINTS.AUTH.GOOGLE, {
             idToken,
             code,
@@ -146,7 +145,9 @@ export const useAuthStore = create<AuthState>()(
        */
       fetchProfile: async () => {
         try {
-          const response = await apiClient.get<{ user: AppUser }>(API_ENDPOINTS.AUTH.ME);
+          const response = await apiClient.get<{ success: boolean; data: { user: AppUser } }>(
+            API_ENDPOINTS.AUTH.ME,
+          );
           set({ user: response.data.user });
         } catch (error) {
           console.log('Failed to fetch profile:', error);

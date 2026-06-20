@@ -101,7 +101,7 @@ const CreatePregnancyScreen: React.FC = () => {
       }
       
       // Pre-fill medical information (may persist between pregnancies)
-      if (previousPregnancy.motherHeight) setHeight(previousPregnancy.motherHeight.toString());
+      if (previousPregnancy.height) setHeight(previousPregnancy.height.toString());
       if (previousPregnancy.medicalConditions && previousPregnancy.medicalConditions.length > 0) {
         setMedicalConditions(previousPregnancy.medicalConditions.join(', '));
       }

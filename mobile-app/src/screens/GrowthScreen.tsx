@@ -18,7 +18,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { LoopingVideo } from '../components/common/LoopingVideo';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -550,9 +550,10 @@ const GrowthScreen: React.FC = () => {
   } = useGrowthStore();
 
   // Only use growth data if it belongs to the current profile
-  const latestMeasurement = (growthData?.childId === profile?.id && growthData?.measurements.length > 0)
-    ? growthData.measurements[growthData.measurements.length - 1]
-    : null;
+  const latestMeasurement =
+    growthData && growthData.childId === profile?.id && growthData.measurements.length > 0
+      ? growthData.measurements[growthData.measurements.length - 1]
+      : null;
 
   // Fetch data when profile changes
   useEffect(() => {
@@ -668,15 +669,12 @@ const GrowthScreen: React.FC = () => {
       >
         {/* Video Section */}
         <View style={styles.videoContainer}>
-          <Video
+          <LoopingVideo
             source={require('../../assets/Untitled design.mp4')}
             style={styles.video}
-            useNativeControls
-            resizeMode={ResizeMode.COVER}
-            isLooping
-            shouldPlay={true}
-            isMuted={false}
-            onError={(error) => console.log('Video Error:', error)}
+            contentFit="cover"
+            muted={false}
+            nativeControls
           />
         </View>
 

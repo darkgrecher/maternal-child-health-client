@@ -15,6 +15,9 @@ interface RequestOptions extends RequestInit {
 
 class ApiClient {
   private baseUrl: string;
+  // Holds the in-flight token refresh so concurrent 401s share a single
+  // refresh instead of each racing with their own (rotating) refresh token.
+  private refreshPromise: Promise<boolean> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -95,9 +98,29 @@ class ApiClient {
   }
 
   /**
-   * Try to refresh the access token
+   * Try to refresh the access token.
+   *
+   * Concurrent callers (e.g. several requests that all get a 401 at once)
+   * share a single in-flight refresh. Because the backend rotates refresh
+   * tokens (each one is single-use), letting every request refresh on its
+   * own would make all but the first fail and log the user out.
    */
-  private async tryRefreshToken(): Promise<boolean> {
+  private tryRefreshToken(): Promise<boolean> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.refreshPromise = this.performTokenRefresh().finally(() => {
+      this.refreshPromise = null;
+    });
+
+    return this.refreshPromise;
+  }
+
+  /**
+   * Perform the actual token refresh network request.
+   */
+  private async performTokenRefresh(): Promise<boolean> {
     const useAuthStore = getAuthStore();
     const refreshToken = useAuthStore.getState().refreshToken;
     if (!refreshToken) return false;

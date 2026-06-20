@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../constants';
 import { useThemeStore } from '../../stores';
-import { sendChatMessage } from '../../services';
+import { sendChatMessage, AiChatMessage } from '../../services';
 
 interface ChatMessage {
   id: string;
@@ -148,7 +148,7 @@ export const FloatingChatButton: React.FC = () => {
     setIsSending(true);
 
     try {
-      const aiMessages = nextMessages.map((message) => ({
+      const aiMessages: AiChatMessage[] = nextMessages.map((message) => ({
         role: message.isUser ? 'user' : 'assistant',
         content: message.text,
       }));

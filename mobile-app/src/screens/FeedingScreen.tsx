@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { LoopingVideo } from '../components/common/LoopingVideo';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -183,14 +183,12 @@ const FeedingScreen: React.FC = () => {
         <Card style={styles.videoTextCard}>
           <View style={styles.videoTextSection}>
             <View style={styles.videoWrapper}>
-              <Video
+              <LoopingVideo
                 source={require('../../assets/eatingVideo.mp4')}
                 style={styles.smallVideo}
-                useNativeControls
-                resizeMode={ResizeMode.COVER}
-                isLooping
-                shouldPlay={true}
-                isMuted={false}
+                contentFit="cover"
+                muted={false}
+                nativeControls
               />
             </View>
             <View style={styles.videoTextContent}>

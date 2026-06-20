@@ -15,13 +15,12 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { LoopingVideo } from './LoopingVideo';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../constants';
 import { useThemeStore } from '../../stores';
-import { Button } from './Button';
 
 // Animation video
 const CELEBRATION_VIDEO = require('../../../assets/Seamless_Video_Loop_Creation.mp4');
@@ -148,13 +147,10 @@ export const ConvertToChildModal: React.FC<ConvertToChildModalProps> = ({
 
           {/* Video Container */}
           <View style={styles.videoContainer}>
-            <Video
+            <LoopingVideo
               source={CELEBRATION_VIDEO}
               style={styles.video}
-              resizeMode={ResizeMode.CONTAIN}
-              shouldPlay
-              isLooping
-              isMuted
+              contentFit="contain"
             />
           </View>
 

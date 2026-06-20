@@ -140,15 +140,6 @@ export default {
   },
 
   // Settings Screen
-  settings: {
-    title: 'සැකසුම්',
-    subtitle: 'යෙදුම් මනාපයන්',
-    language: 'භාෂාව',
-    about: 'පිළිබඳව',
-    version: 'අනුවාදය',
-    appName: 'යෙදුමේ නම',
-  },
-
   // Vaccines Screen
   vaccines: {
     title: 'එන්නත්කරණය',
@@ -337,7 +328,6 @@ export default {
     createTitle: 'ගැබ් ගැනීමේ පැතිකඩ නිර්මාණය කරන්න',
     motherInfo: 'මවගේ තොරතුරු',
     pregnancyInfo: 'ගැබ් ගැනීමේ තොරතුරු',
-    medicalInfo: 'වෛද්‍ය තොරතුරු',
     healthcareProviders: 'සෞඛ්‍ය සේවා සපයන්නන්',
     emergencyContact: 'හදිසි සම්බන්ධතාව',
     additionalInfo: 'අතිරේක තොරතුරු',
@@ -351,7 +341,6 @@ export default {
     gravida: 'ගැබිනි වාර',
     para: 'දරු උපත් වාර',
     prePregnancyWeight: 'ගැබ් ගැනීමට පෙර බර',
-    currentWeight: 'වර්තමාන බර',
     height: 'උස',
     enterWeight: 'උදා: 55',
     enterHeight: 'උදා: 165',

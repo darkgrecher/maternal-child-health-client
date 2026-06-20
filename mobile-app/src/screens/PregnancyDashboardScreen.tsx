@@ -18,7 +18,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { LoopingVideo } from '../components/common/LoopingVideo';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -359,13 +359,10 @@ const PregnancyDashboardScreen: React.FC = () => {
         {/* Hero Section with Pregnancy Video */}
         <Card style={styles.heroCard}>
           <View style={styles.heroContentRow}>
-            <Video
+            <LoopingVideo
               source={PREGNANCY_HERO_VIDEO}
               style={styles.heroVideo}
-              resizeMode={ResizeMode.CONTAIN}
-              shouldPlay
-              isLooping
-              isMuted
+              contentFit="contain"
             />
             <View style={styles.heroTextContainer}>
               <Text style={[styles.heroGreeting, { color: '#8B4A6B' }]}>

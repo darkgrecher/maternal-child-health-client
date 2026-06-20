@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { View, Text, Image, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, Image, StyleSheet, ViewStyle, ImageStyle, StyleProp } from 'react-native';
 import { COLORS, BORDER_RADIUS, FONT_SIZE, FONT_WEIGHT } from '../../constants';
 import { useThemeStore } from '../../stores';
 
@@ -60,7 +60,7 @@ export const Avatar: React.FC<AvatarProps> = ({
           styles.image,
           { width: dimension, height: dimension, borderRadius: dimension / 2 },
           style,
-        ]}
+        ] as StyleProp<ImageStyle>}
       />
     );
   }

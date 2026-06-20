@@ -79,7 +79,7 @@ const pregnancyTabIcons: Record<keyof PregnancyTabParamList, { focused: Ionicons
  */
 const AuthNavigator: React.FC = () => {
   return (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+    <AuthStack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Auth" component={AuthScreen} />
     </AuthStack.Navigator>
   );
@@ -90,7 +90,7 @@ const AuthNavigator: React.FC = () => {
  */
 const ProfileStackNavigator: React.FC = () => {
   return (
-    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+    <ProfileStack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
     </ProfileStack.Navigator>
@@ -120,6 +120,7 @@ const ChildTabNavigator: React.FC = () => {
 
   return (
     <Tab.Navigator
+      id={undefined}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
@@ -201,6 +202,7 @@ const PregnancyTabNavigator: React.FC = () => {
 
   return (
     <PregnancyTab.Navigator
+      id={undefined}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
@@ -254,7 +256,7 @@ const PregnancyTabNavigator: React.FC = () => {
  */
 const RootNavigator: React.FC = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Main" component={ChildTabNavigator} />
       <Stack.Screen name="PregnancyMain" component={PregnancyTabNavigator} />
       <Stack.Screen name="Settings" component={SettingsScreen} />

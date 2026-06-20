@@ -36,7 +36,8 @@ interface VaccineState {
   fetchVaccines: () => Promise<void>;
   fetchChildVaccinationRecords: (childId: string) => Promise<void>;
   administerVaccine: (childId: string, vaccineId: string, data?: AdministerVaccineRequest) => Promise<void>;
-  
+  unmarkVaccine: (childId: string, vaccineId: string) => Promise<void>;
+
   // Utility
   clearData: () => void;
   setLoading: (loading: boolean) => void;
@@ -112,6 +113,27 @@ export const useVaccineStore = create<VaccineState>()(
           set({ vaccinationData: updatedData, isLoading: false });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Failed to administer vaccine';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Revert an administered vaccine back to scheduled
+      unmarkVaccine: async (childId: string, vaccineId: string) => {
+        const { vaccinationData } = get();
+        const record = vaccinationData?.schedule.find((r) => r.vaccineId === vaccineId);
+        if (!record?.id) {
+          throw new Error('Vaccination record not found');
+        }
+
+        set({ isLoading: true, error: null });
+        try {
+          await vaccineService.updateVaccinationRecord(record.id, { status: 'scheduled' });
+          // Refresh the vaccination records
+          const updatedData = await vaccineService.getChildVaccinationRecords(childId);
+          set({ vaccinationData: updatedData, isLoading: false });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to unmark vaccine';
           set({ error: message, isLoading: false });
           throw error;
         }

@@ -166,7 +166,7 @@ const PregnancyHealthScreen: React.FC = () => {
   };
 
   const { week, trimester, progress } = calculateProgress();
-  const tips = WELLNESS_TIPS[trimester] || WELLNESS_TIPS[1];
+  const tips = WELLNESS_TIPS[trimester as keyof typeof WELLNESS_TIPS] || WELLNESS_TIPS[1];
 
   // Toggle symptom selection and save
   const toggleSymptom = async (symptomId: string) => {

@@ -1,13 +1,13 @@
 /**
  * API Configuration
- * 
+ *
  * Configuration for API endpoints and client setup.
  */
 
-// API Base URL
-export const API_BASE_URL = __DEV__ 
-  ? 'https://maternal-child-health-server-i486p.ondigitalocean.app/api'
-  : 'https://maternal-child-health-server-i486p.ondigitalocean.app/api';
+import { ENV } from './env';
+
+// API Base URL (validated in ./env)
+export const API_BASE_URL = ENV.api.baseUrl;
 
 /**
  * API Endpoints

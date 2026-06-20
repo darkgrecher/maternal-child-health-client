@@ -19,7 +19,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Video, ResizeMode } from 'expo-av';
+import { LoopingVideo } from '../components/common/LoopingVideo';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -378,13 +378,10 @@ const VaccinesScreen: React.FC = () => {
         <Card style={{ ...styles.videoCard, backgroundColor: '#FFFFFF' }}>
           <View style={styles.videoContentRow}>
             <View style={styles.videoContainer}>
-              <Video
+              <LoopingVideo
                 source={vaccineVideo}
                 style={styles.video}
-                resizeMode={ResizeMode.CONTAIN}
-                shouldPlay
-                isLooping
-                isMuted
+                contentFit="contain"
               />
             </View>
             

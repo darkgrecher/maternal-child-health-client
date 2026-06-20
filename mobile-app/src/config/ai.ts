@@ -1,25 +1,13 @@
 /**
  * AI Agent Configuration
  *
- * Values are read from Expo config extras in app.json.
+ * Values come from ./env (injected via app.config.js from .env / EAS secrets).
  */
 
-import Constants from 'expo-constants';
+import { ENV } from './env';
 
-type ExtraConfig = {
-  DO_AGENT_ENDPOINT?: string;
-  DO_AGENT_KEY?: string;
-  DO_AGENT_MODEL?: string;
-};
+export const DO_AGENT_ENDPOINT = ENV.doAgent.endpoint;
+export const DO_AGENT_KEY = ENV.doAgent.key;
+export const DO_AGENT_MODEL = ENV.doAgent.model;
 
-const extra = (Constants.expoConfig?.extra ?? {}) as ExtraConfig;
-
-export const DO_AGENT_ENDPOINT = extra.DO_AGENT_ENDPOINT?.trim() ?? '';
-export const DO_AGENT_KEY = extra.DO_AGENT_KEY?.trim() ?? '';
-export const DO_AGENT_MODEL = extra.DO_AGENT_MODEL?.trim() ?? '';
-
-export const getDoAgentConfig = () => ({
-  endpoint: DO_AGENT_ENDPOINT,
-  key: DO_AGENT_KEY,
-  model: DO_AGENT_MODEL,
-});
+export const getDoAgentConfig = () => ({ ...ENV.doAgent });

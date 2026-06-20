@@ -138,15 +138,6 @@ export default {
   },
 
   // Settings Screen
-  settings: {
-    title: 'அமைப்புகள்',
-    subtitle: 'பயன்பாட்டு விருப்பத்தேர்வுகள்',
-    language: 'மொழி',
-    about: 'பற்றி',
-    version: 'பதிப்பு',
-    appName: 'பயன்பாட்டின் பெயர்',
-  },
-
   // Vaccines Screen
   vaccines: {
     title: 'நோய்த்தடுப்பு',
@@ -335,7 +326,6 @@ export default {
     createTitle: 'கர்ப்ப சுயவிவரத்தை உருவாக்கவும்',
     motherInfo: 'தாயாரின் தகவல்',
     pregnancyInfo: 'கர்ப்ப தகவல்',
-    medicalInfo: 'மருத்துவ தகவல்',
     healthcareProviders: 'சுகாதார சேவை வழங்குநர்கள்',
     emergencyContact: 'அவசர தொடர்பு',
     additionalInfo: 'கூடுதல் தகவல்',
@@ -349,7 +339,6 @@ export default {
     gravida: 'கர்ப்ப எண்',
     para: 'பிரசவ எண்',
     prePregnancyWeight: 'கர்ப்பத்திற்கு முந்தைய எடை',
-    currentWeight: 'தற்போதைய எடை',
     height: 'உயரம்',
     enterWeight: 'எ.கா: 55',
     enterHeight: 'எ.கா: 165',
