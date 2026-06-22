@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@auth0/auth0-react": "^2.15.0",
     "chart.js": "^4.4.1",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
