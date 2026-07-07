@@ -270,13 +270,7 @@ const PregnancyJournalScreen: React.FC = () => {
             </View>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity 
-              style={[styles.addButton, { backgroundColor: colors.secondary }]}
-              onPress={() => setShowEntryModal(true)}
-            >
-              <Ionicons name="add" size={20} color={colors.white} />
-            </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.headerIconButton}
               onPress={() => navigation.navigate('Settings')}
             >
@@ -455,6 +449,15 @@ const PregnancyJournalScreen: React.FC = () => {
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* Floating New Entry Button */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: colors.secondary }]}
+        onPress={() => setShowEntryModal(true)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color={colors.white} />
+      </TouchableOpacity>
+
       {/* New Entry Modal */}
       <Modal
         visible={showEntryModal}
@@ -612,12 +615,20 @@ const styles = StyleSheet.create({
   headerIconButton: {
     padding: SPACING.xs,
   },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  fab: {
+    position: 'absolute',
+    right: SPACING.lg,
+    bottom: SPACING.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
   },
   scrollViewWithHeader: {
     flex: 1,
