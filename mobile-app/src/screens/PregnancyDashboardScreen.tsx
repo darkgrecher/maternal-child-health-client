@@ -210,6 +210,7 @@ const PregnancyDashboardScreen: React.FC = () => {
 
   const pregnancyProgress = calculatePregnancyProgress();
   const babyInfo = getBabyDevelopmentInfo(pregnancyProgress.weeks);
+  const currentWeight = displayPregnancy?.currentWeight ?? displayPregnancy?.prePregnancyWeight;
   const midwifeName = displayPregnancy?.midwifeName || displayPregnancy?.midwife?.name;
   const midwifePhone = displayPregnancy?.midwifeContact || displayPregnancy?.midwife?.phone;
   const hasMidwifeInfo = Boolean(midwifeName || midwifePhone);
@@ -458,7 +459,7 @@ const PregnancyDashboardScreen: React.FC = () => {
                 {t('pregnancy.currentWeight', 'Current Weight')}
               </Text>
               <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
-                {displayPregnancy.prePregnancyWeight ? `${displayPregnancy.prePregnancyWeight} kg` : '--'}
+                {currentWeight ? `${currentWeight} kg` : '--'}
               </Text>
             </View>
             <View style={[styles.metricItem, { backgroundColor: colors.gray[50] }]}>
