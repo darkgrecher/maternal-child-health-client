@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.lg,
-    paddingTop: 0,
+    paddingTop: SPACING.md,
   },
   heroCard: {
     marginBottom: SPACING.lg,

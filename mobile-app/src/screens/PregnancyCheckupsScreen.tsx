@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.lg,
-    paddingTop: 0,
+    paddingTop: SPACING.md,
   },
   loadingText: {
     marginTop: SPACING.md,
