@@ -517,7 +517,7 @@ const PregnancyDashboardScreen: React.FC = () => {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <FloatingChatButton />
+      <FloatingChatButton variant="pregnancy" />
 
       {/* Convert to Child Modal - shown when due date has passed */}
       <ConvertToChildModal

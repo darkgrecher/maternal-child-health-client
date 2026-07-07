@@ -24,6 +24,7 @@ export interface ThemeColors {
   // Secondary colors
   secondary: string;
   secondaryLight: string;
+  secondaryDark: string;
   
   // Status colors
   success: string;
@@ -77,6 +78,7 @@ export const PINK_THEME: ThemeColors = {
   // Secondary colors
   secondary: '#4CAF50',
   secondaryLight: '#E8F5E9',
+  secondaryDark: '#388E3C',
   
   // Status colors
   success: '#4CAF50',
@@ -130,6 +132,7 @@ export const BLUE_THEME: ThemeColors = {
   // Secondary colors
   secondary: '#4CAF50',
   secondaryLight: '#E8F5E9',
+  secondaryDark: '#388E3C',
   
   // Status colors
   success: '#4CAF50',

@@ -19,6 +19,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../constants';
@@ -31,6 +32,12 @@ interface ChatMessage {
   isUser: boolean;
   timestamp: Date;
 }
+
+const SUGGESTED_PROMPTS = [
+  'What foods should I avoid during pregnancy?',
+  'How can I sleep better while pregnant?',
+  'When should my baby start solid foods?',
+];
 
 type TextPart = {
   text: string;
@@ -119,20 +126,28 @@ const TypingIndicator: React.FC<{ color: string }> = ({ color }) => {
   );
 };
 
-export const FloatingChatButton: React.FC = () => {
+interface FloatingChatButtonProps {
+  /** 'pregnancy' switches the accent to the green secondary palette */
+  variant?: 'default' | 'pregnancy';
+}
+
+export const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ variant = 'default' }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useThemeStore();
+  const accent = variant === 'pregnancy' ? colors.secondary : colors.primary;
+  const accentDark = variant === 'pregnancy' ? colors.secondaryDark : colors.primaryDark;
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const renderedMessages = useMemo(() => messages, [messages]);
   const canSend = inputText.trim() !== '' && !isSending;
   const keyboardOffset = Platform.OS === 'ios' ? insets.top + 12 : 0;
 
-  const handleSend = async () => {
-    const trimmed = inputText.trim();
+  const handleSend = async (presetText?: string) => {
+    const trimmed = (presetText ?? inputText).trim();
     if (trimmed === '' || isSending) return;
 
     const userMessage: ChatMessage = {
@@ -186,11 +201,18 @@ export const FloatingChatButton: React.FC = () => {
     <>
       {/* Floating Button */}
       <TouchableOpacity
-        style={[styles.floatingButton, { bottom: insets.bottom + 20, backgroundColor: colors.primary }]}
+        style={[styles.floatingButton, { bottom: insets.bottom + 20 }]}
         onPress={() => setIsModalVisible(true)}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
       >
-        <Ionicons name="chatbubble-ellipses" size={28} color={colors.white} />
+        <LinearGradient
+          colors={[accent, accentDark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.floatingButtonGradient}
+        >
+          <Ionicons name="chatbubble-ellipses" size={26} color={colors.white} />
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Chat Modal */}
@@ -206,33 +228,74 @@ export const FloatingChatButton: React.FC = () => {
           keyboardVerticalOffset={keyboardOffset}
         >
           {/* Header */}
-          <View style={[styles.chatHeader, { paddingTop: insets.top + SPACING.sm, backgroundColor: colors.white, borderBottomColor: colors.gray[200] }]}>
+          <LinearGradient
+            colors={[accent, accentDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.chatHeader, { paddingTop: insets.top + SPACING.sm }]}
+          >
             <View style={styles.chatHeaderContent}>
               <View style={styles.chatHeaderLeft}>
-                <View style={[styles.aiIconContainer, { backgroundColor: colors.primaryLight }]}>
-                  <Ionicons name="sparkles" size={20} color={colors.primary} />
+                <View style={styles.aiIconContainer}>
+                  <Ionicons name="sparkles" size={22} color={colors.white} />
                 </View>
                 <View>
-                  <Text style={[styles.chatTitle, { color: colors.textPrimary }]}>AI Assistant</Text>
-                  <Text style={[styles.chatSubtitle, { color: colors.success }]}>Online</Text>
+                  <Text style={[styles.chatTitle, { color: colors.white }]}>AI Assistant</Text>
+                  <View style={styles.statusRow}>
+                    <View style={styles.statusDot} />
+                    <Text style={styles.chatSubtitle}>Online</Text>
+                  </View>
                 </View>
               </View>
               <TouchableOpacity
                 onPress={() => setIsModalVisible(false)}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={28} color={colors.textPrimary} />
+                <Ionicons name="close" size={22} color={colors.white} />
               </TouchableOpacity>
             </View>
-          </View>
+          </LinearGradient>
 
           {/* Messages */}
           <ScrollView
+            ref={scrollRef}
             style={styles.messagesContainer}
             contentContainerStyle={styles.messagesContent}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+            onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
           >
+            {renderedMessages.length === 0 && !isSending && (
+              <View style={styles.emptyState}>
+                <LinearGradient
+                  colors={[accent, accentDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.emptyIcon}
+                >
+                  <Ionicons name="sparkles" size={30} color={colors.white} />
+                </LinearGradient>
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+                  Hi! How can I help you today?
+                </Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  Ask me anything about pregnancy, baby care, or your health.
+                </Text>
+                <View style={styles.promptList}>
+                  {SUGGESTED_PROMPTS.map((prompt) => (
+                    <TouchableOpacity
+                      key={prompt}
+                      style={[styles.promptChip, { backgroundColor: colors.white, borderColor: colors.gray[200] }]}
+                      onPress={() => handleSend(prompt)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="chatbubble-outline" size={16} color={accent} />
+                      <Text style={[styles.promptText, { color: colors.textPrimary }]}>{prompt}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
             {renderedMessages.map((message) => (
               <View
                 key={message.id}
@@ -242,17 +305,22 @@ export const FloatingChatButton: React.FC = () => {
                 ]}
               >
                 {!message.isUser && (
-                  <View style={[styles.aiAvatar, { backgroundColor: colors.primaryLight }]}>
-                    <Ionicons name="sparkles" size={16} color={colors.primary} />
-                  </View>
+                  <LinearGradient
+                    colors={[accent, accentDark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.aiAvatar}
+                  >
+                    <Ionicons name="sparkles" size={14} color={colors.white} />
+                  </LinearGradient>
                 )}
                 <View style={styles.messageContent}>
                   <View
                     style={[
                       styles.messageText,
                       message.isUser
-                        ? [styles.userMessageText, { backgroundColor: colors.primary }]
-                        : [styles.aiMessageText, { backgroundColor: colors.gray[100] }],
+                        ? [styles.userMessageText, { backgroundColor: accent }]
+                        : [styles.aiMessageText, { backgroundColor: colors.white }],
                     ]}
                   >
                     {message.isUser ? (
@@ -305,18 +373,23 @@ export const FloatingChatButton: React.FC = () => {
             ))}
             {isSending && (
               <View style={[styles.messageBubble, styles.aiMessage]}>
-                <View style={[styles.aiAvatar, { backgroundColor: colors.primaryLight }]}>
-                  <Ionicons name="sparkles" size={16} color={colors.primary} />
-                </View>
+                <LinearGradient
+                  colors={[accent, accentDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.aiAvatar}
+                >
+                  <Ionicons name="sparkles" size={14} color={colors.white} />
+                </LinearGradient>
                 <View style={styles.messageContent}>
                   <View
                     style={[
                       styles.messageText,
                       styles.aiMessageText,
-                      { backgroundColor: colors.gray[100] },
+                      { backgroundColor: colors.white },
                     ]}
                   >
-                    <TypingIndicator color={colors.primary} />
+                    <TypingIndicator color={accent} />
                   </View>
                 </View>
               </View>
@@ -324,7 +397,7 @@ export const FloatingChatButton: React.FC = () => {
           </ScrollView>
 
           {/* Input */}
-          <View style={[styles.inputContainer, { paddingBottom: insets.bottom + SPACING.sm, backgroundColor: colors.white, borderTopColor: colors.gray[200] }]}>
+          <View style={[styles.inputContainer, { paddingBottom: insets.bottom + SPACING.sm, backgroundColor: colors.white, borderTopColor: colors.gray[100] }]}>
             <View style={[styles.inputWrapper, { backgroundColor: colors.gray[50], borderColor: colors.gray[200] }]}>
               <TextInput
                 style={[styles.input, { color: colors.textPrimary }]}
@@ -336,19 +409,24 @@ export const FloatingChatButton: React.FC = () => {
                 maxLength={500}
               />
               <TouchableOpacity
-                style={[
-                  styles.sendButton,
-                  canSend ? styles.sendButtonActive : styles.sendButtonDisabled,
-                  { backgroundColor: canSend ? colors.primary : colors.gray[300] },
-                ]}
-                onPress={handleSend}
+                onPress={() => handleSend()}
                 disabled={!canSend}
+                activeOpacity={0.8}
               >
-                <Ionicons
-                  name="send"
-                  size={20}
-                  color={canSend ? colors.white : colors.gray[400]}
-                />
+                {canSend ? (
+                  <LinearGradient
+                    colors={[accent, accentDark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.sendButton, styles.sendButtonActive]}
+                  >
+                    <Ionicons name="send" size={18} color={colors.white} />
+                  </LinearGradient>
+                ) : (
+                  <View style={[styles.sendButton, { backgroundColor: colors.gray[200] }]}>
+                    <Ionicons name="send" size={18} color={colors.gray[400]} />
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -362,11 +440,7 @@ const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
     right: 20,
-    width: 60,
-    height: 60,
     borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -374,13 +448,27 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     zIndex: 999,
   },
+  floatingButtonGradient: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modalContainer: {
     flex: 1,
   },
   chatHeader: {
-    borderBottomWidth: 1,
     paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.sm,
+    paddingBottom: SPACING.md,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    zIndex: 10,
   },
   chatHeaderContent: {
     flexDirection: 'row',
@@ -393,21 +481,87 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   aiIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
   },
   chatTitle: {
-    fontSize: FONT_SIZE.md,
-    fontWeight: FONT_WEIGHT.semibold,
+    fontSize: FONT_SIZE.lg,
+    fontWeight: FONT_WEIGHT.bold,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#6EE7A0',
   },
   chatSubtitle: {
     fontSize: FONT_SIZE.xs,
+    color: 'rgba(255,255,255,0.85)',
   },
   closeButton: {
-    padding: SPACING.xs,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingTop: SPACING.xl * 1.5,
+    paddingHorizontal: SPACING.lg,
+  },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  emptyTitle: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: FONT_WEIGHT.bold,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: FONT_SIZE.sm,
+    textAlign: 'center',
+    marginTop: SPACING.xs,
+    lineHeight: 20,
+  },
+  promptList: {
+    alignSelf: 'stretch',
+    marginTop: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  promptChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.lg,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+  },
+  promptText: {
+    flex: 1,
+    fontSize: FONT_SIZE.sm,
   },
   messagesContainer: {
     flex: 1,
@@ -440,8 +594,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   messageText: {
-    padding: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: 18,
   },
   inlineText: {
     fontSize: FONT_SIZE.sm,
@@ -472,10 +627,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   userMessageText: {
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: 6,
   },
   aiMessageText: {
-    borderBottomLeftRadius: 4,
+    borderTopLeftRadius: 6,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
   },
   messageTime: {
     fontSize: FONT_SIZE.xs,
@@ -493,8 +653,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: SPACING.sm,
     borderWidth: 1,
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: 26,
     padding: SPACING.xs,
+    paddingLeft: SPACING.sm,
   },
   input: {
     flex: 1,
@@ -507,9 +668,9 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -519,10 +680,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-  },
-  sendButtonDisabled: {
-    elevation: 0,
-    shadowOpacity: 0,
   },
   typingDots: {
     flexDirection: 'row',
